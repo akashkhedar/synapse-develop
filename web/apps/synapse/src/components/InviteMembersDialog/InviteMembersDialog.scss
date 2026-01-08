@@ -1,0 +1,120 @@
+.invite-members-dialog {
+  padding: 20px 0;
+
+  &__loading {
+    text-align: center;
+    padding: 40px 0;
+    font-size: 14px;
+    color: var(--color-neutral-content-subtle);
+  }
+
+  &__description {
+    font-size: 14px;
+    color: var(--color-neutral-content);
+    margin: 0 0 24px 0;
+    line-height: 1.6;
+  }
+
+  &__link-section {
+    margin-bottom: 24px;
+  }
+
+  &__label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-neutral-content);
+    margin-bottom: 8px;
+  }
+
+  &__input-group {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  &__input {
+    flex: 1;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  &__copy-button {
+    min-width: 100px;
+    white-space: nowrap;
+  }
+
+  &__error {
+    font-size: 13px;
+    color: var(--color-error-content);
+    padding: 8px 12px;
+    background-color: var(--color-error-background-subtle);
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+
+  &__info {
+    padding: 16px;
+    background-color: var(--color-primary-background-subtle);
+    border-radius: 6px;
+    border: 1px solid var(--color-primary-border-subtle);
+  }
+
+  &__info-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-neutral-content);
+    margin: 0 0 12px 0;
+  }
+
+  &__info-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 13px;
+    color: var(--color-neutral-content-subtle);
+    line-height: 1.6;
+
+    li {
+      margin-bottom: 6px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  &__mode-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  &__toggle-button {
+    flex: 1;
+  }
+
+  &__email-section {
+    margin-bottom: 24px;
+  }
+
+  &__send-button {
+    min-width: 120px;
+    white-space: nowrap;
+  }
+
+  &__success {
+    font-size: 13px;
+    color: var(--color-success-content);
+    padding: 8px 12px;
+    background-color: var(--color-success-background-subtle);
+    border-radius: 4px;
+    margin-top: 8px;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-primary-border-subtle);
+  }
+}

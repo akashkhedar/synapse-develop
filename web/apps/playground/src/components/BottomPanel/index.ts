@@ -1,0 +1,2 @@
+export { BottomPanel } from "./BottomPanel";
+

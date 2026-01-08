@@ -1,0 +1,48 @@
+.root {
+  :global(.react-codemirror2 .CodeMirror) {
+    border: none;
+    border-radius: 0;
+  }
+
+  :global(.sf-tabs-panel__body) {
+    height: 100%;
+  }
+
+  :global(.sf-panel-tabs__tab) {
+    color: var(--color-neutral-content-subtler);
+  }
+
+  :global(.sf-panel-tabs__tab_active) {
+    transform: none;
+    border-width: 0;
+    color: var(--color-neutral-content);
+    box-shadow: 1px -1px 0 rgba(var(--color-neutral-shadow-raw) / 4%), -1px -1px 0 rgba(var(--color-neutral-shadow-raw) / 4%);
+  }
+
+  :global(.sf-tabs__tabs-row) {
+    border: none;
+  }
+
+  :global(.sf-sidepanels_collapsed .sf-sidepanels__wrapper .sf-tabs__contents) {
+    border: none;
+  }
+
+  :global(.sf-sidepanels_collapsed) {
+    flex: 1;
+  }
+
+  :global(.sf-wrapper) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.sf-editor) {
+    min-width: 320px;
+    width: 100%;
+  }
+}
+
+body {
+  overflow: hidden;
+}

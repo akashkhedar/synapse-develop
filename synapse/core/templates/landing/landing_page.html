@@ -1,0 +1,585 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Synapse - Open Source Data Labeling Platform</title>
+    <meta
+      name="description"
+      content="The most flexible data labeling platform to fine-tune LLMs, prepare training data, or evaluate AI models."
+    />
+    <link
+      rel="icon"
+      href="{% static 'images/favicon.ico' %}"
+      type="image/x-icon"
+    />
+    <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: #1a1a1a;
+      }
+
+      .gradient-text {
+        background: linear-gradient(
+          90deg,
+          #ff9c66 0%,
+          #ff7557 50%,
+          #e37bd3 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: none;
+        font-size: 1rem;
+      }
+
+      .btn-primary {
+        background: #1a1a1a;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #2a2a2a;
+      }
+
+      .btn-secondary {
+        border: 2px solid #1a1a1a;
+        background: transparent;
+        color: #1a1a1a;
+      }
+
+      .btn-secondary:hover {
+        background: #f5f5f5;
+      }
+
+      .btn-large {
+        padding: 1rem 2rem;
+        font-size: 1.125rem;
+      }
+
+      nav {
+        border-bottom: 1px solid #e5e5e5;
+        background: white;
+        padding: 1rem 0;
+      }
+
+      .nav-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        color: #1a1a1a;
+      }
+
+      .nav-logo {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(
+          135deg,
+          #ff9c66 0%,
+          #ff7557 50%,
+          #e37bd3 100%
+        );
+        border-radius: 0.25rem;
+      }
+
+      .nav-brand h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .nav-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .hero {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 5rem 1.5rem;
+        text-align: center;
+      }
+
+      .hero h2 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 1.5rem;
+      }
+
+      .hero p {
+        font-size: 1.25rem;
+        color: #666;
+        max-width: 700px;
+        margin: 0 auto 2.5rem;
+      }
+
+      .hero-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+      }
+
+      .hero-features {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        font-size: 0.875rem;
+        color: #666;
+        flex-wrap: wrap;
+      }
+
+      .hero-feature {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .checkmark {
+        color: #22c55e;
+      }
+
+      .hero-demo {
+        margin-top: 4rem;
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e5e5e5;
+        overflow: hidden;
+      }
+
+      .demo-placeholder {
+        aspect-ratio: 16 / 9;
+        background: linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .demo-icon {
+        font-size: 4rem;
+        color: #999;
+      }
+
+      .features {
+        background: white;
+        padding: 5rem 0;
+      }
+
+      .features-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+      }
+
+      .features-header {
+        text-align: center;
+        margin-bottom: 4rem;
+      }
+
+      .features-header h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .features-header p {
+        font-size: 1.125rem;
+        color: #666;
+        max-width: 700px;
+        margin: 0 auto;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+      }
+
+      .feature-card {
+        padding: 2rem;
+        border-radius: 0.75rem;
+        border: 1px solid #e5e5e5;
+        transition: all 0.2s;
+      }
+
+      .feature-card:hover {
+        border-color: #ff7557;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      .feature-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #ff9c66 0%, #ff7557 100%);
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .feature-card h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      .feature-card p {
+        color: #666;
+        line-height: 1.6;
+      }
+
+      .cta {
+        background: linear-gradient(
+          90deg,
+          #ff9c66 0%,
+          #ff7557 50%,
+          #e37bd3 100%
+        );
+        padding: 5rem 0;
+        text-align: center;
+        color: white;
+      }
+
+      .cta h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .cta p {
+        font-size: 1.125rem;
+        margin-bottom: 2.5rem;
+        opacity: 0.95;
+      }
+
+      .cta-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .btn-white {
+        background: white;
+        color: #1a1a1a;
+      }
+
+      .btn-white:hover {
+        background: #f5f5f5;
+      }
+
+      .btn-outline-white {
+        border: 2px solid white;
+        background: transparent;
+        color: white;
+      }
+
+      .btn-outline-white:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      footer {
+        background: #1a1a1a;
+        color: #999;
+        padding: 3rem 0 2rem;
+      }
+
+      .footer-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+      }
+
+      .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 3rem;
+        margin-bottom: 3rem;
+      }
+
+      .footer-section h4 {
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      .footer-section ul {
+        list-style: none;
+      }
+
+      .footer-section li {
+        margin-bottom: 0.75rem;
+      }
+
+      .footer-section a {
+        color: #999;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      .footer-section a:hover {
+        color: white;
+      }
+
+      .footer-bottom {
+        border-top: 1px solid #333;
+        padding-top: 2rem;
+        text-align: center;
+      }
+
+      @media (max-width: 768px) {
+        .hero h2 {
+          font-size: 2.5rem;
+        }
+
+        .features-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav>
+      <div class="nav-container">
+        <a href="/" class="nav-brand">
+          <div class="nav-logo"></div>
+          <h1>Synapse</h1>
+        </a>
+        <div class="nav-actions">
+          <a href="/user/login" class="btn btn-secondary">Sign In</a>
+          <a href="/user/signup" class="btn btn-primary">Get Started</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <h2>
+        Open Source<br />
+        <span class="gradient-text">Data Labeling Platform</span>
+      </h2>
+      <p>
+        The most flexible data labeling platform to fine-tune LLMs, prepare
+        training data, or evaluate AI models.
+      </p>
+      <div class="hero-actions">
+        <a href="/user/signup" class="btn btn-primary btn-large">
+          Start for Free
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+            <path
+              d="M7.5 12.5L6.5 11.5L10 8H1V6.5H10L6.5 3L7.5 2L13 7.5L7.5 12.5Z"
+            />
+          </svg>
+        </a>
+        <a href="/guide/" class="btn btn-secondary btn-large">
+          View Documentation
+        </a>
+      </div>
+      <div class="hero-features">
+        <div class="hero-feature">
+          <span class="checkmark">✓</span>
+          No credit card required
+        </div>
+        <div class="hero-feature">
+          <span class="checkmark">✓</span>
+          Open source
+        </div>
+        <div class="hero-feature">
+          <span class="checkmark">✓</span>
+          Self-hosted
+        </div>
+      </div>
+      <div class="hero-demo">
+        <div class="demo-placeholder">
+          <div class="demo-icon">📁</div>
+          <p style="color: #999">Product demo placeholder</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+      <div class="features-container">
+        <div class="features-header">
+          <h2>Everything you need for data labeling</h2>
+          <p>
+            Powerful features to streamline your annotation workflow and
+            accelerate your ML projects.
+          </p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">✓</div>
+            <h3>Multi-Format Support</h3>
+            <p>
+              Label images, text, audio, video, and time-series data all in one
+              platform.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚙</div>
+            <h3>Flexible Workflows</h3>
+            <p>
+              Customize labeling interfaces and workflows to match your specific
+              needs.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <h3>Team Collaboration</h3>
+            <p>
+              Work together with your team with role-based access and project
+              management.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>ML Integration</h3>
+            <p>
+              Connect your machine learning models for pre-annotations and
+              active learning.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">☁</div>
+            <h3>Cloud Storage</h3>
+            <p>
+              Integrate with S3, GCS, Azure, and other cloud storage providers
+              seamlessly.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📤</div>
+            <h3>Export Options</h3>
+            <p>
+              Export your annotations in multiple formats for training your
+              models.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+      <h2>Ready to get started?</h2>
+      <p>
+        Join thousands of teams using Synapse to build better AI models.
+      </p>
+      <div class="cta-actions">
+        <a href="/user/signup" class="btn btn-white btn-large">
+          Create Free Account
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+            <path
+              d="M7.5 12.5L6.5 11.5L10 8H1V6.5H10L6.5 3L7.5 2L13 7.5L7.5 12.5Z"
+            />
+          </svg>
+        </a>
+        <a
+          href="https://github.com/Synapse/synapse"
+          target="_blank"
+          class="btn btn-outline-white btn-large"
+        >
+          View on GitHub
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-container">
+        <div class="footer-grid">
+          <div class="footer-section">
+            <h4>Product</h4>
+            <ul>
+              <li><a href="/guide/">Documentation</a></li>
+              <li><a href="/templates/">Templates</a></li>
+              <li><a href="/guide/release_notes">Release Notes</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h4>Resources</h4>
+            <ul>
+              <li>
+                <a href="https://synapse.io/blog/" target="_blank">Blog</a>
+              </li>
+              <li>
+                <a href="https://slack.synapse.io" target="_blank"
+                  >Community</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/Synapse/synapse"
+                  target="_blank"
+                  >GitHub</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h4>Company</h4>
+            <ul>
+              <li><a href="#">About</a></li>
+              <li><a href="#">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h4>Legal</h4>
+            <ul>
+              <li><a href="#">Privacy Policy</a></li>
+              <li><a href="#">Terms of Service</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>
+            © {% now "Y" %} Synapse. Open source data labeling platform.
+          </p>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

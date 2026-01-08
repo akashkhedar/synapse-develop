@@ -1,0 +1,97 @@
+import pandas as pd
+import pytest
+
+from synapse.tests.sdk.common import LABEL_CONFIG_AND_TASKS
+
+pytestmark = pytest.mark.django_db
+from synapse_sdk import AsyncSynapse
+from synapse_sdk.client import Synapse
+
+
+@pytest.fixture
+def test_project(django_live_url, business_client):
+    client = Synapse(base_url=django_live_url, api_key=business_client.api_key)
+    project = client.projects.create(title='Export Test Project', label_config=LABEL_CONFIG_AND_TASKS['label_config'])
+    client.projects.import_tasks(id=project.id, request=LABEL_CONFIG_AND_TASKS['tasks_for_import'])
+    return ls, project
+
+
+async def test_project_async(django_live_url, business_client):
+    Synapse = AsyncSynapse(base_url=django_live_url, api_key=business_client.api_key)
+    project = await client.projects.create(
+        title='Export Test Project', label_config=LABEL_CONFIG_AND_TASKS['label_config']
+    )
+    await client.projects.import_tasks(id=project.id, request=LABEL_CONFIG_AND_TASKS['tasks_for_import'])
+    return ls, project
+
+
+def test_export_formats(test_project):
+    ls, project = test_project
+
+    # Get available export formats
+    formats = client.projects.exports.list_formats(project.id)
+    assert len(formats) > 0
+
+
+def test_direct_export(test_project):
+    ls, project = test_project
+
+    # Test JSON export
+    json_data = client.projects.exports.as_json(project.id)
+    assert isinstance(json_data, list)
+    assert len(json_data) == 1
+
+    # Test pandas export
+    df = client.projects.exports.as_pandas(project.id)
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+
+    # Test low level export - import new task without annotations
+    client.projects.import_tasks(
+        id=project.id,
+        request={
+            'data': {
+                'my_text': 'Opossums are great',
+                'ref_id': 456,
+                'meta_info': {'timestamp': '2020-03-09 18:15:28.212882', 'location': 'North Pole'},
+            }
+        },
+    )
+    data = client.projects.exports.download_sync(project.id, download_all_tasks=False)
+
+    def _bytestream_to_json(data):
+        import json
+        from io import BytesIO
+
+        buffer = BytesIO()
+        for chunk in data:
+            buffer.write(chunk)
+        buffer.seek(0)
+        return json.load(buffer)
+
+    assert len(_bytestream_to_json(data)) == 1
+
+    data = client.projects.exports.download_sync(project.id, download_all_tasks=True)
+
+    assert len(_bytestream_to_json(data)) == 2
+
+
+# TODO: support pytest-asyncio, otherwise this test will be skipped
+@pytest.mark.skip(reason='pytest-asyncio is not supported in this version of Synapse')
+async def test_async_export(test_project_async):
+    ls, project = test_project_async
+
+    # Test JSON export
+    json_data = await client.projects.exports.as_json(project.id)
+    assert isinstance(json_data, list)
+    assert len(json_data) == 1
+
+    # Test pandas export
+    df = await client.projects.exports.as_pandas(project.id, create_kwargs={'task_filter_options': {'finished': 'only'}})
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+
+
+
+
+

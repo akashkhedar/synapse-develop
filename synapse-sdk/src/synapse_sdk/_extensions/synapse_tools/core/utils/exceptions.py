@@ -1,0 +1,9 @@
+class SynapseXMLSyntaxErrorSentryIgnored(Exception):
+    pass
+
+
+
+
+
+
+

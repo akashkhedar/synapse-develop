@@ -1,0 +1,92 @@
+{
+  "name": "synapse",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/synapse/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "compiler": "babel",
+        "outputPath": "dist/apps/synapse",
+        "index": "apps/synapse/src/index.html",
+        "baseHref": "/",
+        "main": "apps/synapse/src/main.tsx",
+        "tsConfig": "apps/synapse/tsconfig.app.json",
+        "assets": [],
+        "styles": [],
+        "scripts": [],
+        "isolatedConfig": true,
+        "webpackConfig": "webpack.config.js"
+      },
+      "configurations": {
+        "development": {
+          "extractLicenses": false,
+          "optimization": false,
+          "sourceMap": true,
+          "vendorChunk": true
+        },
+        "production": {
+          "fileReplacements": [
+            {
+              "replace": "apps/synapse/src/environments/environment.ts",
+              "with": "apps/synapse/src/environments/environment.prod.ts"
+            }
+          ],
+          "optimization": true,
+          "sourceMap": false,
+          "namedChunks": false,
+          "extractLicenses": true,
+          "vendorChunk": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/webpack:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "synapse:build",
+        "hmr": true
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "synapse:build:development"
+        },
+        "production": {
+          "buildTarget": "synapse:build:production",
+          "hmr": false
+        }
+      }
+    },
+    "serve-static": {
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "synapse:build"
+      }
+    },
+    "unit": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/synapse/jest.config.ts",
+        "passWithNoTests": true
+      },
+      "configurations": {
+        "ci": {
+          "ci": true,
+          "codeCoverage": true
+        }
+      }
+    },
+    "version": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/synapse",
+        "command": "node ../../tools/version/version.mjs"
+      }
+    }
+  }
+}

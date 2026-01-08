@@ -1,0 +1,28 @@
+"""Projects Django App Configuration"""
+
+import logging
+
+from django.apps import AppConfig
+
+logger = logging.getLogger(__name__)
+
+
+class ProjectsConfig(AppConfig):
+    name = "projects"
+
+    def ready(self):
+        """
+        Projects app initialization.
+
+        Note: FSM transitions are now registered centrally in fsm/apps.py.
+        Do NOT import transitions here to avoid duplicate registration.
+        """
+        # Import signal handlers to register them
+        from projects import signals  # noqa: F401
+
+        logger.info("✅ Registered automatic task assignment signal handlers")
+
+
+
+
+

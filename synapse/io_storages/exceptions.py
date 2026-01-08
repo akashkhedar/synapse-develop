@@ -1,0 +1,7 @@
+class UnsupportedFileFormatError(ValueError):
+    pass
+
+
+
+
+

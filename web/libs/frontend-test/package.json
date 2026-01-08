@@ -1,0 +1,10 @@
+{
+  "name": "@synapse/frontend-tests",
+  "version": "1.0.0",
+  "dependencies": {},
+  "devDependencies": {},
+  "files": [
+    "./src/**/*"
+  ]
+}
+

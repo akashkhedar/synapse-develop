@@ -1,0 +1,72 @@
+{
+  "name": "@synapse/audio-file-decoder",
+  "version": "0.1.5",
+  "description": "Decode audio files using FFmpeg and WebAssembly",
+  "license": "LGPL-2.1-or-later",
+  "keywords": [
+    "audio",
+    "decode",
+    "decoder",
+    "FFmpeg",
+    "wasm",
+    "WebAssembly",
+    "emscripten",
+    "flac",
+    "wav",
+    "mp3",
+    "aac",
+    "ogg",
+    "m4a"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/synapse/audio-file-decoder.git"
+  },
+  "homepage": "https://github.com/synapse/audio-file-decoder#readme",
+  "bugs": "https://github.com/synapse/audio-file-decoder/issues",
+  "author": "Brandon Martel",
+  "main": "./dist/audio-file-decoder.js",
+  "browser": "./dist/audio-file-decoder.js",
+  "types": "./dist/audio-file-decoder.d.ts",
+  "files": [
+    "/dist/audio-file-decoder.js",
+    "/dist/audio-file-decoder.d.ts",
+    "/dist/decode-audio.wasm",
+    "/decode-audio.wasm"
+  ],
+  "scripts": {
+    "sync": "make sync",
+    "unsync": "make unsync",
+    "build": "npm run clean && npm run types && rollup -c",
+    "build-deps": "make deps",
+    "build-wasm": "make clean && make",
+    "clean": "rm -rf ./dist && rm -rf ./decode-audio.wasm",
+    "clean-deps": "make clean-deps",
+    "clean-wasm": "make clean",
+    "types": "dts-bundle-generator --project tsconfig.types.json ./src/lib/audio-file-decoder.ts -o ./dist/audio-file-decoder.d.ts",
+    "lint": "tsc --project tsconfig.types.json --noEmit && eslint . --ext .js --ext .ts"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.13.10",
+    "@babel/plugin-proposal-class-properties": "^7.13.0",
+    "@babel/plugin-transform-runtime": "^7.13.10",
+    "@babel/preset-env": "^7.13.10",
+    "@babel/preset-typescript": "^7.13.0",
+    "@rollup/plugin-babel": "^5.3.0",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "@typescript-eslint/eslint-plugin": "^4.17.0",
+    "@typescript-eslint/parser": "^4.17.0",
+    "dts-bundle-generator": "^5.7.0",
+    "eslint": "^7.21.0",
+    "rollup": "^2.41.0",
+    "rollup-plugin-copy": "^3.4.0",
+    "rollup-plugin-eslint": "^7.0.0",
+    "rollup-plugin-filesize": "^9.1.1",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-web-worker-loader": "^1.6.1",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.13.10"
+  }
+}

@@ -1,0 +1,534 @@
+import { useMemo, useState, useCallback } from "react";
+import { useHistory } from "react-router";
+import { Button, Typography, useToast } from "@synapse/ui";
+import { useUpdatePageTitle, createTitleFromSegments } from "@synapse/core";
+import { Label } from "../../components/Form";
+import { modal } from "../../components/Modal/Modal";
+import { useModalControls } from "../../components/Modal/ModalPopup";
+import Input from "../../components/Form/Elements/Input/Input";
+import { Space } from "../../components/Space/Space";
+import { Spinner } from "../../components/Spinner/Spinner";
+import { useAPI } from "../../providers/ApiProvider";
+import { useProject } from "../../providers/ProjectProvider";
+import { cn } from "../../utils/bem";
+import "./DangerZone.scss";
+
+// Severity icons for warnings
+const severityConfig = {
+  critical: { icon: "⛔", color: "#dc2626", bgColor: "#fef2f2" },
+  high: { icon: "⚠️", color: "#ea580c", bgColor: "#fff7ed" },
+  medium: { icon: "⚡", color: "#ca8a04", bgColor: "#fefce8" },
+  low: { icon: "ℹ️", color: "#2563eb", bgColor: "#eff6ff" },
+  info: { icon: "📋", color: "#6b7280", bgColor: "#f9fafb" },
+};
+
+export const DangerZone = () => {
+  const { project } = useProject();
+  const api = useAPI();
+  const history = useHistory();
+  const toast = useToast();
+  const [processing, setProcessing] = useState(null);
+  const [loadingWarnings, setLoadingWarnings] = useState(false);
+
+  useUpdatePageTitle(createTitleFromSegments([project?.title, "Danger Zone"]));
+
+  // Fetch deletion warnings from the API
+  const fetchDeletionWarnings = useCallback(async () => {
+    if (!project?.id) return null;
+
+    try {
+      const response = await fetch(
+        `/api/billing/project-billing/deletion_warnings/?project_id=${project.id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        console.warn("Failed to fetch deletion warnings");
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching deletion warnings:", error);
+      return null;
+    }
+  }, [project?.id]);
+
+  // Render warning item
+  const WarningItem = ({ warning }) => {
+    const config = severityConfig[warning.severity] || severityConfig.info;
+
+    return (
+      <div
+        className="deletion-warning-item"
+        style={{
+          backgroundColor: config.bgColor,
+          borderLeft: `4px solid ${config.color}`,
+        }}
+      >
+        <div className="warning-header">
+          <span className="warning-icon">{config.icon}</span>
+          <span className="warning-title" style={{ color: config.color }}>
+            {warning.title}
+          </span>
+          <span
+            className="warning-severity"
+            style={{
+              backgroundColor: config.color,
+              color: "white",
+              padding: "2px 8px",
+              borderRadius: "12px",
+              fontSize: "11px",
+              textTransform: "uppercase",
+            }}
+          >
+            {warning.severity}
+          </span>
+        </div>
+        <p className="warning-message">{warning.message}</p>
+        {warning.action_suggested && (
+          <p className="warning-action">
+            💡 <strong>Suggested:</strong> {warning.action_suggested}
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  const showDangerConfirmation = ({
+    title,
+    message,
+    requiredWord,
+    buttonText,
+    onConfirm,
+    warnings = [],
+    summary = null,
+    refundBreakdown = null,
+  }) => {
+    const isDev = process.env.NODE_ENV === "development";
+    const hasUnexportedWork = summary?.has_unexported_work || false;
+    const hasCriticalWarnings = warnings.some((w) => w.severity === "critical");
+
+    return modal({
+      title,
+      width: 700,
+      allowClose: false,
+      body: () => {
+        const ctrl = useModalControls();
+        const inputValue = ctrl?.state?.inputValue || "";
+
+        return (
+          <div className="danger-zone-modal-body">
+            {/* Warnings Section */}
+            {warnings.length > 0 && (
+              <div className="deletion-warnings-container">
+                <Typography variant="title" size="medium" className="mb-tight">
+                  ⚠️ Please Review Before Deleting
+                </Typography>
+
+                {/* Summary stats */}
+                {summary && (
+                  <div className="deletion-summary">
+                    <div className="summary-stat">
+                      <span className="stat-value">{summary.task_count}</span>
+                      <span className="stat-label">Tasks</span>
+                    </div>
+                    <div className="summary-stat">
+                      <span className="stat-value">
+                        {summary.annotation_count}
+                      </span>
+                      <span className="stat-label">Annotations</span>
+                    </div>
+                    {summary.refund_estimate > 0 && (
+                      <div className="summary-stat refund">
+                        <span className="stat-value">
+                          ₹{summary.refund_estimate.toFixed(0)}
+                        </span>
+                        <span className="stat-label">Est. Refund</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Refund Breakdown */}
+                {refundBreakdown && refundBreakdown.deposit_paid > 0 && (
+                  <div className="refund-breakdown">
+                    <Typography
+                      variant="title"
+                      size="small"
+                      className="mb-tight"
+                    >
+                      💰 Credit Refund Breakdown
+                    </Typography>
+                    <div className="breakdown-table">
+                      <div className="breakdown-row">
+                        <span className="breakdown-label">
+                          Security Deposit Paid:
+                        </span>
+                        <span className="breakdown-value">
+                          ₹{refundBreakdown.deposit_paid.toFixed(0)}
+                        </span>
+                      </div>
+                      {refundBreakdown.annotation_cost > 0 && (
+                        <div className="breakdown-row deduction">
+                          <span className="breakdown-label">
+                            Annotation Costs:
+                          </span>
+                          <span className="breakdown-value">
+                            - ₹{refundBreakdown.annotation_cost.toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+                      {refundBreakdown.credits_consumed > 0 && (
+                        <div className="breakdown-row deduction">
+                          <span className="breakdown-label">
+                            Other Credits Used:
+                          </span>
+                          <span className="breakdown-value">
+                            - ₹{refundBreakdown.credits_consumed.toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="breakdown-row total">
+                        <span className="breakdown-label">Refund Amount:</span>
+                        <span className="breakdown-value refund-amount">
+                          ₹{refundBreakdown.refund_amount.toFixed(0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="warnings-list">
+                  {warnings.map((warning, index) => (
+                    <WarningItem key={index} warning={warning} />
+                  ))}
+                </div>
+
+                {/* Export button if unexported work */}
+                {hasUnexportedWork && (
+                  <div className="export-suggestion">
+                    <Button
+                      variant="primary"
+                      look="outline"
+                      onClick={() => {
+                        ctrl?.hide();
+                        history.push(
+                          `/projects/${project?.id}/data?dialog=export`
+                        );
+                      }}
+                    >
+                      📥 Export Data First
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Original message */}
+            <Typography
+              variant="body"
+              size="medium"
+              className="mb-tight deletion-main-message"
+            >
+              {message}
+            </Typography>
+
+            {hasCriticalWarnings && (
+              <div className="critical-warning-banner">
+                ⛔ <strong>Critical warnings detected!</strong> Please ensure
+                you understand the consequences before proceeding.
+              </div>
+            )}
+
+            <Input
+              label={`To proceed, type "${requiredWord}" in the field below:`}
+              value={inputValue}
+              onChange={(e) => ctrl?.setState({ inputValue: e.target.value })}
+              autoFocus
+              data-testid="danger-zone-confirmation-input"
+              autoComplete="off"
+            />
+          </div>
+        );
+      },
+      footer: () => {
+        const ctrl = useModalControls();
+        const inputValue = (ctrl?.state?.inputValue || "").trim().toLowerCase();
+        const isValid = isDev || inputValue === requiredWord.toLowerCase();
+
+        return (
+          <Space align="end">
+            <Button
+              variant="neutral"
+              look="outline"
+              onClick={() => ctrl?.hide()}
+              data-testid="danger-zone-cancel-button"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="negative"
+              disabled={!isValid}
+              onClick={async () => {
+                await onConfirm();
+                ctrl?.hide();
+              }}
+              data-testid="danger-zone-confirm-button"
+            >
+              {buttonText}
+            </Button>
+          </Space>
+        );
+      },
+    });
+  };
+
+  const handleOnClick = (type) => async () => {
+    // For project deletion, fetch warnings first
+    if (type === "project") {
+      setLoadingWarnings(true);
+
+      try {
+        const warningsData = await fetchDeletionWarnings();
+        setLoadingWarnings(false);
+
+        showDangerConfirmation({
+          title: "Delete Project",
+          message: (
+            <>
+              You are about to delete the project{" "}
+              <strong>{project.title}</strong>. This action cannot be undone.
+            </>
+          ),
+          requiredWord: "delete",
+          buttonText: "Delete Project",
+          warnings: warningsData?.warnings || [],
+          summary: warningsData?.summary || null,
+          refundBreakdown: warningsData?.refund_breakdown || null,
+          onConfirm: async () => {
+            setProcessing(type);
+            try {
+              const response = await api.callApi("deleteProject", {
+                params: {
+                  pk: project.id,
+                },
+              });
+
+              // Build success message with refund info
+              let successMessage = "Project deleted successfully!";
+
+              if (response?.refund?.success) {
+                const refundAmount = response.refund.amount || 0;
+                const consumed = response.refund.consumed || 0;
+
+                if (refundAmount > 0) {
+                  successMessage = `Project deleted! ₹${refundAmount.toFixed(
+                    0
+                  )} credits have been refunded to your account.`;
+                  if (consumed > 0) {
+                    successMessage += ` (₹${consumed.toFixed(
+                      0
+                    )} were consumed for annotations)`;
+                  }
+                } else if (consumed > 0) {
+                  successMessage = `Project deleted! All deposit credits (₹${consumed.toFixed(
+                    0
+                  )}) were consumed for annotations.`;
+                }
+              } else if (response?.refund?.error) {
+                successMessage = `Project deleted, but refund could not be processed: ${response.refund.error}`;
+              }
+
+              toast.show({ message: successMessage });
+              history.replace("/projects");
+            } catch (error) {
+              toast.show({ message: `Error: ${error.message}`, type: "error" });
+            } finally {
+              setProcessing(null);
+            }
+          },
+        });
+      } catch (error) {
+        setLoadingWarnings(false);
+        toast.show({
+          message: `Error checking project status: ${error.message}`,
+          type: "error",
+        });
+      }
+      return;
+    }
+
+    // Other actions (non-project deletion)
+    const actionConfig = {
+      reset_cache: {
+        title: "Reset Cache",
+        message: (
+          <>
+            You are about to reset the cache for{" "}
+            <strong>{project.title}</strong>. This action cannot be undone.
+          </>
+        ),
+        requiredWord: "cache",
+        buttonText: "Reset Cache",
+      },
+      tabs: {
+        title: "Drop All Tabs",
+        message: (
+          <>
+            You are about to drop all tabs for <strong>{project.title}</strong>.
+            This action cannot be undone.
+          </>
+        ),
+        requiredWord: "tabs",
+        buttonText: "Drop All Tabs",
+      },
+    };
+
+    const config = actionConfig[type];
+
+    if (!config) {
+      return;
+    }
+
+    showDangerConfirmation({
+      ...config,
+      onConfirm: async () => {
+        setProcessing(type);
+        try {
+          if (type === "reset_cache") {
+            await api.callApi("projectResetCache", {
+              params: {
+                pk: project.id,
+              },
+            });
+            toast.show({ message: "Cache reset successfully" });
+          } else if (type === "tabs") {
+            await api.callApi("deleteTabs", {
+              body: {
+                project: project.id,
+              },
+            });
+            toast.show({ message: "All tabs dropped successfully" });
+          }
+        } catch (error) {
+          toast.show({ message: `Error: ${error.message}`, type: "error" });
+        } finally {
+          setProcessing(null);
+        }
+      },
+    });
+  };
+
+  const buttons = useMemo(
+    () => [
+      {
+        type: "annotations",
+        disabled: true, //&& !project.total_annotations_number,
+        label: `Delete ${project.total_annotations_number} Annotations`,
+      },
+      {
+        type: "tasks",
+        disabled: true, //&& !project.task_number,
+        label: `Delete ${project.task_number} Tasks`,
+      },
+      {
+        type: "predictions",
+        disabled: true, //&& !project.total_predictions_number,
+        label: `Delete ${project.total_predictions_number} Predictions`,
+      },
+      {
+        type: "reset_cache",
+        help:
+          "Reset Cache may help in cases like if you are unable to modify the labeling configuration due " +
+          "to validation errors concerning existing labels, but you are confident that the labels don't exist. You can " +
+          "use this action to reset the cache and try again.",
+        label: "Reset Cache",
+      },
+      {
+        type: "tabs",
+        help: "If the Data Manager is not loading, dropping all Data Manager tabs can help.",
+        label: "Drop All Tabs",
+      },
+      {
+        type: "project",
+        help: "Deleting a project removes all tasks, annotations, and project data from the database. You will see a list of warnings before deletion if there are any issues.",
+        label: "Delete Project",
+      },
+    ],
+    [project]
+  );
+
+  return (
+    <div className={cn("simple-settings")}>
+      <Typography variant="headline" size="medium" className="mb-tighter">
+        Danger Zone
+      </Typography>
+      <Typography
+        variant="body"
+        size="medium"
+        className="text-neutral-content-subtler !mb-base"
+      >
+        Perform these actions at your own risk. Actions you take on this page
+        can't be reverted. Make sure your data is backed up.
+      </Typography>
+
+      {project.id ? (
+        <div style={{ marginTop: 16 }}>
+          {buttons.map((btn) => {
+            const waiting =
+              processing === btn.type ||
+              (btn.type === "project" && loadingWarnings);
+            const disabled =
+              btn.disabled || (processing && !waiting) || loadingWarnings;
+
+            return (
+              btn.disabled !== true && (
+                <div className={cn("settings-wrapper")} key={btn.type}>
+                  <Typography variant="title" size="large">
+                    {btn.label}
+                  </Typography>
+                  {btn.help && (
+                    <Label
+                      description={btn.help}
+                      style={{ width: 600, display: "block" }}
+                    />
+                  )}
+                  <Button
+                    key={btn.type}
+                    variant="negative"
+                    look="outlined"
+                    disabled={disabled}
+                    waiting={waiting}
+                    onClick={handleOnClick(btn.type)}
+                    style={{ marginTop: 16 }}
+                  >
+                    {btn.type === "project" && loadingWarnings
+                      ? "Checking project status..."
+                      : btn.label}
+                  </Button>
+                </div>
+              )
+            );
+          })}
+        </div>
+      ) : (
+        <div
+          style={{ display: "flex", justifyContent: "center", marginTop: 32 }}
+        >
+          <Spinner size={32} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+DangerZone.title = "Danger Zone";
+DangerZone.path = "/danger-zone";
+

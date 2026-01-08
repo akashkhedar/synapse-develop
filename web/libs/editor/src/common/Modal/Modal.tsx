@@ -1,0 +1,12 @@
+/**
+ * Editor Modal wrapper
+ *
+ * Re-exports Modal from @synapse/ui for backward compatibility.
+ * Editor modals don't use providers by default (simple: true).
+ */
+import { Modal, modal, info, confirm, useModalControls } from "@synapse/ui/lib/modal";
+
+export { modal as standaloneModal, modal, info, confirm, useModalControls, Modal };
+
+export type { ButtonProps as ButtonVariant } from "@synapse/ui/lib/button/button";
+

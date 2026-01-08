@@ -1,0 +1,38 @@
+# react SF / react-app with dm
+recursive-include web/dist/libs/editor *
+include web/dist/apps/synapse/*
+recursive-include web/dist/libs/datamanager/ *
+
+# html template files
+recursive-include synapse *.html
+
+# exclude node modules
+prune web/node_modules
+prune web/build-tmp
+
+# annotation templates
+recursive-include synapse/annotation_templates *
+
+# core
+recursive-include synapse/core/static *
+recursive-include synapse/core/static_build *
+include synapse/core/utils/schema/*.json
+include synapse/core/templatetags/*.py
+include synapse/core/version_.py
+include synapse/core/all_urls.json
+
+# io storages
+recursive-include synapse/io_storages *.yml
+
+# tests
+recursive-include synapse/tests *.sh
+recursive-include synapse/tests/loadtests *.txt
+recursive-include synapse/tests/test_data *.yml
+recursive-include synapse/tests/test_suites/samples *
+recursive-include synapse/tests/test_suites *.yml
+
+include synapse/pytest.ini
+
+# feature flags
+include synapse/feature_flags.json
+

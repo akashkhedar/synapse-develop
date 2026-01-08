@@ -1,0 +1,66 @@
+{% load static %}
+{% load i18n %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, shrink-to-fit=no" />
+    <meta name="theme-color" content="#272727" />
+    
+    <title>Synapse - Intelligent Data Labeling Platform</title>
+    <link href="{{settings.HOSTNAME}}{% static 'images/favicon.ico' %}" rel="shortcut icon" />
+    
+    <!-- CSS -->
+    <link
+      href="{{settings.FRONTEND_HOSTNAME}}/react-app/main.css?v={{ versions.backend.commit }}"
+      rel="stylesheet"
+    />
+    
+    <script>
+      function handleThemeColor() {
+        let themeColor = window.localStorage.getItem("preferred-color-scheme");
+        if (themeColor === "Auto") {
+          themeColor =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "Dark"
+              : "Light";
+        } else if (!themeColor) {
+          themeColor = "Light";
+        }
+        document.documentElement.setAttribute(
+          "data-color-scheme",
+          themeColor.toLowerCase()
+        );
+      }
+      handleThemeColor();
+    </script>
+  </head>
+
+  <body>
+    <div class="app-wrapper"></div>
+
+    <template id="main-content">
+      <main class="main"></main>
+    </template>
+
+    <template id="context-menu-left"></template>
+    
+    <template id="context-menu-right"></template>
+
+    <script id="app-settings" nonce="{{request.csp_nonce}}">
+      window.APP_SETTINGS = Object.assign(window.APP_SETTINGS || {}, {
+        hostname: "{{ settings.HOSTNAME }}",
+        user: null,
+        feature_flags: {},
+        feature_flags_default_value: false
+      });
+    </script>
+
+    <!-- React App Scripts -->
+    <script src="{{settings.FRONTEND_HOSTNAME}}/react-app/runtime.js?v={{ versions.backend.commit }}"></script>
+    <script src="{{settings.FRONTEND_HOSTNAME}}/react-app/vendor.js?v=1"></script>
+    <script src="{{settings.FRONTEND_HOSTNAME}}/react-app/main.js?v={{ versions.backend.commit }}"></script>
+  </body>
+</html>

@@ -1,0 +1,270 @@
+.expert-earnings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.earnings-header {
+    margin-bottom: 24px;
+}
+
+.earnings-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 8px 0;
+}
+
+.earnings-header .subtitle {
+    color: #666;
+    margin: 0;
+}
+
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Summary Cards */
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.summary-card .card-icon {
+    font-size: 32px;
+}
+
+.summary-card .card-content {
+    flex: 1;
+}
+
+.summary-card h3 {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    margin: 0 0 4px 0;
+}
+
+.summary-card .amount {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.summary-card.available .amount {
+    color: #2e7d32;
+}
+
+.summary-card.pending .amount {
+    color: #f57c00;
+}
+
+.summary-card.total .amount {
+    color: #1565c0;
+}
+
+.summary-card.withdrawn .amount {
+    color: #7b1fa2;
+}
+
+/* Stats Row */
+.stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a2e;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 0;
+}
+
+.tab {
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    color: #667eea;
+}
+
+.tab.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+/* Overview Content */
+.overview-content {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.info-card h3 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    color: #1a1a2e;
+}
+
+.info-card ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.info-card li {
+    margin-bottom: 12px;
+    line-height: 1.5;
+    color: #444;
+}
+
+.info-card li strong {
+    color: #1a1a2e;
+}
+
+/* Transactions */
+.transactions-content {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.transactions-content h3 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    color: #1a1a2e;
+}
+
+.transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.transactions-table th,
+.transactions-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.transactions-table th {
+    font-weight: 600;
+    color: #666;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tx-type {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.tx-type.review_payment {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.tx-type.correction_bonus {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.tx-type.quality_bonus {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.tx-type.withdrawal {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+.amount-positive {
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+.amount-negative {
+    color: #c62828;
+    font-weight: 600;
+}
+
+.no-transactions {
+    text-align: center;
+    color: #666;
+    padding: 40px;
+}

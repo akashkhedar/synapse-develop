@@ -1,0 +1,47 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "resolveJsonModule": true,
+    "importHelpers": true,
+    "jsx": "react",
+    "target": "esnext",
+    "module": "esnext",
+    "lib": ["es2020", "dom", "dom.iterable", "esnext.array"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@synapse/app-common": ["libs/app-common/src/index.ts"],
+      "@synapse/app-common/*": ["libs/app-common/src/*"],
+      "@synapse/core": ["libs/core/src/index.ts"],
+      "@synapse/core/*": ["libs/core/src/*"],
+      "@synapse/datamanager": ["libs/datamanager/src/index.js"],
+      "@synapse/editor": ["libs/editor/src/index.js"],
+      "@synapse/frontend-test/*": ["libs/frontend-test/src/*"],
+      "@synapse/icons": ["libs/ui/src/assets/icons"],
+      "@synapse/shad/*": ["./libs/ui/src/shad/*"],
+      "@synapse/ui": ["libs/ui/src/index.ts"],
+      "@synapse/ui/*": ["libs/ui/src/*"]
+    },
+    "plugins": [
+      {
+        "name": "typescript-plugin-css-modules",
+        "options": {
+          "customMatcher": "\\.module\\.scss$",
+          "classnameTransform": "asIs"
+        }
+      }
+    ]
+  },
+  "exclude": ["node_modules", "tmp"]
+}
+
+
+

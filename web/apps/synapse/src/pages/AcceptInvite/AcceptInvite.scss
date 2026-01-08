@@ -1,0 +1,83 @@
+.accept-invite {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+
+  &__container {
+    background: white;
+    border-radius: 12px;
+    padding: 48px;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  &__spinner {
+    margin-bottom: 24px;
+    color: #667eea;
+  }
+
+  &__title {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    color: #1a202c;
+  }
+
+  &__message {
+    font-size: 16px;
+    color: #4a5568;
+    margin: 0 0 8px 0;
+    line-height: 1.5;
+    
+    strong {
+      color: #667eea;
+      font-weight: 600;
+    }
+  }
+
+  &__submessage {
+    font-size: 14px;
+    color: #718096;
+    margin: 8px 0 0 0;
+  }
+
+  &__error {
+    font-size: 16px;
+    color: #e53e3e;
+    margin: 16px 0 24px 0;
+    line-height: 1.5;
+  }
+
+  &__error-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+
+  &__success-icon {
+    font-size: 64px;
+    color: #48bb78;
+    margin-bottom: 16px;
+    animation: scaleIn 0.5s ease-out;
+  }
+
+  &__actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}

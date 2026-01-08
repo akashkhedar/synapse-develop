@@ -1,0 +1,28 @@
+{
+  "name": "Synapse-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/Synapse-e2e/src",
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nx/cypress:cypress",
+      "options": {
+        "cypressConfig": "apps/Synapse-e2e/cypress.config.ts",
+        "baseUrl": "http://localhost:8080/",
+        "testingType": "e2e"
+      },
+      "configurations": {
+        "production": {
+          "devServerTarget": "Synapse:serve:production"
+        },
+        "ci": {
+          "devServerTarget": "Synapse:serve-static"
+        }
+      }
+    }
+  },
+  "tags": [],
+  "implicitDependencies": ["Synapse"]
+}
+
+

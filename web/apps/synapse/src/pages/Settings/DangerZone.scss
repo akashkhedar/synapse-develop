@@ -1,0 +1,194 @@
+/* DangerZone Modal Styles */
+
+.danger-zone-modal-body {
+  .deletion-warnings-container {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #fef2f2;
+    border-radius: 8px;
+    border: 1px solid #fecaca;
+  }
+
+  .deletion-summary {
+    display: flex;
+    gap: 24px;
+    margin: 16px 0;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+
+    .summary-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 16px;
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1f2937;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      &.refund {
+        .stat-value {
+          color: #059669;
+        }
+      }
+    }
+  }
+
+  .refund-breakdown {
+    margin: 16px 0;
+    padding: 16px;
+    background: #f0fdf4;
+    border-radius: 6px;
+    border: 1px solid #bbf7d0;
+
+    .breakdown-table {
+      margin-top: 12px;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #dcfce7;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .breakdown-label {
+        font-size: 14px;
+        color: #374151;
+      }
+
+      .breakdown-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      &.deduction {
+        .breakdown-value {
+          color: #dc2626;
+        }
+      }
+
+      &.total {
+        padding-top: 12px;
+        margin-top: 8px;
+        border-top: 2px solid #16a34a;
+        border-bottom: none;
+
+        .breakdown-label {
+          font-weight: 700;
+          color: #166534;
+        }
+
+        .breakdown-value.refund-amount {
+          font-size: 18px;
+          font-weight: 700;
+          color: #16a34a;
+        }
+      }
+    }
+  }
+
+  .warnings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 8px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+  }
+
+  .deletion-warning-item {
+    padding: 12px 16px;
+    border-radius: 6px;
+    background: white;
+
+    .warning-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+
+      .warning-icon {
+        font-size: 18px;
+      }
+
+      .warning-title {
+        font-weight: 600;
+        flex: 1;
+      }
+    }
+
+    .warning-message {
+      margin: 0;
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    .warning-action {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: #1d4ed8;
+      background: #eff6ff;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+  }
+
+  .export-suggestion {
+    margin-top: 16px;
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid #fecaca;
+  }
+
+  .deletion-main-message {
+    margin-top: 16px !important;
+  }
+
+  .critical-warning-banner {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: #dc2626;
+    color: white;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+  }
+}
+
+/* Adjustments for modal width */
+.modal-content {
+  &.danger-zone-modal {
+    max-width: 700px;
+  }
+}

@@ -1,0 +1,147 @@
+"""Email verification views"""
+
+import logging
+
+from django.contrib import messages
+from django.contrib.auth import login
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
+from users.email_verification import resend_verification_email
+from users.models import User
+from users.models_verification import EmailVerificationToken
+
+logger = logging.getLogger(__name__)
+
+
+def verification_pending(request):
+    """Show verification pending page after signup"""
+    return render(request, "users/verification_pending.html")
+
+
+@require_http_methods(["GET"])
+def verify_email(request, token):
+    """
+    Verify user email address using token
+
+    URL: /user/verify-email/<token>/
+    """
+    try:
+        verification_token = get_object_or_404(EmailVerificationToken, token=token)
+
+        # Check if token is valid
+        if not verification_token.is_valid():
+            if verification_token.is_used:
+                messages.warning(
+                    request, "This verification link has already been used."
+                )
+            else:
+                messages.error(
+                    request,
+                    "This verification link has expired. Please request a new one.",
+                )
+            return redirect("resend-verification")
+
+        # Mark email as verified
+        user = verification_token.user
+        user.email_verified = True
+        user.email_verified_at = timezone.now()
+        user.save(update_fields=["email_verified", "email_verified_at"])
+
+        # Mark token as used
+        verification_token.mark_as_used()
+
+        # If user is an annotator, update status and redirect to test
+        if user.is_annotator:
+            user.annotator_status = "pending_test"
+            user.save(update_fields=["annotator_status"])
+            logger.info(
+                f"Email verified for annotator: {user.email}, status: {user.annotator_status}"
+            )
+
+            # Log the user in
+            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+
+            messages.success(
+                request,
+                "Your email has been verified! Please complete the test to activate your account.",
+            )
+            # Redirect to test page
+            return redirect("/annotators/test/")
+        else:
+            # For clients, log them in and redirect to dashboard
+            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            messages.success(
+                request,
+                "Your email has been verified successfully! Welcome to Synapse.",
+            )
+            logger.info(f"Email verified for user: {user.email}")
+            return redirect(reverse("projects:project-index"))
+
+    except EmailVerificationToken.DoesNotExist:
+        messages.error(request, "Invalid verification link.")
+        return redirect("resend-verification")
+    except Exception as e:
+        logger.error(f"Error during email verification: {e}")
+        messages.error(
+            request, "An error occurred during verification. Please try again."
+        )
+        return redirect("resend-verification")
+
+
+def resend_verification(request):
+    """
+    Resend verification email
+
+    URL: /user/resend-verification/
+    """
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+
+        if not email:
+            messages.error(request, "Please provide your email address.")
+            return render(request, "users/resend_verification.html")
+
+        try:
+            user = User.objects.get(email=email)
+
+            # Check if already verified
+            if user.email_verified:
+                messages.info(
+                    request, "Your email is already verified. You can log in."
+                )
+                return redirect("user-login")
+
+            # Resend verification email
+            if resend_verification_email(user, request):
+                messages.success(
+                    request,
+                    "Verification email has been sent! Please check your inbox.",
+                )
+                logger.info(f"Verification email resent to: {email}")
+            else:
+                messages.error(
+                    request,
+                    "Failed to send verification email. Please try again later.",
+                )
+                logger.error(f"Failed to resend verification email to: {email}")
+
+        except User.DoesNotExist:
+            # Don't reveal if email exists or not for security
+            messages.success(
+                request,
+                "If an account exists with this email, a verification link will be sent.",
+            )
+            logger.warning(
+                f"Verification resend attempted for non-existent email: {email}"
+            )
+
+        return render(request, "users/resend_verification.html")
+
+    return render(request, "users/resend_verification.html")
+
+
+
+
+

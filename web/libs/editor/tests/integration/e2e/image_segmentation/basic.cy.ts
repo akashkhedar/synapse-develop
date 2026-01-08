@@ -1,0 +1,62 @@
+import { ImageView, Labels, Synapse, Sidebar } from "@synapse/frontend-test/helpers/SF";
+
+const config = `
+  <View>
+    <Image name="img" value="$image"></Image>
+    <RectangleLabels name="tag" toName="img">
+      <Label value="Planet"></Label>
+      <Label value="Moonwalker" background="blue"></Label>
+    </RectangleLabels>
+  </View>
+`;
+
+const image =
+  "https://htx-pub.s3.us-east-1.amazonaws.com/examples/images/nick-owuor-astro-nic-visuals-wDifg5xc9Z4-unsplash.jpg";
+
+describe("Basic Image scenario", () => {
+  it("Should be able to draw a simple rectangle", () => {
+    Synapse.init({
+      config,
+      task: {
+        id: 1,
+        annotations: [{ id: 1001, result: [] }],
+        predictions: [],
+        data: { image },
+      },
+    });
+
+    ImageView.waitForImage();
+    Sidebar.hasNoRegions();
+
+    Labels.select("Planet");
+
+    ImageView.drawRect(20, 20, 100, 100);
+
+    Sidebar.hasRegions(1);
+  });
+
+  it("Should check that the canvas changed", () => {
+    Synapse.init({
+      config,
+      task: {
+        id: 1,
+        annotations: [{ id: 1001, result: [] }],
+        predictions: [],
+        data: { image },
+      },
+    });
+
+    ImageView.waitForImage();
+    Sidebar.hasNoRegions();
+
+    ImageView.capture("canvas");
+
+    Labels.select("Moonwalker");
+
+    ImageView.drawRect(20, 20, 100, 100);
+
+    Sidebar.hasRegions(1);
+    ImageView.canvasShouldChange("canvas", 0);
+  });
+});
+

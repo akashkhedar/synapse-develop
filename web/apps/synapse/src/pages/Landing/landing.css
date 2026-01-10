@@ -3,9 +3,35 @@
 /* Google Fonts for Hero Section Glitch Effect */
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=VT323&family=Press+Start+2P&family=Share+Tech+Mono&family=Silkscreen&family=Major+Mono+Display&family=Orbitron:wght@700&display=swap');
 
-/* Smooth scrolling */
+/* Performance optimizations */
 html {
   scroll-behavior: smooth;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Reduce repaints on scroll */
+body {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
 /* Custom scrollbar - minimal */

@@ -23,6 +23,7 @@ import { ServicesPage } from "./Services";
 import { AboutPage } from "./About";
 import { SecurityPage } from "./Security";
 import { ContactPage } from "./Contact";
+import { BlogListPage, BlogPostPage } from "./Blog";
 import { OrganizationPage } from "./Organization";
 import { ModelsPage } from "./Organization/Models/ModelsPage";
 import { AcceptInvite } from "./AcceptInvite";
@@ -96,6 +97,8 @@ export const Pages = [
   AboutPage,
   SecurityPage,
   ContactPage,
+  BlogListPage,
+  BlogPostPage,
   ApiDocsPage,
   AnnotatorSignup,
   AnnotatorLogin,

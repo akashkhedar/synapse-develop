@@ -1,18 +1,40 @@
 import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef, useEffect, useState } from "react";
 import { PrismBackground } from "./PrismBackground";
 import { GlitchTextBlock } from "./GlitchText";
 
 export const HeroSection = () => {
   const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 500], [0, 150]);
-  const opacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const [scrollValues, setScrollValues] = useState({ y: 0, opacity: 1 });
+  const rafRef = useRef<number>();
+  
+  // Throttle scroll transforms with RAF for better performance
+  useEffect(() => {
+    const updateScroll = () => {
+      const scrollYValue = scrollY.get();
+      const newY = Math.min(150, (scrollYValue / 500) * 150);
+      const newOpacity = Math.max(0, 1 - (scrollYValue / 400));
+      setScrollValues({ y: newY, opacity: newOpacity });
+    };
+    
+    const unsubscribe = scrollY.on("change", () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(updateScroll);
+    });
+    
+    return () => {
+      unsubscribe();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [scrollY]);
 
   return (
-    <motion.section 
+    <section 
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
       style={{ 
-        opacity,
-        contain: "layout style paint", // CSS containment for scroll perf
+        opacity: scrollValues.opacity,
+        contain: "layout style paint",
+        willChange: scrollValues.y > 0 ? "opacity" : "auto",
       }}
     >
       {/* Prism Background - react-bits Prism component */}
@@ -41,9 +63,12 @@ export const HeroSection = () => {
       </div>
 
       {/* Content - centered like Lambda reference */}
-      <motion.div 
+      <div 
         className="relative z-10 w-full max-w-8xl mx-auto px-6 text-center"
-        style={{ y }}
+        style={{ 
+          transform: `translateY(${scrollValues.y}px)`,
+          willChange: scrollValues.y > 0 ? "transform" : "auto",
+        }}
       >
         {/* Subheading with glitch effect */}
         <motion.p
@@ -77,21 +102,23 @@ export const HeroSection = () => {
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
           <motion.button
-            whileHover={{ scale: 1.02, backgroundColor: '#d8d4c9' }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="bg-[#e8e4d9] text-black px-10 py-5 text-[13px] font-semibold tracking-[0.2em] transition-all uppercase"
+            className="bg-[#e8e4d9] text-black px-10 py-5 text-[13px] font-semibold tracking-[0.2em] transition-colors uppercase hover:bg-[#d8d4c9]"
+            style={{ willChange: "transform" }}
           >
             Launch GPU Instance
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.02, backgroundColor: '#7c5ce0' }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="bg-[#8b5cf6] text-white px-10 py-5 text-[13px] font-semibold tracking-[0.2em] transition-all uppercase"
+            className="bg-[#8b5cf6] text-white px-10 py-5 text-[13px] font-semibold tracking-[0.2em] transition-colors uppercase hover:bg-[#7c5ce0]"
+            style={{ willChange: "transform" }}
           >
             Talk to Our Team
           </motion.button>
         </motion.div>
-      </motion.div>
+      </div>
 
       {/* Right side vertical text */}
       <motion.div
@@ -109,6 +136,6 @@ export const HeroSection = () => {
         </div>
       </motion.div>
 
-    </motion.section>
+    </section>
   );
 };

@@ -11,7 +11,7 @@
 {% endblock %} 
 {% block user_content %}
 <div class="form-wrapper">
-  <h2>Log in</h2>
+  <h2>Log In</h2>
   <form
     id="login-form"
     action="{% url 'user-login' %}?next={{ next }}"
@@ -19,22 +19,24 @@
   >
     {% csrf_token %}
     <div class="input-wrapper">
-      <label>Email Address</label>
+      <label for="email">Email Address</label>
       <input
         type="text"
         class="sf-input-ls"
         name="email"
         id="email"
         value="{{ form.data.email }}"
+        placeholder="you@example.com"
       />
     </div>
     <div class="input-wrapper">
-      <label>Password</label>
+      <label for="password">Password</label>
       <input
         type="password"
         class="sf-input-ls"
         name="password"
         id="password"
+        placeholder="Enter your password"
       />
     </div>
     {% if form.non_field_errors %} 
@@ -49,7 +51,6 @@
         name="persist_session"
         class="sf-checkbox-ls"
         checked="checked"
-        style="width: auto"
       />
       <label for="persist_session">Keep me logged in this browser</label>
     </div>
@@ -60,7 +61,7 @@
 </div>
 {% if not settings.DISABLE_SIGNUP_WITHOUT_LINK %}
 <div class="text-wrapper">
-  <p class="">Don't have an account?</p>
+  <p>Don't have an account?</p>
   <a href="{% url 'user-signup' %}{% querystring %}">Sign up</a>
 </div>
 {% endif %} 

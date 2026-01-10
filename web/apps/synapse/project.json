@@ -16,7 +16,13 @@
         "baseHref": "/",
         "main": "apps/synapse/src/main.tsx",
         "tsConfig": "apps/synapse/tsconfig.app.json",
-        "assets": [],
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/synapse/public",
+            "output": "."
+          }
+        ],
         "styles": [],
         "scripts": [],
         "isolatedConfig": true,

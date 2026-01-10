@@ -29,23 +29,32 @@ const FeatureAccordion = ({
             <h3 className="text-2xl md:text-3xl font-medium text-white">{title}</h3>
             <motion.span
               animate={{ rotate: isOpen ? 45 : 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }}
               className="text-gray-500 text-3xl font-light"
             >
               +
             </motion.span>
           </div>
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {isOpen && (
-              <motion.p
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="text-gray-500 text-base mt-6 leading-relaxed overflow-hidden font-mono"
+              <motion.div
+                initial={{ opacity: 0, gridTemplateRows: "0fr" }}
+                animate={{ opacity: 1, gridTemplateRows: "1fr" }}
+                exit={{ opacity: 0, gridTemplateRows: "0fr" }}
+                transition={{ 
+                  duration: 0.4, 
+                  ease: [0.4, 0.0, 0.2, 1],
+                  opacity: { duration: 0.3 }
+                }}
+                className="grid overflow-hidden"
+                style={{ willChange: "grid-template-rows, opacity" }}
               >
-                {description}
-              </motion.p>
+                <div className="overflow-hidden">
+                  <p className="text-gray-500 text-base mt-6 leading-relaxed font-mono">
+                    {description}
+                  </p>
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
@@ -94,24 +103,41 @@ export const FeaturesSection = () => {
     },
   ];
 
-  // Update active feature based on scroll progress
+  // Update active feature based on scroll progress with throttling
   useEffect(() => {
+    let rafId: number | null = null;
+    
     const unsubscribe = scrollYProgress.on("change", (latest) => {
-      const featureCount = features.length;
-      const newIndex = Math.min(
-        Math.floor(latest * featureCount),
-        featureCount - 1
-      );
-      setActiveIndex(newIndex);
+      // Use requestAnimationFrame to throttle updates
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      
+      rafId = requestAnimationFrame(() => {
+        const featureCount = features.length;
+        const newIndex = Math.min(
+          Math.floor(latest * featureCount),
+          featureCount - 1
+        );
+        setActiveIndex((prev) => {
+          // Only update if index actually changed
+          return prev !== newIndex ? newIndex : prev;
+        });
+      });
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }, [scrollYProgress, features.length]);
 
   return (
     <div className="relative bg-black">
       {/* Heading section - scrolls normally */}
-      <div className="min-h-screen flex items-center">
+      <div className="min-h-[20vh] flex items-center">
         <div className="max-w-7xl mx-auto px-6 w-full">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight max-w-2xl">
             Built for AI.
@@ -139,21 +165,27 @@ export const FeaturesSection = () => {
               </div>
 
               {/* Right side - Image Gallery with Scroll Sync */}
-              <div className="relative h-[450px] hidden lg:block">
+              <div className="relative h-[70vh] hidden lg:block">
                 <div className="h-full w-full">
-                  <AnimatePresence mode="wait">
+                  <AnimatePresence initial={false}>
                     <motion.div
                       key={activeIndex}
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -30 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
-                      className="w-full h-full"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ 
+                        duration: 0.5, 
+                        ease: [0.4, 0.0, 0.2, 1]
+                      }}
+                      className="absolute inset-0 w-full h-full"
+                      style={{ willChange: "opacity" }}
                     >
                       <img
                         src={features[activeIndex].image}
                         alt={features[activeIndex].title}
                         className="w-full h-full object-cover rounded-lg border border-gray-800"
+                        loading="lazy"
+                        style={{ transform: "translateZ(0)" }}
                       />
                     </motion.div>
                   </AnimatePresence>

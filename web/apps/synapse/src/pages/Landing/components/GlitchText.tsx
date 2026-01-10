@@ -26,6 +26,7 @@ const HoverGlitchChar = ({ char, charKey }: HoverGlitchCharProps) => {
   const [currentFont, setCurrentFont] = useState<string>("");
   const charRef = useRef<HTMLSpanElement>(null);
   const [charWidth, setCharWidth] = useState<number | null>(null);
+  const hoverTimeoutRef = useRef<number>();
 
   // Measure character width on mount to prevent layout shift
   useEffect(() => {
@@ -35,13 +36,24 @@ const HoverGlitchChar = ({ char, charKey }: HoverGlitchCharProps) => {
   }, [charWidth]);
 
   const handleMouseEnter = () => {
+    // Debounce hover to reduce rapid re-renders
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     setCurrentFont(getRandomFont());
     setIsHovered(true);
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
+    // Small delay before hiding to reduce flickering
+    hoverTimeoutRef.current = window.setTimeout(() => {
+      setIsHovered(false);
+    }, 50);
   };
+  
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
+  }, []);
 
   if (char === " ") {
     return (

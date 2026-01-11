@@ -8,7 +8,7 @@ import { useStorageApi } from "./hooks/useStorageApi";
 import { step1Schema, getProviderSchema } from "./schemas";
 import { addProvider } from "./providers";
 import type { ProviderConfig } from "./types/provider";
-import { InlineError } from "apps/Synapse/src/components/Error/InlineError";
+import { InlineError } from "apps/synapse/src/components/Error/InlineError";
 
 interface StorageProviderFormProps {
   onSubmit: () => void;

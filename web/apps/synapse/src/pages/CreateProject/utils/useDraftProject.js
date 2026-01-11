@@ -1,4 +1,4 @@
-import { projectAtom } from "apps/Synapse/src/providers/ProjectProvider";
+import { projectAtom } from "apps/synapse/src/providers/ProjectProvider";
 import { useAtom } from "jotai";
 import React, { useEffect } from "react";
 import { useAPI } from "../../../providers/ApiProvider";

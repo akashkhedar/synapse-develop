@@ -9,13 +9,58 @@ import { Dropdown } from "@synapse/ui";
 import Form from "../../Common/Form/Form";
 import { Menu } from "../../Common/Menu/Menu";
 import { Modal } from "../../Common/Modal/ModalPopup";
-import "./ActionsButton.scss";
 
 const isFFLOPSE3 = isFF(FF_LOPS_E_3);
 const injector = inject(({ store }) => ({
   store,
   hasSelected: store.currentView?.selected?.hasSelected ?? false,
 }));
+
+// Modern actions button styles matching OrderButton design
+const actionsButtonStyle = {
+  background: 'rgba(139, 92, 246, 0.08)',
+  border: '1px solid rgba(139, 92, 246, 0.3)',
+  color: '#a78bfa',
+  borderRadius: '8px',
+  fontWeight: 500,
+  fontSize: '13px',
+  fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+const actionsButtonDisabledStyle = {
+  background: 'rgba(55, 65, 81, 0.3)',
+  border: '1px solid rgba(75, 85, 99, 0.4)',
+  color: '#6b7280',
+  borderRadius: '8px',
+  fontWeight: 500,
+  fontSize: '13px',
+  fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+};
+
+// Menu item styles
+const menuItemStyle = {
+  fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+  fontSize: '13px',
+  fontWeight: 500,
+  letterSpacing: '0.02em',
+  transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+const menuTitleStyle = {
+  fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+  fontSize: '11px',
+  fontWeight: 600,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  color: '#a78bfa',
+};
+
+const separatorStyle = {
+  height: '1px',
+  background: 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent)',
+  margin: '8px 0',
+};
 
 const DialogContent = ({ text, form, formRef, store, action }) => {
   const [formData, setFormData] = useState(form);
@@ -90,13 +135,15 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
       size="small"
       onClick={onClick}
       aria-label={action.title}
+      style={action.isTitle ? menuTitleStyle : action.isSeparator ? separatorStyle : menuItemStyle}
     >
       <div
         className={cn("actionButton").elem("titleContainer").toClassName()}
         {...(action.disabled ? { title: action.disabledReason } : {})}
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}
       >
-        <div className={cn("actionButton").elem("title").toClassName()}>{action.title}</div>
-        {hasChildren ? <IconChevronRight className={cn("actionButton").elem("icon").toClassName()} /> : null}
+        <div style={{ flexGrow: 1 }}>{action.title}</div>
+        {hasChildren ? <IconChevronRight style={{ opacity: 0.7 }} /> : null}
       </div>
     </Menu.Item>
   );
@@ -109,7 +156,7 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
         toggle={false}
         ref={submenuRef}
         content={
-          <ul className={cn("actionButton-submenu").toClassName()}>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
             {action.children.map((childAction) => (
               <ActionButton
                 key={childAction.id}
@@ -135,12 +182,10 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
           key={action.id}
           variant={isDeleteAction ? "negative" : undefined}
           onClick={onClick}
-          className={`actionButton${action.isSeparator ? "_isSeparator" : action.isTitle ? "_isTitle" : ""} ${
-            action.disabled ? "actionButton_disabled" : ""
-          }`}
           icon={isDeleteAction && <IconTrash />}
           title={action.disabled ? action.disabledReason : null}
           aria-label={action.title}
+          style={action.isSeparator ? separatorStyle : action.isTitle ? menuTitleStyle : menuItemStyle}
         >
           {action.title}
         </Menu.Item>
@@ -254,6 +299,7 @@ export const ActionsButton = injector(
           disabled={!hasSelected}
           trailing={<IconChevronDown />}
           aria-label="Tasks Actions"
+          style={hasSelected ? actionsButtonStyle : actionsButtonDisabledStyle}
           {...rest}
         >
           {selectedCount > 0 ? `${selectedCount} ${recordTypeLabel}${selectedCount > 1 ? "s" : ""}` : "Actions"}

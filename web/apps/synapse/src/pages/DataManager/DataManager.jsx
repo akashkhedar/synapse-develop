@@ -352,7 +352,7 @@ DataManagerPage.context = ({ dmRef }) => {
           <Link
             key={path}
             tag={NavLink}
-            className={buttonVariant({ size: "small", look: "outlined" })}
+            className={`${buttonVariant({ size: "small", look: "outlined", variant: "neutral" })} dm-context-button`}
             to={`/projects/${project.id}${path}`}
             data-external
           >

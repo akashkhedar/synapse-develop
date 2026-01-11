@@ -1,6 +1,9 @@
 .modal {
   padding: 16px;
   position: relative;
+  background-color: #0a0a0a;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
 }
 
 .header {
@@ -12,9 +15,15 @@
 }
 
 .tooltip {
-  font-size: 12px;
+  font-size: 11px;
   max-width: 300px;
   line-height: 16px;
+  background-color: #1f2937;
+  color: #e8e4d9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 
   p {
     margin-bottom: 4px;
@@ -29,10 +38,16 @@
   margin-left: auto;
 
   & > * {
-    width: 20px;
+    width: 24px;
     margin-left: 16px;
     text-align: center;
     cursor: pointer;
+    color: #9ca3af;
+    transition: all 200ms ease;
+    
+    &:hover {
+      color: #8b5cf6;
+    }
   }
 }
 
@@ -41,6 +56,8 @@
   height: 100%;
   min-height: 100px;
   position: relative;
+  background-color: #000000;
+  border-radius: 6px;
 }
 
 .image {

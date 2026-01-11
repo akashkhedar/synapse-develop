@@ -47,16 +47,6 @@ export const SelectedUser = ({
   const [activeOrg, setActiveOrg] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState(null);
 
-  // Guard against null user
-  if (!user) {
-    return null;
-  }
-
-  const fullName = [user.first_name, user.last_name]
-    .filter((n) => !!n)
-    .join(" ")
-    .trim();
-
   // Load current user and active organization
   useEffect(() => {
     api.callApi("me").then((userData) => {
@@ -89,31 +79,26 @@ export const SelectedUser = ({
     });
   }, []);
 
-  const isOwner = currentUserRole === "owner";
-  const isTargetOwner = memberRole === "owner";
-  const isTargetAdmin = memberRole === "admin";
-  const isTargetMember = memberRole === "member";
-
   const canRemoveMember = useCallback(() => {
     if (!currentUser || !activeOrg || !user) return false;
     // Owner and admins can remove members, but not the owner, and not themselves
     if (user.id === currentUser.id) return false;
-    if (isTargetOwner) return false;
-    return isOwner || currentUserRole === "admin";
-  }, [currentUser, activeOrg, user, isOwner, currentUserRole, isTargetOwner]);
+    if (memberRole === "owner") return false;
+    return currentUserRole === "owner" || currentUserRole === "admin";
+  }, [currentUser, activeOrg, user, currentUserRole, memberRole]);
 
   const canPromoteMember = useCallback(() => {
     // Only owner can promote regular members to admin
-    return isOwner && isTargetMember && user.id !== currentUser?.id;
-  }, [isOwner, isTargetMember, user, currentUser]);
+    return currentUserRole === "owner" && memberRole === "member" && user?.id !== currentUser?.id;
+  }, [currentUserRole, memberRole, user, currentUser]);
 
   const canDemoteMember = useCallback(() => {
     // Only owner can demote admins to regular members
-    return isOwner && isTargetAdmin && user.id !== currentUser?.id;
-  }, [isOwner, isTargetAdmin, user, currentUser]);
+    return currentUserRole === "owner" && memberRole === "admin" && user?.id !== currentUser?.id;
+  }, [currentUserRole, memberRole, user, currentUser]);
 
   const removeMember = useCallback(async () => {
-    if (isRemoving || !activeOrg) return;
+    if (isRemoving || !activeOrg || !user) return;
 
     setIsRemoving(true);
     try {
@@ -146,7 +131,7 @@ export const SelectedUser = ({
   }, [user, activeOrg, isRemoving, onClose, onMemberRemoved]);
 
   const promoteMember = useCallback(async () => {
-    if (isPromoting || !activeOrg) return;
+    if (isPromoting || !activeOrg || !user) return;
 
     setIsPromoting(true);
     try {
@@ -178,7 +163,7 @@ export const SelectedUser = ({
   }, [user, activeOrg, isPromoting, onMemberRemoved]);
 
   const demoteMember = useCallback(async () => {
-    if (isDemoting || !activeOrg) return;
+    if (isDemoting || !activeOrg || !user) return;
 
     setIsDemoting(true);
     try {
@@ -208,6 +193,21 @@ export const SelectedUser = ({
       setIsDemoting(false);
     }
   }, [user, activeOrg, isDemoting, onMemberRemoved]);
+
+  // Guard against null user - moved after ALL hooks
+  if (!user) {
+    return null;
+  }
+
+  const fullName = [user.first_name, user.last_name]
+    .filter((n) => !!n)
+    .join(" ")
+    .trim();
+
+  const isOwner = currentUserRole === "owner";
+  const isTargetOwner = memberRole === "owner";
+  const isTargetAdmin = memberRole === "admin";
+  const isTargetMember = memberRole === "member";
 
   const getRoleBadge = () => {
     if (isTargetOwner) {

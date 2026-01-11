@@ -1,16 +1,16 @@
 .radio-group-dm {
-  --radius: var(--corner-radius-small);
+  --radius: 6px;
   --height: 40px;
   --padding: 3px;
-  --font-size: 16px;
-  --button-padding: 0 10px;
-  --button-checked-shadow: 0 1px 0 var(--black_10), 0 0 0 1px var(--black_2), 0 5px 10px var(--black_15);
+  --font-size: 12px;
+  --button-padding: 0 12px;
+  --button-checked-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3);
 
   height: var(--height);
   border-radius: var(--radius);
   padding: var(--padding);
-  background: linear-gradient(0deg, var(--color-neutral-surface), var(--color-neutral-surface)), var(--color-neutral-background);
-  border: 1px solid var(--color-neutral-border);
+  background: #0a0a0a;
+  border: 1px solid #1f2937;
 
   &__buttons {
     height: calc(var(--height) - calc(var(--padding) * 2));
@@ -29,22 +29,24 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     border-radius: calc(var(--radius) - var(--padding));
     height: calc(var(--height) - calc(var(--padding) * 2) - 2px);
-    color: var(--color-neutral-content-subtler);
-    transition: all 100ms ease-out;
+    color: #6b7280;
+    transition: all 200ms ease;
     cursor: pointer;
 
     &_checked {
       opacity: 1;
-      background-color: var(--color-neutral-surface-hover);
+      background-color: rgba(139, 92, 246, 0.2);
       box-shadow: var(--button-checked-shadow);
-      color: var(--color-neutral-content);
+      color: #8b5cf6;
     }
 
     &_disabled {
       opacity: 0.3;
-      color: var(--color-neutral-subtlest);
+      color: #374151;
       cursor: not-allowed;
     }
 
@@ -65,17 +67,17 @@
   &_size {
     &_small {
       --height: 32px;
-      --radius: var(--corner-radius-smaller);
-      --font-size: 14px;
+      --radius: 4px;
+      --font-size: 11px;
     }
 
     &_smaller {
       --height: 24px;
       --radius: 4px;
       --padding: 2px;
-      --font-size: 12px;
-      --button-padding: 0 5px;
-      --button-checked-shadow: 0 1px 0 var(--black_10), 0 0 0 1px var(--black_2), 0 2px 4px var(--black_15);
+      --font-size: 10px;
+      --button-padding: 0 6px;
+      --button-checked-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2);
     }
   }
 }

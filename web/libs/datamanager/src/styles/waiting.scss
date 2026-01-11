@@ -1,4 +1,4 @@
-@mixin waiting($c1: #efefef, $c2: #fff) {
+@mixin waiting($c1: #1f2937, $c2: #0a0a0a) {
   $base-color: rgba($c2, 0.2);
   $accent-color: $c1;
 

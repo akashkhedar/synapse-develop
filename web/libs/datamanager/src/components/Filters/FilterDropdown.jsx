@@ -57,6 +57,12 @@ export const FilterDropdown = observer(
         triggerClassName="whitespace-nowrap"
         searchFilter={searchFilter}
         isVirtualList={true}
+        style={{
+          fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+          fontSize: '13px',
+          fontWeight: 500,
+          ...style,
+        }}
       />
     );
   },

@@ -91,6 +91,12 @@ export class Synapse {
 
     this.root = root;
     this.options = options;
+
+    // Register legacy event callbacks BEFORE creating the app
+    // because afterCreate fires synchronously during AppStore.create()
+    // and needs the callbacks to be registered on this.events
+    this.supportLegacyEvents();
+
     if (options.instanceOptions?.reactVersion === "v18") {
       this.createAppV18();
     } else {
@@ -100,8 +106,6 @@ export class Synapse {
     // @todo whole approach to hotkeys should be rewritten,
     // @todo but for now we need a way to export Hotkey to different app
     if (window.Htx) window.Htx.Hotkey = Hotkey;
-
-    this.supportLegacyEvents();
 
     if (options.instanceOptions?.reactVersion !== "v18") {
       Synapse.instances.add(this);
@@ -253,12 +257,15 @@ export class Synapse {
   supportLegacyEvents() {
     const keys = Object.keys(legacyEvents);
 
+    console.log("[Synapse] supportLegacyEvents called, registering callbacks for:", keys.filter(k => isDefined(this.options[k])));
+
     keys.forEach((key) => {
       const callback = this.options[key];
 
       if (isDefined(callback)) {
         const eventName = camelCase(key.replace(/^on/, ""));
 
+        console.log(`[Synapse] Registering event: ${key} -> ${eventName}`);
         this.events.on(eventName, callback);
       }
     });

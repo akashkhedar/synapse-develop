@@ -9,6 +9,15 @@ import pathlib
 import socket
 import sys
 
+# Load environment variables from .env file FIRST before anything else
+try:
+    from dotenv import load_dotenv
+    env_path = pathlib.Path(__file__).parent.parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path, override=True)
+except ImportError:
+    pass
+
 from colorama import Fore, init
 
 if sys.platform == "win32":

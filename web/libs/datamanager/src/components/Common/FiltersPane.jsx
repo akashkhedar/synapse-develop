@@ -31,11 +31,34 @@ export const FiltersButton = buttonInjector(
           onClick={() => sidebarEnabled && viewsStore.toggleSidebar()}
           trailing={<Icon icon={IconChevronDown} />}
           aria-label="Filters"
+          style={{
+            background: 'rgba(139, 92, 246, 0.08)',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            color: '#a78bfa',
+            borderRadius: '8px',
+            fontWeight: 500,
+            fontSize: '13px',
+            fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+            transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
           {...rest}
         >
           Filters{" "}
           {hasFilters && (
-            <Badge size="small" style={{ marginLeft: 5 }}>
+            <Badge 
+              size="small" 
+              style={{ 
+                marginLeft: 6,
+                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: '10px',
+                fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+                padding: '2px 6px',
+                borderRadius: '10px',
+                boxShadow: '0 2px 6px rgba(139, 92, 246, 0.3)',
+              }}
+            >
               {activeFiltersNumber}
             </Badge>
           )}

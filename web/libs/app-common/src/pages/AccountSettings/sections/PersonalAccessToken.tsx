@@ -4,7 +4,7 @@ import { Button, IconFileCopy, IconLaunch, Label, Typography } from "@synapse/ui
  * FIXME: This is legacy imports. We're not supposed to use such statements
  * each one of these eventually has to be migrated to core/ui
  */
-import { Input, TextArea } from "apps/Synapse/src/components/Form";
+import { Input, TextArea } from "apps/synapse/src/components/Form";
 import { atom, useAtomValue } from "jotai";
 import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
 import styles from "./PersonalAccessToken.module.scss";

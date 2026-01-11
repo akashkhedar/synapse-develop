@@ -122,7 +122,7 @@ type RegionDetailsMetaProps = {
   region: any;
   editMode?: boolean;
   cancelEditMode?: () => void;
-  enterEditMode?: () => void;
+  enterEditMode: () => void; // Remove the ? to make it required
 };
 
 export const RegionDetailsMeta: FC<RegionDetailsMetaProps> = observer(
@@ -158,7 +158,7 @@ export const RegionDetailsMeta: FC<RegionDetailsMetaProps> = observer(
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                saveMeta(e.target.value);
+                saveMeta((e.target as HTMLTextAreaElement).value);
                 cancelEditMode?.();
               }
             }}

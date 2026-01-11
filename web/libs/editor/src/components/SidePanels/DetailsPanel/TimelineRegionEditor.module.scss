@@ -1,30 +1,50 @@
 .container {
   display: grid;
   width: 100%;
-  grid-gap: 4px;
+  grid-gap: 8px;
   grid-template-columns: repeat(var(--col-count), minmax(0, 1fr));
 }
 
 .labelText {
-  font-size: 12px;
-  opacity: 0.5;
+  font-size: 11px;
+  opacity: 0.6;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .input {
   display: block;
-  border: 1px solid var(--color-neutral-border);
-  border-radius: 4px;
-  padding: 0 0 0 8px;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 0 0 0 10px;
   width: 80px;
-  font-size: 14px;
+  font-size: 13px;
   text-align: right;
+  background: transparent;
+  color: #e8e4d9;
+  height: 32px;
+  transition: all 200ms ease;
+
+  &:hover {
+    border-color: #4b5563;
+  }
+
+  &:focus {
+    border-color: #8b5cf6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
 
   &[readonly] {
-    color: var(--color-neutral-content-subtlest);
+    color: #6b7280;
     cursor: default;
+    background: rgba(31, 41, 55, 0.3);
 
     &:focus {
       outline: none;
+      border-color: #374151;
+      box-shadow: none;
     }
   }
 }

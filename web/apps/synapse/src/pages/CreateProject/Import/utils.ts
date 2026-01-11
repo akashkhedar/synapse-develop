@@ -1,4 +1,4 @@
-import { API } from "apps/Synapse/src/providers/ApiProvider";
+import { API } from "apps/synapse/src/providers/ApiProvider";
 
 export const importFiles = async ({
   files,

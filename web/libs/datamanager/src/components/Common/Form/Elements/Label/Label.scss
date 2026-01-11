@@ -6,16 +6,19 @@
     height: 22px;
     display: flex;
     margin-bottom: 4px;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 22px;
     justify-content: space-between;
+    color: #e8e4d9;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   &__description {
     margin-top: 5px;
-    font-size: 14px;
-    line-height: 22px;
-    color: var(--sand_500);
+    font-size: 12px;
+    line-height: 20px;
+    color: #6b7280;
   }
 
   &__field {
@@ -24,7 +27,7 @@
 
   &_size_large &__text {
     font-weight: 500;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 22px;
     margin-bottom: 16px;
   }
@@ -41,11 +44,12 @@
 
   &[data-required] &__text::after {
     content: "Required";
-    color: var(--sand_500);
+    color: #8b5cf6;
+    font-size: 10px;
   }
 
   &_large &__text {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
     margin-bottom: 16px;
   }
@@ -63,7 +67,7 @@
   &_placement_right &__text,
   &_placement_left &__text {
     margin-bottom: 0;
-    font-size: 16px;
+    font-size: 13px;
     line-height: 22px;
     height: auto;
     align-items: center;

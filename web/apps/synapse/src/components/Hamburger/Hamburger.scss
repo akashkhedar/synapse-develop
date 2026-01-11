@@ -1,16 +1,18 @@
 .hamburger {
-  width: 18px;
-  height: 14px;
+  width: 16px;
+  height: 12px;
   cursor: pointer;
   position: relative;
   display: inline-block;
 
   span {
-    height: 2px;
+    height: 1.5px;
     width: 100%;
     display: block;
     position: absolute;
-    background-color: var(--color-neutral-content);
+    background-color: #6b7280 !important;
+    border-radius: 1px;
+    transition: all 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
 
     &:nth-child(1) {
       top: 0;
@@ -19,6 +21,7 @@
     &:nth-child(2) {
       top: 50%;
       transform: translate3d(0, -50%, 0);
+      width: 75%;
     }
 
     &:nth-child(3) {
@@ -27,28 +30,34 @@
   }
 
   &_animated span {
-    transition: all var(--menu-animation-duration) ease;
+    transition: all 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
   }
 
-  &:hover span,
-  &_opened span {
-    background-color: var(--color-neutral-content);
+  &:hover span {
+    background-color: #8b5cf6 !important;
+
+    &:nth-child(2) {
+      width: 100%;
+    }
   }
 
   &_opened span {
+    background-color: #8b5cf6 !important;
+
     &:nth-child(1) {
-      top: 6px;
-      transform: rotate(135deg);
+      top: 5px;
+      transform: rotate(45deg);
     }
 
     &:nth-child(2) {
       opacity: 0;
+      width: 0;
       transform: translate3d(-100%, -50%, 0);
     }
 
     &:nth-child(3) {
-      bottom: 6px;
-      transform: rotate(-135deg);
+      bottom: 5px;
+      transform: rotate(-45deg);
     }
   }
 }

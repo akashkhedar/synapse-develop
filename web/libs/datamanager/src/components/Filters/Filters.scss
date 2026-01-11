@@ -1,17 +1,19 @@
 .filters {
-  background-color: var(--color-neutral-background);
+  background-color: #0a0a0a;
   position: relative;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
 
   &:not(&_sidebar) {
-    padding-top: var(--spacing-tight);
+    padding-top: 12px;
     min-width: 400px;
-    border-radius: var(--corner-radius-small);
-    box-shadow: 0 3px 6px -4px rgb(0 0 0 / 12%),
-      0 6px 16px 0 rgb(0 0 0 / 8%), 0 9px 28px 8px var(--black_5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 
   &_sidebar {
     width: 100%;
+    border: none;
+    border-radius: 0;
 
     .filterLine {
       .datepicker__output_range {
@@ -27,52 +29,64 @@
 
   &__actions {
     display: flex;
-    margin-top: var(--spacing-base);
-    padding: 0 var(--spacing-tight) var(--spacing-tight);
+    margin-top: 12px;
+    padding: 0 12px 12px;
     justify-content: space-between;
 
     .button-dm {
-      border: 1px solid var(--color-neutral-border);
+      border: 1px solid #374151;
+      background-color: transparent;
+      color: #9ca3af;
+      transition: all 200ms ease;
 
       &:hover {
-        border: 1px solid var(--color-neutral-border);
+        border: 1px solid #8b5cf6;
+        background-color: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
       }
     }
   }
 
   &__empty {
-    padding: 0 var(--spacing-tight);
-    font-size: 14px;
-    color: var(--color-neutral-content-subtler);
+    padding: 0 12px;
+    font-size: 13px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   &__list {
-    padding: var(--spacing-tight) var(--spacing-tight) var(--spacing-tighter);
+    padding: 12px 12px 8px;
 
     &_withFilters {
       display: flex;
       flex-flow: column nowrap;
-      gap: var(--spacing-tight);
+      gap: 12px;
     }
   }
 
   &_sidebar &__list {
-    padding: var(--spacing-base) var(--spacing-tight) var(--spacing-tighter);
+    padding: 16px 12px 8px;
 
     &_withFilters {
       display: flex;
       flex-flow: column nowrap;
-      gap: var(--spacing-tight);
+      gap: 12px;
     }
   }
 }
 
 .filter-data-tag {
   margin: 1px;
-  font-size: 12px;
-  padding: 2px 4px;
+  font-size: 11px;
+  padding: 4px 8px;
   display: inline-flex;
   align-items: center;
+  background-color: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 // Note: Dropdown padding is now controlled via triggerProps in FilterDropdown component

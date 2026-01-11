@@ -4,15 +4,15 @@
   display: flex;
   position: relative;
   min-width: 114px;
-  border-radius: 8px;
-  background: var(--color-neutral-surface);
+  border-radius: 6px;
+  background: #0a0a0a;
   box-sizing: border-box;
-  box-shadow: 0 0 0 1px var(--color-neutral-border) inset;
-  transition: box-shadow 80ms ease;
+  box-shadow: 0 0 0 1px #1f2937 inset;
+  transition: all 200ms ease;
 
   &_disabled {
-    opacity: 0.6;
-    background-color: var(--color-neutral-background);
+    opacity: 0.5;
+    background-color: #000000;
   }
 
   &__btn {
@@ -20,31 +20,32 @@
     min-height: 32px;
     margin: 4px;
     border-radius: 4px;
-    background: var(--color-neutral-background);
+    background: #000000;
     display: flex;
-    color: var(--color-primary-content);
+    color: #8b5cf6;
     border: none;
     outline: none;
     align-items: center;
     justify-content: center;
-    transition: all 80ms ease;
-    box-shadow: 0 1px 0 rgba(var(--color-neutral-shadow-raw) / 24%), 0 0 0 1px rgba(var(--color-neutral-shadow-raw) / 10%), 0 5px 10px rgba(var(--color-neutral-shadow-raw) / 10%);
+    transition: all 200ms ease;
+    box-shadow: 0 0 0 1px #1f2937;
+    cursor: pointer;
 
     &_disabled {
       box-shadow: none;
       background: none;
       pointer-events: none;
-      color: var(--color-neutral-content-subtlest);
+      color: #374151;
+    }
+
+    &:hover {
+      background: rgba(139, 92, 246, 0.1);
+      box-shadow: 0 0 0 1px #8b5cf6;
     }
 
     &:active {
-      background: var(--color-neutral-background);
-      box-shadow: 0 1px 0 rgba(var(--color-neutral-shadow-raw) / 24%), 0 0 0 1px rgba(var(--color-neutral-shadow-raw) / 10%), 0 5px 10px rgba(var(--color-neutral-shadow-raw) / 10%);
-    }
-
-    &:active,
-    &:hover {
-      color: var(--color-primary-content-hover);
+      background: rgba(139, 92, 246, 0.2);
+      box-shadow: 0 0 0 1px #8b5cf6;
     }
   }
 
@@ -58,8 +59,9 @@
     text-align: center;
     position: relative;
     outline: none;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 22px;
+    color: #e8e4d9;
 
     &_under {
       left: 40px;
@@ -71,6 +73,7 @@
       z-index: 1;
       opacity: 0.6;
       position: absolute;
+      color: #6b7280;
     }
 
     &_withPostfix {

@@ -49,46 +49,20 @@ export const PeopleList = ({ onSelect, selectedUser, defaultSelected, organizati
   const getRoleBadge = (role) => {
     if (role === 'owner') {
       return (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '2px 8px',
-          borderRadius: '10px',
-          backgroundColor: '#FFD700',
-          color: '#000',
-          fontSize: '11px',
-          fontWeight: '600',
-        }}>
-          👑 Owner
+        <span className="role-badge role-badge--owner">
+          Owner
         </span>
       );
     }
     if (role === 'admin') {
       return (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '2px 8px',
-          borderRadius: '10px',
-          backgroundColor: '#3B82F6',
-          color: '#fff',
-          fontSize: '11px',
-          fontWeight: '600',
-        }}>
-          ⭐ Admin
+        <span className="role-badge role-badge--admin">
+          Admin
         </span>
       );
     }
     return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '2px 8px',
-        fontSize: '11px',
-        color: '#6B7280',
-      }}>
+      <span className="role-badge role-badge--member">
         Member
       </span>
     );

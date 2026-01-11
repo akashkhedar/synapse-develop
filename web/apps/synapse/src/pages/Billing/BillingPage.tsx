@@ -6,6 +6,22 @@ import './BillingPage.css';
 
 type ViewMode = 'dashboard' | 'pricing';
 
+const DashboardIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+
+const PricingIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+    <line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+);
+
 export const BillingPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -31,13 +47,13 @@ export const BillingPage: React.FC = () => {
           className={viewMode === 'dashboard' ? 'active' : ''}
           onClick={() => setViewMode('dashboard')}
         >
-          📊 Dashboard
+          <DashboardIcon /> Dashboard
         </button>
         <button
           className={viewMode === 'pricing' ? 'active' : ''}
           onClick={() => setViewMode('pricing')}
         >
-          💳 Plans & Pricing
+          <PricingIcon /> Plans & Pricing
         </button>
       </div>
 

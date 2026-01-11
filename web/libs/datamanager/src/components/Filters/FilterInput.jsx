@@ -18,7 +18,17 @@ export const FilterInput = ({ value, type, onChange, placeholder, schema, style 
       ref={inputRef}
       placeholder={placeholder}
       onChange={onChangeHandler}
-      style={style}
+      style={{
+        ...style,
+        fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+        fontSize: '13px',
+        fontWeight: 500,
+        color: '#e5e7eb',
+        background: 'rgba(139, 92, 246, 0.05)',
+        border: '1px solid rgba(139, 92, 246, 0.2)',
+        borderRadius: '6px',
+        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
       {...(schema ?? {})}
     />
   );

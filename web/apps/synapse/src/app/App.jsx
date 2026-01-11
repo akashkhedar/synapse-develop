@@ -88,6 +88,10 @@ const App = ({ content }) => {
 const root = document.querySelector(".app-wrapper");
 const content = document.querySelector("#main-content");
 
+// Apply dark theme
+document.documentElement.setAttribute('data-color-scheme', 'dark');
+document.body.setAttribute('data-color-scheme', 'dark');
+
 render(<App content={content.innerHTML} />, root);
 
 if (module?.hot) {

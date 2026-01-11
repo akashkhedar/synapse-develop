@@ -16,11 +16,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useUpdatePageTitle } from "@synapse/core";
+import { motion } from "framer-motion";
 import { HeidiTips } from "../../components/HeidiTips/HeidiTips";
 import { useAPI } from "../../providers/ApiProvider";
 import { CreateProject } from "../CreateProject/CreateProject";
 import { InviteLink } from "../Organization/PeoplePage/InviteLink";
 import type { Page } from "../types/Page";
+import styles from "./HomePage.module.css";
 
 const PROJECTS_TO_SHOW = 10;
 
@@ -30,7 +32,7 @@ const resources = [
     url: "https://synapse.io/guide/",
   },
   {
-    title: "API Documentation",
+    title: "API Reference",
     url: "https://api.synapse.io/api-reference/introduction/getting-started",
   },
   {
@@ -38,11 +40,11 @@ const resources = [
     url: "https://synapse.io/learn/categories/release-notes/",
   },
   {
-    title: "synapse.io Blog",
+    title: "Blog",
     url: "https://synapse.io/blog/",
   },
   {
-    title: "Slack Community",
+    title: "Community",
     url: "https://slack.synapse.io",
   },
 ];
@@ -61,6 +63,29 @@ const actions = [
 ] as const;
 
 type Action = (typeof actions)[number]["type"];
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
+    },
+  },
+};
 
 export const HomePage: Page = () => {
   const api = useAPI();
@@ -91,128 +116,128 @@ export const HomePage: Page = () => {
   };
 
   return (
-    <main className="p-6">
-      <div className="grid grid-cols-[minmax(0,1fr)_450px] gap-6">
-        <section className="flex flex-col gap-6">
-          <div className="flex flex-col gap-1">
-            <Typography variant="headline" size="small">
-              Welcome 👋
-            </Typography>
-            <Typography size="small" className="text-neutral-content-subtler">
-              Let's get you started.
-            </Typography>
-          </div>
-          <div className="flex justify-start gap-4">
-            {actions.map((action) => {
-              return (
-                <Button
-                  key={action.title}
-                  look="outlined"
-                  align="center"
-                  className="flex-grow-0 text-16/24 gap-2 text-primary-content text-left min-w-[250px] [&_svg]:w-6 [&_svg]:h-6 pl-2"
-                  onClick={handleActions(action.type)}
-                  leading={<action.icon />}
-                >
-                  {action.title}
-                </Button>
-              );
-            })}
-          </div>
+    <main className={styles.homePage}>
+      <motion.div
+        className={styles.container}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div className={styles.header} variants={itemVariants}>
+          <h1 className={styles.welcomeTitle}>Dashboard</h1>
+          <p className={styles.welcomeSubtitle}>
+            Manage your annotation projects and team
+          </p>
+        </motion.div>
 
-          <SimpleCard
-            title={
-              data && data?.count > 0 ? (
-                <>
-                  Recent Projects{" "}
-                  <a
-                    href="/projects"
-                    className="text-lg font-normal hover:underline"
-                  >
+        <motion.div className={styles.actionsGrid} variants={itemVariants}>
+          {actions.map((action) => {
+            return (
+              <motion.button
+                key={action.title}
+                className={styles.actionButton}
+                onClick={handleActions(action.type)}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <action.icon />
+                {action.title}
+              </motion.button>
+            );
+          })}
+        </motion.div>
+
+        <div className={styles.mainGrid}>
+          <motion.section className={styles.mainSection} variants={itemVariants}>
+            <div className={styles.card}>
+              {data && data?.count > 0 && (
+                <div className={styles.cardHeader}>
+                  <h2 className={styles.cardTitle}>Recent Projects</h2>
+                  <a href="/projects" className={styles.cardViewAll}>
                     View All
                   </a>
-                </>
-              ) : null
-            }
-          >
-            {isFetching ? (
-              <div className="h-64 flex justify-center items-center">
-                <Spinner />
-              </div>
-            ) : isError ? (
-              <div className="h-64 flex justify-center items-center">
-                can't load projects
-              </div>
-            ) : isSuccess && data && data.results.length === 0 ? (
-              <div className="flex flex-col justify-center items-center border border-primary-border-subtle bg-primary-emphasis-subtle rounded-lg h-64">
-                <div
-                  className={
-                    "rounded-full w-12 h-12 flex justify-center items-center bg-accent-grape-subtle text-primary-icon"
-                  }
-                >
-                  <IconFolderOpen />
                 </div>
-                <Typography variant="headline" size="small">
-                  Create your first project
-                </Typography>
-                <Typography
-                  size="small"
-                  className="text-neutral-content-subtler"
+              )}
+
+              {isFetching ? (
+                <div className={styles.loadingContainer}>
+                  <Spinner />
+                </div>
+              ) : isError ? (
+                <div className={styles.errorContainer}>
+                  // ERROR: Failed to load projects
+                </div>
+              ) : isSuccess && data && data.results.length === 0 ? (
+                <motion.div
+                  className={styles.emptyState}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
                 >
-                  Import your data and set up the labeling interface to start
-                  annotating
-                </Typography>
-                <Button
-                  className="mt-4"
-                  onClick={() => setCreationDialogOpen(true)}
-                  aria-label="Create new project"
-                >
-                  Create Project
-                </Button>
+                  <div className={styles.emptyStateIcon}>
+                    <IconFolderOpen />
+                  </div>
+                  <h3 className={styles.emptyStateTitle}>
+                    Create your first project
+                  </h3>
+                  <p className={styles.emptyStateDescription}>
+                    Import your data and configure the labeling interface to begin annotation
+                  </p>
+                  <motion.button
+                    className={styles.createButton}
+                    onClick={() => setCreationDialogOpen(true)}
+                    aria-label="Create new project"
+                    whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(139, 92, 246, 0.3)" }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Create Project
+                  </motion.button>
+                </motion.div>
+              ) : isSuccess && data && data.results.length > 0 ? (
+                <div className={styles.projectsList}>
+                  {data.results.map((project, index) => {
+                    return (
+                      <ProjectCard key={project.id} project={project} index={index} />
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          </motion.section>
+
+          <motion.aside className={styles.sidebarSection} variants={itemVariants}>
+            <HeidiTips collection="projectSettings" />
+            
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>Resources</h2>
               </div>
-            ) : isSuccess && data && data.results.length > 0 ? (
-              <div className="flex flex-col gap-1">
-                {data.results.map((project) => {
+              <p className={styles.cardDescription}>
+                Learn, explore and get help
+              </p>
+              <div className={styles.resourcesList}>
+                {resources.map((link) => {
                   return (
-                    <ProjectSimpleCard key={project.id} project={project} />
-                  );
-                })}
-              </div>
-            ) : null}
-          </SimpleCard>
-        </section>
-        <section className="flex flex-col gap-6">
-          <HeidiTips collection="projectSettings" />
-          <SimpleCard
-            title="Resources"
-            description="Learn, explore and get help"
-            data-testid="resources-card"
-          >
-            <ul>
-              {resources.map((link) => {
-                return (
-                  <li key={link.title}>
                     <a
+                      key={link.title}
                       href={link.url}
-                      className="py-2 px-1 flex justify-between items-center text-neutral-content"
+                      className={styles.resourceLink}
                       target="_blank"
                       rel="noreferrer"
                     >
                       {link.title}
-                      <IconExternal className="text-primary-icon" />
+                      <IconExternal />
                     </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </SimpleCard>
-          <div className="flex gap-2 items-center">
-            <IconSynapse />
-            <span className="text-neutral-content-subtle">
-              Synapse Version: Community
-            </span>
-          </div>
-        </section>
-      </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            
+          </motion.aside>
+        </div>
+      </motion.div>
+
       {creationDialogOpen && (
         <CreateProject onClose={() => setCreationDialogOpen(false)} />
       )}
@@ -228,43 +253,49 @@ HomePage.title = "Dashboard";
 HomePage.path = "/dashboard";
 HomePage.exact = true;
 
-function ProjectSimpleCard({ project }: { project: APIProject }) {
+function ProjectCard({ project, index }: { project: APIProject; index: number }) {
   const finished = project.finished_task_number ?? 0;
   const total = project.task_number ?? 0;
   const progress = (total > 0 ? finished / total : 0) * 100;
   const white = "#FFFFFF";
   const color =
-    project.color && project.color !== white ? project.color : "#E1DED5";
+    project.color && project.color !== white ? project.color : "#8b5cf6";
 
   return (
-    <Link
-      to={`/projects/${project.id}`}
-      className="block even:bg-neutral-surface rounded-sm overflow-hidden"
-      data-external
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
     >
-      <div
-        className="grid grid-cols-[minmax(0,1fr)_150px] p-2 py-3 items-center border-l-[3px]"
-        style={{ borderLeftColor: color }}
+      <Link
+        to={`/projects/${project.id}`}
+        className={styles.projectCard}
+        style={{ "--project-color": color } as React.CSSProperties}
+        data-external
       >
-        <div className="flex flex-col gap-1">
-          <Tooltip title={project.title}>
-            <span className="text-neutral-content truncate">
-              {project.title}
+        <div className={styles.projectCardContent}>
+          <div className={styles.projectInfo}>
+            <Tooltip title={project.title}>
+              <span className={styles.projectTitle}>{project.title}</span>
+            </Tooltip>
+            <div className={styles.projectStats}>
+              {finished} / {total} tasks completed
+            </div>
+          </div>
+          <div className={styles.projectProgress}>
+            <span className={styles.projectProgressLabel}>
+              {total > 0 ? Math.round((finished / total) * 100) : 0}%
             </span>
-          </Tooltip>
-          <div className="text-neutral-content-subtler text-sm">
-            {finished} of {total} Tasks (
-            {total > 0 ? Math.round((finished / total) * 100) : 0}%)
+            <div className={styles.projectProgressBar}>
+              <div
+                className={styles.projectProgressFill}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         </div>
-        <div className="bg-neutral-surface rounded-full overflow-hidden w-full h-2 shadow-neutral-border-subtle shadow-border-1">
-          <div
-            className="bg-positive-surface-hover h-full"
-            style={{ maxWidth: `${progress}%` }}
-          />
-        </div>
-      </div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }
 

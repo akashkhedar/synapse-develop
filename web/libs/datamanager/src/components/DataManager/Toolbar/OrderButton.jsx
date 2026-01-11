@@ -13,13 +13,43 @@ const injector = inject(({ store }) => {
   };
 });
 
+// Modern order button styles
+const orderButtonStyle = {
+  background: 'rgba(139, 92, 246, 0.08)',
+  border: '1px solid rgba(139, 92, 246, 0.3)',
+  color: '#a78bfa',
+  borderRadius: '8px 0 0 8px',
+  fontWeight: 500,
+  fontSize: '13px',
+};
+
+const sortToggleStyle = {
+  background: 'rgba(55, 65, 81, 0.4)',
+  border: '1px solid rgba(75, 85, 99, 0.5)',
+  borderLeft: 'none',
+  color: '#9ca3af',
+  borderRadius: '0 8px 8px 0',
+  padding: '8px 10px',
+  minWidth: '36px',
+};
+
+const sortToggleActiveStyle = {
+  background: 'rgba(139, 92, 246, 0.15)',
+  border: '1px solid rgba(139, 92, 246, 0.4)',
+  borderLeft: 'none',
+  color: '#a78bfa',
+  borderRadius: '0 8px 8px 0',
+  padding: '8px 10px',
+  minWidth: '36px',
+};
+
 export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
   return (
     <Space style={{ fontSize: 12 }}>
       <ButtonGroup collapsed {...rest}>
         <FieldsButton
           size={size}
-          style={{ minWidth: 67, textAlign: "left", marginRight: -1 }}
+          style={{ ...orderButtonStyle, minWidth: 80, textAlign: "left" }}
           title={ordering ? ordering.column?.title : "Order by"}
           onClick={(col) => view.setOrdering(col.id)}
           onReset={() => view.setOrdering(null)}
@@ -39,6 +69,7 @@ export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  color: '#8b5cf6',
                 }}
               >
                 {column?.icon}
@@ -48,18 +79,10 @@ export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
           openUpwardForShortViewport={false}
         />
 
-        <Button
-          size={size}
-          look="outlined"
-          variant="neutral"
-          disabled={!!ordering === false}
-          onClick={() => view.setOrdering(ordering?.field)}
-          aria-label={ordering?.desc ? "Sort ascending" : "Sort descending"}
-        >
-          {ordering?.desc ? <IconSortUp /> : <IconSortDown />}
-        </Button>
+        
       </ButtonGroup>
     </Space>
   );
 });
+
 

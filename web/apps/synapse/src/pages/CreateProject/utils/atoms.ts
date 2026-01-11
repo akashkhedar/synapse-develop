@@ -1,6 +1,6 @@
 import { isDefined } from "@synapse/core/lib/utils/helpers";
-import { API } from "apps/Synapse/src/providers/ApiProvider";
-import { projectAtom } from "apps/Synapse/src/providers/ProjectProvider";
+import { API } from "apps/synapse/src/providers/ApiProvider";
+import { projectAtom } from "apps/synapse/src/providers/ProjectProvider";
 import { atomWithQuery } from "jotai-tanstack-query";
 
 export const sampleDatasetAtom = atomWithQuery((get) => {

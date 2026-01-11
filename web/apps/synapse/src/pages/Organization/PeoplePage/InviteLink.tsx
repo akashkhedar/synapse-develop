@@ -1,12 +1,13 @@
 import { Button, Typography } from "@synapse/ui";
 import { Space } from "@synapse/ui/lib/space/space";
-import { cn } from "apps/Synapse/src/utils/bem";
-import { Modal } from "apps/Synapse/src/components/Modal/ModalPopup";
-import { API } from "apps/Synapse/src/providers/ApiProvider";
+import { cn } from "apps/synapse/src/utils/bem";
+import { Modal } from "apps/synapse/src/components/Modal/ModalPopup";
+import { API } from "apps/synapse/src/providers/ApiProvider";
 import { useAtomValue } from "jotai";
 import { atomWithQuery } from "jotai-tanstack-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "../../../components/Form";
+import "./PeopleInvitation.scss";
 
 const linkAtom = atomWithQuery(() => ({
   queryKey: ["invite-link"],
@@ -14,7 +15,7 @@ const linkAtom = atomWithQuery(() => ({
     // called only once when the component is rendered on page reload
     // will also be reset when called `refetch()` on the Reset button
     const result = await API.invoke("resetInviteLink");
-    return location.origin + result.invite_url;
+    return location.origin + result.response.invite_url;
   },
 }));
 
@@ -27,7 +28,7 @@ export function InviteLink({
   onOpened?: () => void;
   onClosed?: () => void;
 }) {
-  const modalRef = useRef<Modal>();
+  const modalRef = useRef<Modal>(null);
   useEffect(() => {
     if (modalRef.current && opened) {
       modalRef.current?.show?.();
@@ -39,12 +40,11 @@ export function InviteLink({
   return (
     <Modal
       ref={modalRef}
-      title="Invite members"
-      opened={opened}
+      title="Invite Members"
       bareFooter={true}
       body={<InvitationModal />}
       footer={<InvitationFooter />}
-      style={{ width: 640, height: 472 }}
+      style={{ width: 560, height: 380 }}
       onHide={onClosed}
       onShow={onOpened}
     />
@@ -55,25 +55,26 @@ const InvitationModal = () => {
   const { data: link } = useAtomValue(linkAtom);
   return (
     <div className={cn("invite").toClassName()}>
-      <Input value={link} style={{ width: "100%" }} readOnly />
-      <Typography size="small" className="text-neutral-content-subtler mt-base mb-wider">
+      <div className="invite__label">Share this link with your team</div>
+      <div className="invite__input-wrapper">
+        <input type="text" value={link} style={{ width: "100%" }} readOnly />
+      </div>
+      <p className="invite__hint">
         Invite members to join your Synapse instance. People that you invite have full access to all of your
         projects.{" "}
         <a
           href="https://synapse.io/guide/signup.html"
           target="_blank"
           rel="noreferrer"
-          className="hover:underline"
           onClick={() =>
             __lsa("docs.organization.add_people.learn_more", {
               href: "https://synapse.io/guide/signup.html",
             })
           }
         >
-          Learn more
+          Learn more →
         </a>
-        .
-      </Typography>
+      </p>
     </div>
   );
 };
@@ -83,29 +84,22 @@ const InvitationFooter = () => {
   const { refetch, data: link } = useAtomValue(linkAtom);
 
   return (
-    <Space spread>
-      <Space>
-        <Button
-          variant="negative"
-          look="outlined"
-          style={{ width: 170 }}
-          onClick={() => refetch()}
-          aria-label="Refresh invite link"
-        >
-          Reset Link
-        </Button>
-      </Space>
-      <Space>
-        <Button
-          variant={copied ? "positive" : "primary"}
-          className="w-[170px]"
-          onClick={() => copyText(link!)}
-          aria-label="Copy invite link"
-        >
-          {copied ? "Copied!" : "Copy link"}
-        </Button>
-      </Space>
-    </Space>
+    <div className="invite__actions">
+      <button
+        className="invite__btn invite__btn--secondary"
+        onClick={() => refetch()}
+        aria-label="Refresh invite link"
+      >
+        Reset Link
+      </button>
+      <button
+        className={`invite__btn invite__btn--primary ${copied ? 'invite__btn--success' : ''}`}
+        onClick={() => copyText(link!)}
+        aria-label="Copy invite link"
+      >
+        {copied ? "Copied!" : "Copy Link"}
+      </button>
+    </div>
   );
 };
 

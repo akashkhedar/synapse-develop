@@ -99,13 +99,13 @@ module.exports = composePlugins(
     if (!process.env.MODE?.startsWith("standalone")) {
       config.entry = {
         main: {
-          import: path.resolve(__dirname, "apps/Synapse/src/main.tsx"),
+          import: path.resolve(__dirname, "apps/synapse/src/main.tsx"),
         },
       };
 
       config.output = {
         ...config.output,
-        uniqueName: "Synapse",
+        uniqueName: "synapse",
         publicPath:
           isDevelopment && FRONTEND_HOSTNAME
             ? `${FRONTEND_HOSTNAME}/react-app/`

@@ -9,16 +9,15 @@ import {
 import { StaticContent } from "../../app/StaticContent/StaticContent";
 import {
   IconBook,
-  IconFolder,
+  IconFolderOpen,
   IconHome,
   IconHotkeys,
   IconPeople,
-  IconPersonInCircle,
+  IconGear,
   IconPin,
   IconTerminal,
   IconDoor,
-  IconGithub,
-  IconSlack,
+  IconSpark,
   IconMastercard,
 } from "@synapse/icons";
 import { LSLogo } from "../../assets/images";
@@ -87,7 +86,10 @@ export const Menubar = ({
   const isClient = !!user?.is_client;
   const isExpert = !!user?.is_expert;
   // Experts and annotators have limited menu (no org, no billing, but show earnings)
-  const hasLimitedMenu = isAnnotator || isExpert;
+  // Only show limited menu if user data is loaded AND user has limited role
+  const hasLimitedMenu = !isLoading && user && (isAnnotator || isExpert);
+  // Only show full menu items if user data is loaded AND user is NOT limited
+  const showFullMenu = !isLoading && user && !hasLimitedMenu;
 
   const location = useFixedLocation();
   const history = useHistory();
@@ -186,12 +188,12 @@ export const Menubar = ({
             <LeftContextMenu className={contextItem.mod({ left: true })} />
             <RightContextMenu className={contextItem.mod({ right: true })} />
           </div>
-          {!hasLimitedMenu && (
+          {showFullMenu && (
             <OrganizationSwitcher
               className={menubarClass.elem("organization")}
             />
           )}
-          {!hasLimitedMenu && (
+          {showFullMenu && (
             <div className={menubarClass.elem("credits")}>
               <CreditBalance onClick={() => history.push("/billing")} />
             </div>
@@ -220,15 +222,15 @@ export const Menubar = ({
               />
             </div>
           </div>
-          {ff.isActive(ff.FF_THEME_TOGGLE) && <ThemeToggle />}
+          
           <Dropdown.Trigger
             ref={useMenuRef}
             align="right"
             content={
               <Menu>
                 <Menu.Item
-                  icon={<IconPersonInCircle />}
-                  label="Account &amp; Settings"
+                  icon={<IconGear />}
+                  label="Account & Settings"
                   href={pages.AccountSettingsPage.path}
                 />
                 {/* <Menu.Item label="Dark Mode"/> */}
@@ -283,9 +285,9 @@ export const Menubar = ({
               style={{ width: 240 }}
             >
               <Menu>
-                {isFF(FF_HOMEPAGE) && !hasLimitedMenu && (
+                {isFF(FF_HOMEPAGE) && showFullMenu && (
                   <Menu.Item
-                    label="Home"
+                    label="Dashboard"
                     to="/dashboard"
                     icon={<IconHome />}
                     data-external
@@ -295,11 +297,11 @@ export const Menubar = ({
                 <Menu.Item
                   label="Projects"
                   to="/projects"
-                  icon={<IconFolder />}
+                  icon={<IconFolderOpen />}
                   data-external
                   exact
                 />
-                {!hasLimitedMenu && (
+                {showFullMenu && (
                   <Menu.Item
                     label="Organization"
                     to="/organization"
@@ -308,7 +310,7 @@ export const Menubar = ({
                     exact
                   />
                 )}
-                {!hasLimitedMenu ? (
+                {showFullMenu ? (
                   <Menu.Item
                     label="Billing & Credits"
                     to="/billing"
@@ -316,30 +318,30 @@ export const Menubar = ({
                     data-external
                     exact
                   />
-                ) : (
+                ) : hasLimitedMenu ? (
                   <>
                     <Menu.Item
                       label="Earnings"
                       to={
                         isExpert ? "/expert/earnings" : "/annotators/earnings"
                       }
-                      icon={<IconMastercard />}
+                      icon={<IconSpark />}
                       data-external
                       exact
                     />
                   </>
-                )}
+                ) : null}
 
                 <Menu.Spacer />
 
                 <Menu.Item
-                  label="API"
+                  label="API Reference"
                   href="https://api.synapse.io/api-reference/introduction/getting-started"
                   icon={<IconTerminal />}
                   target="_blank"
                 />
                 <Menu.Item
-                  label="Docs"
+                  label="Documentation"
                   href="https://synapse.io/guide"
                   icon={<IconBook />}
                   target="_blank"

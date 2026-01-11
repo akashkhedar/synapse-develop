@@ -1,0 +1,545 @@
+/* HomePage - Lambda/Landing Page Inspired Dark Theme */
+/* Matches the Landing page aesthetics with monospace fonts, dark bg, and subtle animations */
+
+.homePage {
+  min-height: 100vh;
+  background: #000000;
+  padding: 120px 40px 60px; /* Account for fixed nav */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle grid background pattern */
+.homePage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.02;
+  background-image: 
+    linear-gradient(to right, #ffffff 1px, transparent 1px),
+    linear-gradient(to bottom, #ffffff 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header with corner bracket decoration */
+.header {
+  margin-bottom: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.welcomeTitle {
+  font-size: 48px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.welcomeSubtitle {
+  font-size: 14px;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 400;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Corner bracket before subtitle */
+.welcomeSubtitle::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-left: 2px solid #374151;
+  border-top: 2px solid #374151;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Action buttons grid */
+.actionsGrid {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 64px;
+}
+
+.actionButton {
+  flex: 0 0 auto;
+  min-width: 200px;
+  padding: 20px 32px;
+  background: #e8e4d9;
+  border: none;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.actionButton::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #8b5cf6;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.actionButton:hover {
+  background: #d8d4c9;
+  transform: translateY(-2px);
+}
+
+.actionButton:hover::after {
+  transform: scaleX(1);
+}
+
+.actionButton:active {
+  transform: translateY(0);
+}
+
+.actionButton svg {
+  width: 20px;
+  height: 20px;
+  color: #8b5cf6;
+}
+
+/* Main content grid */
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 48px;
+}
+
+.mainSection {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.sidebarSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Card styling - minimal with border */
+.card {
+  background: transparent;
+  border: 1px solid #1f2937;
+  padding: 32px;
+  position: relative;
+}
+
+/* Corner decorations on cards */
+.card::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 12px;
+  height: 12px;
+  border-left: 2px solid #8b5cf6;
+  border-top: 2px solid #8b5cf6;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid #8b5cf6;
+  border-bottom: 2px solid #8b5cf6;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #1f2937;
+}
+
+.cardTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cardTitle::before {
+  content: '//';
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.cardViewAll {
+  font-size: 12px;
+  font-weight: 500;
+  color: #8b5cf6;
+  text-decoration: none;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cardViewAll:hover {
+  color: #a78bfa;
+}
+
+.cardViewAll::after {
+  content: '→';
+}
+
+.cardDescription {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 20px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* Empty state */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 32px;
+  text-align: center;
+  border: 1px dashed #374151;
+  position: relative;
+}
+
+.emptyStateIcon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #374151;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.emptyStateIcon::before {
+  content: '01/';
+  position: absolute;
+  top: -24px;
+  left: 0;
+  font-size: 11px;
+  color: #8b5cf6;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.emptyStateIcon svg {
+  width: 28px;
+  height: 28px;
+  color: #6b7280;
+}
+
+.emptyStateTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 12px;
+}
+
+.emptyStateDescription {
+  font-size: 14px;
+  color: #6b7280;
+  max-width: 360px;
+  margin-bottom: 32px;
+  line-height: 1.7;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.createButton {
+  padding: 16px 40px;
+  background: #8b5cf6;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.createButton:hover {
+  background: #7c3aed;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+}
+
+.createButton:active {
+  transform: translateY(0);
+}
+
+/* Projects list */
+.projectsList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.projectCard {
+  display: block;
+  padding: 20px 24px;
+  background: transparent;
+  border: 1px solid #1f2937;
+  border-left: 3px solid var(--project-color, #8b5cf6);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.projectCard:hover {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: #374151;
+  border-left-color: var(--project-color, #8b5cf6);
+}
+
+.projectCardContent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 24px;
+  align-items: center;
+}
+
+.projectInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.projectTitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.projectStats {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.projectProgress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.projectProgressLabel {
+  font-size: 11px;
+  color: #9ca3af;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.05em;
+}
+
+.projectProgressBar {
+  width: 100%;
+  height: 4px;
+  background: #1f2937;
+  overflow: hidden;
+}
+
+.projectProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);
+  transition: width 0.3s ease;
+}
+
+/* Resources list */
+.resourcesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.resourceLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  color: #9ca3af;
+  text-decoration: none;
+  font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  border-bottom: 1px solid #1f2937;
+  transition: all 0.2s ease;
+}
+
+.resourceLink:last-child {
+  border-bottom: none;
+}
+
+.resourceLink:hover {
+  color: #ffffff;
+  padding-left: 8px;
+}
+
+.resourceLink svg {
+  width: 14px;
+  height: 14px;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.resourceLink:hover svg {
+  color: #8b5cf6;
+  transform: translateX(2px);
+}
+
+/* Version badge */
+.versionBadge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: transparent;
+  border: 1px solid #1f2937;
+}
+
+.versionBadge svg {
+  width: 18px;
+  height: 18px;
+  color: #8b5cf6;
+}
+
+.versionBadge span {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.05em;
+}
+
+/* Loading & Error states */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  color: #ef4444;
+  font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* Stats row - optional for future use */
+.statsRow {
+  display: flex;
+  gap: 48px;
+  padding: 24px 0;
+  border-top: 1px solid #1f2937;
+  margin-top: 32px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebarSection {
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .homePage {
+    padding: 100px 24px 40px;
+  }
+
+  .welcomeTitle {
+    font-size: 36px;
+  }
+
+  .actionsGrid {
+    flex-direction: column;
+  }
+
+  .actionButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .projectCardContent {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .projectProgress {
+    align-items: flex-start;
+  }
+
+  .projectProgressBar {
+    max-width: 200px;
+  }
+}

@@ -8,7 +8,7 @@ export interface InlineErrorProps {
   children?: ReactNode;
 }
 
-declare module "apps/Synapse/src/components/Error/InlineError" {
+declare module "apps/synapse/src/components/Error/InlineError" {
   export const InlineError: FC<InlineErrorProps>;
 }
 

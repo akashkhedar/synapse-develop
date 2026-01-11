@@ -31,7 +31,10 @@ export const CreditBalance: React.FC<CreditBalanceProps> = ({ onClick }) => {
   if (loading || !billing) {
     return (
       <div className="credit-balance-widget loading">
-        <div className="loading-spinner"></div>
+        <div className="credit-skeleton">
+          <div className="skeleton-line short"></div>
+          <div className="skeleton-line long"></div>
+        </div>
       </div>
     );
   }
@@ -45,7 +48,12 @@ export const CreditBalance: React.FC<CreditBalanceProps> = ({ onClick }) => {
       onClick={onClick}
       title="Click to view billing dashboard"
     >
-      <div className="credit-icon">💰</div>
+      <div className="credit-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v12M9 9h6M9 15h6"/>
+        </svg>
+      </div>
       <div className="credit-info">
         <div className="credit-label">Credits</div>
         <div className="credit-amount">{credits.toLocaleString()}</div>

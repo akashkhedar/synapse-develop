@@ -1,15 +1,21 @@
+/* =========================================
+   RAZORPAY CHECKOUT - Lambda Design System
+   ========================================= */
+
 .razorpay-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  animation: fadeIn 0.2s ease-in;
+  animation: fadeIn 200ms ease-out;
 }
 
 @keyframes fadeIn {
@@ -22,23 +28,50 @@
 }
 
 .razorpay-modal {
-  background: white;
+  background: #0a0a0a;
+  border: 1px solid #1f2937;
   border-radius: 12px;
   width: 90%;
-  max-width: 500px;
+  max-width: 480px;
   max-height: 90vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  animation: slideUp 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  position: relative;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.razorpay-modal::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 24px;
+  height: 24px;
+  border-top: 2px solid #8b5cf6;
+  border-left: 2px solid #8b5cf6;
+  pointer-events: none;
+}
+
+.razorpay-modal::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 24px;
+  height: 24px;
+  border-bottom: 2px solid #8b5cf6;
+  border-right: 2px solid #8b5cf6;
+  pointer-events: none;
 }
 
 @keyframes slideUp {
   from {
-    transform: translateY(20px);
+    transform: translateY(20px) scale(0.96);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }
@@ -47,22 +80,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 24px 28px;
+  border-bottom: 1px solid #1f2937;
 }
 
 .razorpay-modal-header h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #2d3748;
+  font-size: 16px;
+  font-weight: 500;
+  color: #ffffff;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.razorpay-modal-header h2::before {
+  content: '// ';
+  color: #6b7280;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 32px;
-  color: #a0aec0;
+  background: transparent;
+  border: 1px solid #374151;
+  font-size: 18px;
+  color: #6b7280;
   cursor: pointer;
   padding: 0;
   width: 32px;
@@ -71,38 +111,39 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  transition: all 0.2s;
+  transition: all 200ms ease;
 }
 
 .close-btn:hover {
-  background: #f7fafc;
-  color: #4a5568;
+  background: rgba(139, 92, 246, 0.1);
+  border-color: #8b5cf6;
+  color: #ffffff;
 }
 
 .close-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .razorpay-modal-body {
-  padding: 32px 24px;
-  min-height: 200px;
+  padding: 32px 28px;
+  min-height: 180px;
 }
 
 /* Loading State */
 .loading-state {
   text-align: center;
-  padding: 40px 20px;
+  padding: 48px 20px;
 }
 
 .spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #4299e1;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #1f2937;
+  border-top-color: #8b5cf6;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin: 0 auto 20px;
+  margin: 0 auto 24px;
 }
 
 @keyframes spin {
@@ -112,62 +153,79 @@
 }
 
 .loading-state p {
-  color: #718096;
-  font-size: 16px;
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 /* Error State */
 .error-state {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
 }
 
 .error-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  font-size: 48px;
+  margin-bottom: 20px;
+  opacity: 0.8;
 }
 
 .error-state h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #e53e3e;
+  font-size: 16px;
+  font-weight: 500;
+  color: #ef4444;
   margin-bottom: 12px;
 }
 
 .error-state p {
-  color: #4a5568;
-  margin-bottom: 24px;
+  color: #6b7280;
+  margin-bottom: 28px;
   line-height: 1.6;
+  font-size: 13px;
 }
 
 .retry-btn {
-  padding: 12px 32px;
-  background: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
+  padding: 14px 36px;
+  background: transparent;
+  color: #e8e4d9;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 200ms ease;
 }
 
 .retry-btn:hover {
-  background: #3182ce;
+  background: #e8e4d9;
+  color: #000000;
+  border-color: #e8e4d9;
 }
 
 /* Order Summary */
 .order-summary {
-  background: #f7fafc;
+  background: rgba(31, 41, 55, 0.4);
+  border: 1px solid #1f2937;
   border-radius: 8px;
   padding: 24px;
 }
 
 .order-summary h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2d3748;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff;
   margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.order-summary h3::before {
+  content: '// ';
+  color: #6b7280;
 }
 
 .summary-item {
@@ -175,45 +233,47 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  color: #4a5568;
-  font-size: 15px;
+  color: #9ca3af;
+  font-size: 13px;
 }
 
 .summary-item:not(:last-child) {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #1f2937;
 }
 
 .summary-item.total {
   font-weight: 600;
-  font-size: 18px;
-  color: #2d3748;
+  font-size: 15px;
+  color: #ffffff;
   padding-top: 16px;
   margin-top: 8px;
-  border-top: 2px solid #cbd5e0;
+  border-top: 1px solid #374151;
 }
 
 .summary-item.total .amount {
-  color: #4299e1;
-  font-size: 24px;
+  color: #e8e4d9;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .payment-note {
   margin-top: 20px;
   text-align: center;
-  color: #718096;
-  font-size: 14px;
+  color: #6b7280;
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 /* Modal Footer */
 .razorpay-modal-footer {
-  padding: 20px 24px;
-  background: #f7fafc;
-  border-top: 1px solid #e2e8f0;
+  padding: 20px 28px;
+  background: rgba(31, 41, 55, 0.3);
+  border-top: 1px solid #1f2937;
 }
 
 .security-badges {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -223,12 +283,14 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #4a5568;
+  background: transparent;
+  border: 1px solid #1f2937;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #6b7280;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Responsive */

@@ -46,7 +46,7 @@
 
 .dropdown {
   --menu-animation-duration: 0.15s;
-  --menu-animation-curve: cubic-bezier(0.21, 1.04, 0.68, 1);
+  --menu-animation-curve: cubic-bezier(0.4, 0, 0.2, 1);
   --menu-animation-start: -10px;
 
   /* Default positioning for fallback (no anchor support) */
@@ -58,9 +58,11 @@
   display: none;
   box-sizing: border-box;
   background-color: var(--color-neutral-background);
-  box-shadow: 0 5px 20px rgb(var(--color-neutral-shadow-raw) / calc(20% * var(--shadow-intensity)));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 92, 246, 0.1);
   will-change: transform, opacity;
-  border-radius: var(--corner-radius-small, 4px);
+  border-radius: var(--corner-radius-small, 6px);
+  backdrop-filter: blur(8px);
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
 
   /* Prevent dropdown from causing page overflow */
   max-width: calc(100vw - 20px);

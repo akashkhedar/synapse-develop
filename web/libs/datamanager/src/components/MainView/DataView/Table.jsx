@@ -195,7 +195,7 @@ export const DataView = injector(
         } else if (e.metaKey || e.ctrlKey) {
           window.open(`./?task=${itemID}`, "_blank");
         } else {
-          store._SDK.sf?.saveDraft();
+          store.SF?.saveDraft();
           // Defensive: check MST node is alive before using
           let rootStore;
           try {

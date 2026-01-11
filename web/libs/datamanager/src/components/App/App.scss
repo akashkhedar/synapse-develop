@@ -1,16 +1,27 @@
+// Import global design system
+@import '../../styles/global-theme.scss';
+
 .root {
   height: 100%;
   box-sizing: border-box;
-  background-color: var(--color-neutral-background);
+  background-color: #000000;
+  font-family: var(--dm-font-body);
+  color: var(--dm-gray-300);
+  
+  // Apply better text rendering
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .tab-panel {
   display: flex;
   padding: 12px 16px;
-  background-color: var(--color-neutral-background);
-  color: var(--color-neutral-content-subtle);
+  background-color: #0a0a0a;
+  color: #9ca3af;
   justify-content: space-between;
-  border-bottom: 1px solid var(--color-neutral-border);
+  border-bottom: 1px solid #1f2937;
+  font-family: var(--dm-font-display);
+  font-weight: 500;
 
   &_newUI {
     padding: 8px;
@@ -25,7 +36,7 @@
   padding: 10px;
   justify-content: space-between;
   box-sizing: border-box;
-  box-shadow: -0.5px -0.5px 0 0.5px #ccc;
+  box-shadow: -0.5px -0.5px 0 0.5px #1f2937;
 }
 
 .container {
@@ -42,6 +53,47 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: #000000;
+  position: relative;
+  
+  // Subtle glow effect
+  &::before {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  
+  // Loading spinner animation
+  &::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 3px solid #1f2937;
+    border-top-color: #8b5cf6;
+    border-radius: 50%;
+    animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .ant-picker-cell {
@@ -56,7 +108,7 @@
   position: absolute;
   width: 100vw;
   height: 100vh;
-  background-color: var(--color-neutral-background);
+  background-color: #000000;
   z-index: 100000;
 }
 
@@ -80,7 +132,7 @@
     content: "";
     position: absolute;
     height: 4px;
-    background: linear-gradient(to bottom, rgba(var(--color-neutral-shadow-raw) / 20%) 0%, transparent 100%);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, transparent 100%);
   }
 }
 
@@ -91,10 +143,14 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  background-color: #000000;
 
   &__header {
     font-size: 22px;
     font-weight: 500;
+    color: #e8e4d9;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   &__description {

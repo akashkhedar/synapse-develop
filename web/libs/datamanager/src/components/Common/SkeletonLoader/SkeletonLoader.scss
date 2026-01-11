@@ -1,6 +1,6 @@
 .skeletonLoader {
-  --skeleton-light-color: linear-gradient(0deg, rgb(9 109 217 / 5%), rgb(9 109 217 / 5%)), #FAFAFA;
-  --skeleton-dark-color: linear-gradient(0deg, rgb(9 109 217 / 14%), rgb(9 109 217 / 14%)), #FAFAFA;
+  --skeleton-light-color: rgba(139, 92, 246, 0.05);
+  --skeleton-dark-color: rgba(139, 92, 246, 0.15);
   --skeleton-gap: 4px;
 
   box-sizing: border-box;
@@ -22,12 +22,12 @@
     height: var(--line-height);
     width: var(--line-width);
     min-width: 20px;
-    border-radius: 8px;
+    border-radius: 6px;
     display: block;
     background: var(--skeleton-light-color);
     animation-name: skeleton-animation;
     animation-timing-function: ease-in-out;
-    animation-duration: 0.5s;
+    animation-duration: 0.8s;
     animation-iteration-count: infinite;
     animation-direction: alternate;
   }
@@ -47,7 +47,7 @@
   }
 
   50% {
-    opacity: 0.8;
+    opacity: 0.6;
   }
 
   100% {

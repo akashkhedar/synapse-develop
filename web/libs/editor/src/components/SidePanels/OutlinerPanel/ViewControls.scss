@@ -4,30 +4,31 @@
   height: var(--view-controls-height);
   display: grid;
   position: sticky;
-  padding: 0 4px;
+  padding: 0 12px;
   align-items: center;
   grid-auto-flow: column;
   grid-auto-columns: min-content;
-  grid-column-gap: 4px;
-  background-color: var(--color-neutral-background);
-  box-shadow: 0 1px 0 rgb(0 0 0 / 10%);
-
+  grid-column-gap: 8px;
+  background-color: #000000;
+  border-bottom: 1px solid #1f2937;
 
   &__sort {
     display: flex;
     align-items: center;
+    gap: 8px;
   }
 
   &__label {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: var(--spacing-tight);
+    gap: 8px;
 
     span {
       display: flex;
       align-items: center;
-      color: var(--grape_500);
+      color: #8b5cf6;
+      font-size: 12px;
     }
   }
 
@@ -37,20 +38,27 @@
   }
 
   .button {
-    height: 24px;
+    height: 32px;
     font-size: 11px;
-    font-weight: 400;
-    padding: 0;
+    font-weight: 500;
+    padding: 0 10px;
     justify-content: flex-start;
     white-space: nowrap;
     box-shadow: none;
-    gap: var(--spacing-tighter);
+    gap: 6px;
+    color: #9ca3af;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    transition: all 200ms ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 
     &_newUI {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
-      line-height: 24px;
-      height: 24px;
+      line-height: 32px;
+      height: 32px;
       box-shadow: initial;
     }
 
@@ -61,24 +69,28 @@
 
     &:focus {
       box-shadow: none;
+      outline: none;
     }
 
     &:hover {
-      background: var(--color-primary-emphasis-subtle);
-      border-radius: 4px;
+      background: rgba(139, 92, 246, 0.1);
+      border-color: rgba(139, 92, 246, 0.3);
+      border-radius: 6px;
+      color: #e8e4d9;
     }
 
     &[disabled] {
-      background-color: var(--color-neutral-background);
-      color: var(--color-neutral-content-subtlest);
+      background-color: transparent;
+      color: #4b5563;
+      opacity: 0.5;
     }
 
     &_type_text {
-      padding: 0 2px !important;
+      padding: 0 8px !important;
     }
 
     &.dropdown__trigger {
-      padding: 0 6px 0 2px;
+      padding: 0 10px;
     }
   }
 }

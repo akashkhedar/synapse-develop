@@ -2,8 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark theme overrides for the app */
+:root {
+  --color-neutral-background: #000000;
+  --color-neutral-content: #ffffff;
+}
+
 body {
-  @apply !text-neutral-content !bg-neutral-background;
+  color: #ffffff !important;
+  background-color: #000000 !important;
 }
 
 h1,

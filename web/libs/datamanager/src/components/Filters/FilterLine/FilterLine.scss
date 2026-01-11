@@ -5,7 +5,7 @@
   // Apply the same grid layout as the parent filters container
   display: grid;
   grid-template-columns: 80px minmax(120px, max-content) minmax(100px, max-content) 1fr 24px;
-  grid-gap: var(--spacing-tightest);
+  grid-gap: 8px;
   align-items: start;
 
   &__remove {
@@ -15,20 +15,35 @@
     margin-top: -4px;
 
     .button-dm {
-      height: 24px;
-      width: 24px;
+      height: 28px;
+      width: 28px;
       padding: 0;
       flex: none;
+      background-color: transparent;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      transition: all 200ms ease;
+      
+      &:hover {
+        border-color: #ef4444;
+        background-color: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+      }
     }
   }
 
   &__column {
-    min-height: 24px;
+    min-height: 28px;
 
     &.conjunction {
       display: flex;
       align-items: center;
       justify-content: flex-end;
+      color: #6b7280;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
     }
 
     &.operation {
@@ -63,7 +78,16 @@
   }
 
   .selectTrigger {
-    padding: 0 4px;
+    padding: 0 8px;
+    background-color: transparent;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    color: #e8e4d9;
+    transition: all 200ms ease;
+    
+    &:hover {
+      border-color: #8b5cf6;
+    }
   }
 
   .datepicker {

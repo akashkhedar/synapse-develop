@@ -1,12 +1,20 @@
+/* =========================================
+   CREATE PROJECT - Lambda Design System
+   ========================================= */
+
 .create-project {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  background: #000000;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   .modal-ls__header {
-    border-bottom: 1px solid var(--color-neutral-border);
+    border-bottom: 1px solid #1f2937;
+    background: transparent;
+    padding: 24px 40px;
 
     & h1 {
       width: 224px;
@@ -14,12 +22,23 @@
       margin-bottom: 0;
       margin-top: 0;
       font-size: 24px;
-      color: var(--color-neutral-content);
+      font-weight: 400;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+
+      &::before {
+        content: '// ';
+        color: #6b7280;
+      }
     }
 
     & button {
       line-height: 1em;
-      min-width: 100px;
+      min-width: 120px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
     }
 
     .toggle-items {
@@ -37,48 +56,73 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #6b7280;
 
     &::before {
       content: "";
       display: block;
-      height: 8px;
-      width: 8px;
-      border-radius: 4px;
-      margin-right: 6px;
-      background: var(--color-negative-content);
+      height: 6px;
+      width: 6px;
+      border-radius: 3px;
+      margin-right: 8px;
+      background: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
     }
   }
 
   form.project-name {
     width: 500px;
-    margin: 32px auto;
-
-    & > *:not(:first-child) {
-      margin-top: 32px;
-    }
+    margin: 48px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
 
     label {
       display: inline-flex;
       align-items: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
     }
 
     input, textarea {
-      background: var(--color-neutral-background);
-      border: 1px solid var(--color-neutral-border);
-      color: var(--color-neutral-content);
-      border-radius: var(--corner-radius-smaller);
-      box-shadow: inset 0 1px 2px rgba(var(--color-neutral-shadow-raw) / 12%);
-      transition: all 150ms ease-out;
+      background: transparent !important;
+      border: 1px solid #374151 !important;
+      color: #ffffff !important;
+      border-radius: 6px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      transition: all 200ms ease;
+
+      &::placeholder {
+        color: #6b7280;
+      }
 
       &:hover {
-        border-color: var(--color-neutral-border-bold);
+        border-color: #4b5563 !important;
       }
 
       &:focus, &:focus-visible {
-        border-color: var(--color-neutral-border-bolder);
+        border-color: #8b5cf6 !important;
         outline: none;
-        box-shadow: 0 0 0 4px var(--color-primary-focus-outline);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
       }
+    }
+
+    textarea {
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .text-negative-content {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 8px;
     }
   }
 }
+

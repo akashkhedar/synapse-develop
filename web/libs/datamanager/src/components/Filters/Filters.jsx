@@ -73,6 +73,12 @@ export const Filters = injector(({ views, currentView, filters }) => {
           look="string"
           onClick={() => currentView.createFilter()}
           leading={<IconPlus className="!h-3 !w-3" />}
+          style={{
+            fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+            fontWeight: 500,
+            color: '#a78bfa',
+            transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
         >
           Add {filters.length ? "Another Filter" : "Filter"}
         </Button>
@@ -85,6 +91,11 @@ export const Filters = injector(({ views, currentView, filters }) => {
             tooltip="Pin to sidebar"
             onClick={() => views.expandFilters()}
             aria-label="Pin filters to sidebar"
+            style={{
+              fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+              color: '#a78bfa',
+              transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
           >
             <IconChevronRight className="!w-4 !h-4" />
           </Button>

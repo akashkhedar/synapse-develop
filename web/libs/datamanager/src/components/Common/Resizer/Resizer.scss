@@ -17,12 +17,13 @@
     z-index: 100;
     right: 0;
     width: var(--handle-size);
-    background: var(--color-neutral-border);
+    background: #1f2937;
+    transition: all 200ms ease;
 
     &:hover,
     &_resizing {
       width: var(--handle-size-hover);
-      background-color: var(--color-primary-border-subtle);
+      background-color: #8b5cf6;
     }
   }
 }

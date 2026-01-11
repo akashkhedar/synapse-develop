@@ -120,7 +120,7 @@ export const instruments = {
         trailingIcon={<Icon {...iconProps} />}
         title={"Columns"}
         size={size}
-        style={style}
+        className="toolbar-button--columns"
         openUpwardForShortViewport={false}
       />
     );

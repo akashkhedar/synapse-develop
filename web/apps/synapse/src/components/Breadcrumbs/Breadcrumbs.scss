@@ -2,23 +2,28 @@
   height: 100%;
   display: flex;
   align-items: center;
-  margin-right: 20px;
+  margin-right: 24px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   &__label {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     align-items: center;
+    font-size: 13px;
+    letter-spacing: 0.03em;
   }
 
   &__beta {
-    font-size: 12px;
+    font-size: 9px;
     font-style: normal;
-    font-weight: 500;
-    line-height: 16px;
-    color: var(--plum_0);
+    font-weight: 600;
+    line-height: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ffffff;
     padding: 2px 8px;
-    background-color: var(--plum_500);
-    border-radius: 12px;
+    background-color: #8b5cf6;
+    border-radius: 4px;
   }
 
   &__list {
@@ -31,8 +36,8 @@
   }
 
   &__item {
-    font-size: 16px;
-    line-height: 22px;
+    font-size: 13px;
+    line-height: 20px;
     position: relative;
     margin: 0;
     padding: 0;
@@ -46,10 +51,11 @@
 
       & > span,
       & > a {
-        color: var(--color-neutral-content-subtler);
+        color: #6b7280 !important;
+        transition: color 200ms ease;
 
         &:hover {
-          color: var(--color-primary-content-hover);
+          color: #8b5cf6 !important;
         }
       }
     }
@@ -72,41 +78,48 @@
   &__item > span,
   &__item > a {
     text-decoration: none;
-    color: var(--color-neutral-content);
+    color: #ffffff !important;
 
     a {
-      color: var(--color-primary-content);
+      color: #8b5cf6;
     }
   }
 
   &__item + &__item {
-    margin-left: 30px;
+    margin-left: 24px;
   }
 
   &__item + &__item::before {
     top: 50%;
     right: 100%;
-    width: 30px;
-    content: "/";
+    width: 24px;
+    content: "//";
     height: 16px;
     display: block;
-    color: var(--color-neutral-content-subtlest);
+    color: #374151 !important;
     position: absolute;
     transform: translate3d(0, -50%, 0);
     text-align: center;
     line-height: 16px;
-    font-size: 18px;
+    font-size: 12px;
+    font-weight: 400;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   }
 
   &__settings {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     display: block;
-    margin-left: 10px;
+    margin-left: 12px;
   }
 
   &__settings img {
     display: block;
-    opacity: 0.23;
+    opacity: 0.4;
+    transition: opacity 200ms ease;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 }

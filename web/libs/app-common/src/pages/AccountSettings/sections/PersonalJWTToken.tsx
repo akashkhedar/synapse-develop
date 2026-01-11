@@ -15,7 +15,7 @@ import { Button } from "@synapse/ui";
  */
 import { getApiInstance } from "@synapse/core";
 import { modal, confirm } from "@synapse/ui/lib/modal";
-import { Input, Label } from "apps/Synapse/src/components/Form/Elements";
+import { Input, Label } from "apps/synapse/src/components/Form/Elements";
 import { Tooltip } from "@synapse/ui";
 
 type Token = {

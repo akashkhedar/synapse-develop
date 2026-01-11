@@ -1,6 +1,6 @@
 import { getProviderConfig } from "../providers";
 import { ProviderForm } from "../components/provider-form";
-import Input from "apps/Synapse/src/components/Form/Elements/Input/Input";
+import Input from "apps/synapse/src/components/Form/Elements/Input/Input";
 import { Toggle } from "@synapse/ui";
 
 interface ProviderDetailsStepProps {

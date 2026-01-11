@@ -3,12 +3,14 @@
   align-items: center;
   justify-content: space-between;
   min-width: 100%;
-  padding: 0 var(--spacing-tight);
-  background-color: var(--color-neutral-surface);
+  padding: 0 12px;
+  background-color: #0a0a0a;
   height: 41px;
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateY(-41px);
   position: absolute;
+  border-bottom: 1px solid #1f2937;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   &_visible {
     position: relative;
@@ -18,24 +20,21 @@
   &__customize-button.table-toolbar__customize-button {
     height: 28px;
     width: 28px;
-    background-color: var(--color-neutral-background);
-    box-shadow: 0 2px 5px 0 var(--black_20);
-    border-radius: 4px;
+    background-color: transparent;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    color: #9ca3af;
+    transition: all 200ms ease;
 
     &:hover {
-      border: none;
-      filter: none;
-      background: var(--color-primary-emphasis-subtle);
-
-      &__icon {
-        color: var(--color-neutral-content);
-      }
+      border-color: #8b5cf6;
+      background: rgba(139, 92, 246, 0.1);
+      color: #8b5cf6;
     }
 
     &:active {
-      color: var(--color-neutral-content);
-      background: linear-gradient(0deg, var(--black_2), var(--black_2)), #FFF;
-      box-shadow: 0 0 5px 0 var(--black_20);
+      color: #ffffff;
+      background: rgba(139, 92, 246, 0.2);
     }
   }
 }
@@ -46,16 +45,16 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: var(--color-neutral-background);
+  background-color: #000000;
 
   &__auto-size {
     &_quick-view {
       & > div {
-        background-color: var(--color-neutral-surface);
+        background-color: #0a0a0a;
       }
 
       & .table-head {
-        border-top: 1px solid var(--color-neutral-border);
+        border-top: 1px solid #1f2937;
       }
     }
   }
@@ -80,6 +79,21 @@
   &__virtual {
     max-width: 100vw;
     min-width: 100vw;
+    
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #0a0a0a;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #8b5cf6;
+      border-radius: 4px;
+    }
   }
 
   &__virtual>div {
@@ -90,24 +104,27 @@
     min-width: fit-content;
     position: relative;
     cursor: pointer;
-    background-color: var(--color-neutral-background);
+    background-color: #000000;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 
     &_disabled,
     &_loading {
-      opacity: 0.6;
+      opacity: 0.5;
       pointer-events: none;
     }
 
     &_even:not(.table__row_wrapper_selected) {
-      background-color: var(--color-neutral-emphasis-subtle);
+      background-color: rgba(255, 255, 255, 0.02);
     }
 
     &_selected {
-      background-color: var(--color-primary-emphasis);
+      background-color: rgba(139, 92, 246, 0.2);
+      box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.4);
     }
 
     &:not(.table__row_wrapper_selected):hover {
-      background-color: var(--color-primary-emphasis-subtle);
+      background-color: rgba(139, 92, 246, 0.08);
+      transform: translateX(2px);
     }
 
     &_highlighted:not(.table__row_wrapper_selected)::after {
@@ -119,7 +136,7 @@
       z-index: 50;
       position: absolute;
       pointer-events: none;
-      box-shadow: 0 0 0 1px rgb(var(--accent_color-raw) / 80%) inset;
+      box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.8) inset;
     }
   }
 
@@ -129,13 +146,18 @@
     width: fit-content;
     min-width: min-content;
     max-width: min-content;
-    padding: 10px;
+    padding: 12px;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     position: relative;
     word-break: break-word;
-    color: var(--color-neutral-content-subtler);
+    color: #9ca3af;
+    border-right: 1px solid rgba(31, 41, 55, 0.5);
+    
+    &:last-child {
+      border-right: none;
+    }
   }
 
   &__cell-content {
@@ -143,10 +165,11 @@
     display: flex;
     white-space: nowrap;
     align-items: center;
-    color: var(--color-neutral-content);
+    color: #e8e4d9;
+    font-size: 13px;
 
     &_disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       pointer-events: none;
     }
   }

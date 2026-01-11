@@ -10,8 +10,16 @@ import { shallowEqualObjects } from "shallow-equal";
 import { FF_UNSAVED_CHANGES, isFF } from "../utils/feature-flags";
 import { useAPI } from "./ApiProvider";
 import { useAppStore } from "./AppStoreProvider";
-import { useParams } from "./RoutesProvider";
 import { atom, useSetAtom } from "jotai";
+
+// Import useParams dynamically to avoid circular dependency
+let useParamsHook: any;
+const getUseParams = () => {
+  if (!useParamsHook) {
+    useParamsHook = require("./RoutesProvider").useParams;
+  }
+  return useParamsHook;
+};
 
 type Empty = Record<string, never>;
 
@@ -47,6 +55,7 @@ export const ProjectProvider: React.FunctionComponent<ProjectProviderProps> = ({
   children,
 }) => {
   const api = useAPI();
+  const useParams = getUseParams();
   const params = useParams();
   const { update: updateStore } = useAppStore();
   // @todo use null for missed project data

@@ -56,6 +56,17 @@ const FieldsMenu = observer(({ columns, WrapperComponent, onClick, onReset, sele
   );
 });
 
+// Modern toolbar dropdown button style
+const toolbarDropdownStyle = {
+  background: 'rgba(139, 92, 246, 0.08)',
+  border: '1px solid rgba(139, 92, 246, 0.3)',
+  color: '#a78bfa',
+  borderRadius: '8px',
+  fontWeight: 500,
+  fontSize: '13px',
+  transition: 'all 0.2s ease',
+};
+
 export const FieldsButton = injector(
   ({
     columns,
@@ -89,6 +100,7 @@ export const FieldsButton = injector(
           leading={icon}
           trailing={trailingIcon}
           data-testid={dataTestId}
+          style={toolbarDropdownStyle}
         >
           {content.length ? content : null}
         </Button>
@@ -121,6 +133,7 @@ export const FieldsButton = injector(
               leading={icon}
               trailing={trailingIcon}
               data-testid={dataTestId}
+              style={toolbarDropdownStyle}
             >
               {content.length ? content : null}
             </Button>

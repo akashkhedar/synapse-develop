@@ -1,6 +1,6 @@
 import { buttonVariant, Space } from "@synapse/ui";
 import { useUpdatePageTitle } from "@synapse/core";
-import { cn } from "apps/Synapse/src/utils/bem";
+import { cn } from "apps/synapse/src/utils/bem";
 import { Link } from "react-router-dom";
 import type { Page } from "../../types/Page";
 import { EmptyList } from "./@components/EmptyList";

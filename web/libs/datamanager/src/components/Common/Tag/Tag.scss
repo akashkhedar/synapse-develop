@@ -1,36 +1,41 @@
 .tag-dm {
-  --height: 22px;
-  --radius: 5px;
-  --shadow-color: #ccc;
-  --font-size: 14px;
+  --height: 24px;
+  --radius: 6px;
+  --shadow-color: transparent;
+  --font-size: 12px;
   --padding: 0 12px;
-  --background: #efefef;
-  --color: #ccc;
+  --background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.15));
+  --color: #a78bfa;
 
-  font-weight: 500;
+  font-weight: 600;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
   padding: var(--padding);
   height: var(--height);
   color: var(--color);
-  background-color: var(--background);
+  background: var(--background);
   border-radius: var(--radius);
   font-size: var(--font-size);
   line-height: var(--height);
   display: inline-block;
-  box-shadow: 0 0 0 1px var(--shadow-color) inset;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.15);
 
   &_size {
     &_small {
-      --padding: 0 5px;
+      --padding: 0 6px;
       --height: 18px;
-      --radius: 3px;
-      --font-size: 12px;
+      --radius: 4px;
+      --font-size: 10px;
     }
 
     &_compact {
       --padding: 0 8px;
       --height: 28px;
-      --radius: 4px;
-      --font-size: 14px;
+      --radius: 6px;
+      --font-size: 12px;
     }
   }
 }

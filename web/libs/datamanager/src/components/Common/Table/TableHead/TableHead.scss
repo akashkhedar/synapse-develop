@@ -1,15 +1,17 @@
 .table-head {
   display: flex;
   width: 100%;
-  height: 50px;
+  height: 48px;
   z-index: 150;
   font-weight: 500;
   overflow: visible;
-  background-color: var(--color-neutral-background);
+  background-color: #0a0a0a;
   min-width: fit-content;
-  font-size: 14px;
-  border-bottom: 1px solid var(--color-neutral-border);
-  color: var(--color-neutral-content);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid #1f2937;
+  color: #e8e4d9;
   position: sticky;
 
   &__extra {
@@ -24,6 +26,7 @@
     margin: 0 2px 0 10px;
     display: flex;
     align-items: center;
+    color: #8b5cf6;
   }
 
   &__draggable {
@@ -31,5 +34,10 @@
 
     transform: scale(var(--scale));
     cursor: move;
+    transition: all 200ms ease;
+    
+    &:hover {
+      background-color: rgba(139, 92, 246, 0.1);
+    }
   }
 }

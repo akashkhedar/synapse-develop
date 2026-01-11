@@ -297,7 +297,12 @@ export class SFWrapper {
   /** @private */
   initSynapse(settings) {
     try {
-      const sf = resolveSynapse();
+      const Synapse = resolveSynapse();
+
+      if (!Synapse) {
+        console.error("Synapse library not loaded - window.Synapse is undefined");
+        return;
+      }
 
       this.sfInstance = new Synapse(this.root, settings);
 
@@ -494,6 +499,10 @@ export class SFWrapper {
     selectAnnotation = false,
     selectPrediction = false
   ) {
+    if (!this.sf) {
+      console.warn("[SFWrapper] setAnnotation called but sf is not initialized");
+      return;
+    }
     const id = annotationID ? annotationID.toString() : null;
     const { annotationStore: cs } = this.sf;
     let annotation;
@@ -728,6 +737,8 @@ export class SFWrapper {
   }
 
   onSynapseLoad = async (ls) => {
+    console.log("[SFWrapper] onSynapseLoad called with:", ls);
+    
     // Guard: if datamanager store was destroyed/removed, skip Synapse load handling
     if (
       !this.datamanager ||
@@ -742,6 +753,7 @@ export class SFWrapper {
 
     this.datamanager.invoke("SynapseLoad", ls);
     this.sf = ls;
+    console.log("[SFWrapper] this.sf is now set to:", this.sf);
 
     if (!this.sf.task) this.setLoading(true);
 
@@ -881,7 +893,7 @@ export class SFWrapper {
   onStorageInitialized = async (ls) => {
     this.datamanager.invoke("onStorageInitialized", ls);
 
-    if (this.labelStream === false) {
+    if (this.labelStream === false && this.sf) {
       const node = this.getTaskNode();
       if (node && isAlive(node)) {
         const annotationID =

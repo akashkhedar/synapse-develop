@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAPI } from "apps/Synapse/src/providers/ApiProvider";
+import { useAPI } from "apps/synapse/src/providers/ApiProvider";
 import { useCallback, useMemo } from "react";
 
 function useStorages(target: "import" | "export", projectId?: number) {

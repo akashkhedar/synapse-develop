@@ -330,7 +330,12 @@ export default types
 
       self.attachHotkeys();
 
-      getEnv(self).events.invoke("SynapseLoad", self);
+      // Event name must be lowercase "synapseLoad" to match what supportLegacyEvents registers
+      // (it uses camelCase which lowercases the first letter)
+      console.log("[AppStore] afterCreate invoking synapseLoad event");
+      const events = getEnv(self).events;
+      console.log("[AppStore] events object:", events, "hasEvent:", events?.hasEvent?.("synapseLoad"));
+      events.invoke("synapseLoad", self);
     }
 
     function attachHotkeys() {

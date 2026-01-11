@@ -7,6 +7,7 @@ import {
   IconEllipsis,
   IconMinus,
   IconSparks,
+  IconFolder,
 } from "@synapse/icons";
 import { Userpic, Button, Dropdown, Tooltip } from "@synapse/ui";
 import { Menu, Pagination } from "../../components";
@@ -16,6 +17,118 @@ import { absoluteURL } from "../../utils/helpers";
 import { ProjectStateChip } from "@synapse/app-common";
 
 const DEFAULT_CARD_COLORS = ["#FFFFFF", "#FDFDFC"];
+
+// Circular progress ring component
+const CircularProgress = ({ percentage, size = 80, strokeWidth = 6 }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="rgba(139, 92, 246, 0.1)"
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="url(#gradient)"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+        />
+        <defs>
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#8b5cf6" />
+            <stop offset="100%" stopColor="#a78bfa" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        fontFamily: "'Space Grotesk', system-ui, sans-serif",
+        fontSize: '18px',
+        fontWeight: 700,
+        color: '#a78bfa',
+        textAlign: 'center',
+        lineHeight: 1,
+      }}>
+        {Math.round(percentage)}%
+      </div>
+    </div>
+  );
+};
+
+// Stat badge component
+const StatBadge = ({ icon: Icon, value, label, color, gradient }) => {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '8px 12px',
+      background: gradient || `linear-gradient(135deg, ${color}15, ${color}08)`,
+      border: `1px solid ${color}30`,
+      borderRadius: '8px',
+      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+      cursor: 'default',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '24px',
+        height: '24px',
+        borderRadius: '6px',
+        background: `${color}20`,
+        color: color,
+      }}>
+        <Icon style={{ width: '14px', height: '14px' }} />
+      </div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+      }}>
+        <span style={{
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontSize: '16px',
+          fontWeight: 700,
+          color: color,
+          lineHeight: 1,
+        }}>
+          {value}
+        </span>
+        <span style={{
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontSize: '10px',
+          fontWeight: 500,
+          color: 'var(--color-neutral-content-subtle)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          lineHeight: 1,
+        }}>
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export const ProjectsList = ({
   projects,
@@ -27,7 +140,6 @@ export const ProjectsList = ({
   const { user } = useAuth();
   const isAnnotator = !!user?.is_annotator;
   const role = isAnnotator ? "annotator" : "client";
-  console.log("PROJECTS---PROJECTS---PROJECTS",role)
   console.log(projects)
   return (
     <>
@@ -55,21 +167,22 @@ export const ProjectsList = ({
 export const EmptyProjectsList = ({ openModal, isAnnotator }) => {
   return (
     <div className={cn("empty-projects-page").toClassName()}>
-      <img
-        alt="Heidi looking for projects"
-        className={cn("empty-projects-page").elem("heidi").toClassName()}
-        src={absoluteURL("/static/images/opossum_looking.png")}
-      />
+      <div className={cn("empty-projects-page").elem("icon").toClassName()}>
+        <IconFolder />
+      </div>
+      <div className={cn("empty-projects-page").elem("step-indicator").toClassName()}>
+        01/
+      </div>
       {isAnnotator ? (
         <>
           <h1
             className={cn("empty-projects-page").elem("header").toClassName()}
           >
-            Heidi doesn't see any projects assigned!
+            No projects assigned
           </h1>
           <p>
             You don't have any projects assigned yet. Contact your project
-            manager.
+            manager to get started.
           </p>
         </>
       ) : (
@@ -77,17 +190,17 @@ export const EmptyProjectsList = ({ openModal, isAnnotator }) => {
           <h1
             className={cn("empty-projects-page").elem("header").toClassName()}
           >
-            Heidi doesn't see any projects here!
+            Create your first project
           </h1>
-          <p>Create one and start labeling your data.</p>
+          <p>Import your data and configure the labeling interface to start annotating.</p>
           {openModal && (
-            <Button
+            <button
               onClick={openModal}
-              className="my-8"
+              className="create-btn"
               aria-label="Create new project"
             >
               Create Project
-            </Button>
+            </button>
           )}
         </>
       )}
@@ -187,79 +300,72 @@ const ProjectCard = ({ project, role }) => {
           <div className={cn("project-card").elem("summary").toClassName()}>
             <div
               className={cn("project-card").elem("annotation").toClassName()}
+              style={{
+                display: 'flex',
+                gap: '20px',
+                alignItems: 'center',
+                padding: '16px 0',
+              }}
             >
-              <div className={cn("project-card").elem("total").toClassName()}>
+              {/* Circular Progress for Task Completion */}
+              <div style={{ flexShrink: 0 }}>
+                <CircularProgress
+                  percentage={project.task_number > 0 ? (project.finished_task_number / project.task_number) * 100 : 0}
+                  size={80}
+                  strokeWidth={6}
+                />
+                <div style={{
+                  marginTop: '8px',
+                  textAlign: 'center',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: 'var(--color-neutral-content-subtle)',
+                }}>
+                  {project.finished_task_number ?? 0} / {project.task_number ?? 0}
+                  <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>
+                    Tasks Done
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Grid */}
+              <div style={{
+                flex: 1,
+                display: 'grid',
+                gridTemplateColumns: role === "annotator" ? '1fr' : 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '8px',
+              }}>
                 {role === "annotator" ? (
-                  <>
-                    <span style={{ fontWeight: 600 }}>{project.finished_task_number ?? 0}</span>
-                    <span style={{ color: 'var(--color-neutral-content-subtler)', fontSize: '0.875rem', marginLeft: '4px' }}>
-                      / {project.task_number ?? 0} tasks completed
-                    </span>
-                  </>
+                  <StatBadge
+                    icon={IconCheck}
+                    value={project.total_annotations_number ?? 0}
+                    label="Annotations"
+                    color="#10b981"
+                  />
                 ) : (
-                  `${project.finished_task_number ?? 0} / ${project.task_number ?? 0}`
+                  <>
+                    <StatBadge
+                      icon={IconCheck}
+                      value={project.total_annotations_number ?? 0}
+                      label="Annotated"
+                      color="#10b981"
+                    />
+                    <StatBadge
+                      icon={IconMinus}
+                      value={project.skipped_annotations_number ?? 0}
+                      label="Skipped"
+                      color="#f59e0b"
+                    />
+                    <StatBadge
+                      icon={IconSparks}
+                      value={project.total_predictions_number ?? 0}
+                      label="Predictions"
+                      color="#a78bfa"
+                    />
+                  </>
                 )}
               </div>
-              {(project.total_annotations_number != null || project.skipped_annotations_number != null || project.total_predictions_number != null) && (
-                <div
-                  className={cn("project-card").elem("detail").toClassName()}
-                >
-                  {role === "annotator" ? (
-                    <>
-                      <div
-                        className={cn("project-card")
-                          .elem("detail-item")
-                          .mod({ type: "completed" })
-                          .toClassName()}
-                      >
-                        <IconCheck
-                          className={cn("project-card").elem("icon").toClassName()}
-                        />
-                        {project.total_annotations_number ?? 0}
-                        <span style={{ marginLeft: '4px', fontSize: '0.75rem', color: 'var(--color-neutral-content-subtler)' }}>
-                          annotations
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div
-                        className={cn("project-card")
-                          .elem("detail-item")
-                          .mod({ type: "completed" })
-                          .toClassName()}
-                      >
-                        <IconCheck
-                          className={cn("project-card").elem("icon").toClassName()}
-                        />
-                        {project.total_annotations_number ?? 0}
-                      </div>
-                      <div
-                        className={cn("project-card")
-                          .elem("detail-item")
-                          .mod({ type: "rejected" })
-                          .toClassName()}
-                      >
-                        <IconMinus
-                          className={cn("project-card").elem("icon").toClassName()}
-                        />
-                        {project.skipped_annotations_number ?? 0}
-                      </div>
-                      <div
-                        className={cn("project-card")
-                          .elem("detail-item")
-                          .mod({ type: "predictions" })
-                          .toClassName()}
-                      >
-                        <IconSparks
-                          className={cn("project-card").elem("icon").toClassName()}
-                        />
-                        {project.total_predictions_number ?? 0}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>

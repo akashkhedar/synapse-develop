@@ -1,17 +1,100 @@
 .people {
+  padding: 48px;
+  min-height: calc(100vh - var(--header-height));
+  background: #000000;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+
   &__controls {
-    padding: 0 0 1rem;
+    padding: 0 0 40px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+    margin-bottom: 40px;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 120px;
+      height: 2px;
+      background: linear-gradient(90deg, #8b5cf6, transparent);
+    }
+
+    .button-ls {
+      background: rgba(139, 92, 246, 0.05) !important;
+      border: 1px solid rgba(139, 92, 246, 0.2) !important;
+      color: #a78bfa !important;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      padding: 10px 20px;
+
+      &:hover {
+        border-color: #8b5cf6 !important;
+        color: #ffffff !important;
+        background: rgba(139, 92, 246, 0.12) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+      }
+
+      &[data-primary], &:first-of-type {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+        border-color: transparent !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+
+        &:hover {
+          background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+        }
+      }
+    }
+  }
+
+  &__page-header {
+    margin-bottom: 32px;
+  }
+
+  &__page-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.02em;
+
+    &::before {
+      content: '//';
+      color: #4b5563;
+      margin-right: 12px;
+      font-weight: 400;
+    }
+  }
+
+  &__page-subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
   }
 
   &__content {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 400px;
     grid-template-rows: min-content;
     align-items: flex-start;
-    grid-gap: 20px;
+    grid-gap: 32px;
   }
 
   .heidy-tip {
-    max-width: 450px;
+    display: none;
+  }
+
+  @media (max-width: 1200px) {
+    &__content {
+      grid-template-columns: 1fr;
+    }
   }
 }

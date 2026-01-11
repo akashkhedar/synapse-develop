@@ -1,16 +1,26 @@
 .toolbar {
-  width: 42px;
-  background: var(--color-neutral-background);
-  border: 1px solid var(--color-neutral-border);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 5%), 0 5px 10px rgb(0 0 0 / 10%);
-  border-radius: 7px;
+  width: 48px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #080808 100%);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  box-shadow: 
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
   position: sticky;
   top: 70px;
   margin-top: 50px;
+  backdrop-filter: blur(8px);
+  overflow: hidden;
 
-  &__group ~ &__group:not(:last-child) {
-    margin-top: 4px;
-    border-top: 2px solid var(--color-neutral-border);
+  &__group {
+    padding: 6px;
+    
+    & ~ &:not(:last-child) {
+      margin-top: 0;
+      border-top: 1px solid rgba(139, 92, 246, 0.12);
+      padding-top: 6px;
+    }
   }
 
   &_expanded {

@@ -1,6 +1,7 @@
 
 .grid-view {
   flex: 1;
+  background-color: #000000;
 
   &__resize {
     width: 100%;
@@ -23,15 +24,19 @@
   &__cell {
     padding: 16px 16px 0 0;
     box-sizing: border-box;
-    transition: all 150ms ease-out;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 
     &-header {
-      padding: 5px;
+      padding: 8px 10px;
       width: 100%;
       display: flex;
-      background: var(--color-neutral-background);
+      background: #0a0a0a;
       justify-content: space-between;
-      transition: all 150ms ease-out;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      border-bottom: 1px solid #1f2937;
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      font-weight: 500;
+      font-size: 13px;
     }
 
     &-body {
@@ -72,9 +77,9 @@
       overflow: hidden;
       position: relative;
       border-radius: 8px;
-      background: none;
+      background: #0a0a0a;
       box-shadow: 0 0 0 4px transparent;
-      transition: all 150ms ease-out;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       display: grid;
       grid-auto-flow: row;
       grid-template-rows: min-content minmax(0, 1fr);
@@ -85,30 +90,31 @@
         position: absolute;
         pointer-events: none;
         border-radius: 8px;
-        border: 1px solid var(--color-neutral-border);
-        transition: all 150ms ease-out;
+        border: 1px solid #1f2937;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       &:hover {
-        background-color: var(--color-primary-emphasis-subtle);
-        box-shadow: 0 0 0 4px var(--color-primary-focus-outline);
+        background-color: rgba(139, 92, 246, 0.05);
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15), 0 8px 24px rgba(139, 92, 246, 0.2);
+        transform: translateY(-2px);
 
         &::after {
-          border: 1px solid var(--color-primary-border);
+          border: 1px solid rgba(139, 92, 246, 0.6);
         }
       }
     }
 
     &_selected &-header {
-      background-color: var(--color-primary-emphasis);
+      background-color: rgba(139, 92, 246, 0.2);
     }
 
     &_selected &-content {
-      background-color: var(--color-primary-emphasis-subtle);
-      box-shadow: 0 0 0 4px var(--color-primary-focus-outline);
+      background-color: rgba(139, 92, 246, 0.1);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
 
       &::after {
-        border-color: var(--color-primary-border-subtle);
+        border-color: rgba(139, 92, 246, 0.4);
       }
     }
   }
@@ -123,6 +129,6 @@
     height: 100%;
     text-align: center;
     justify-content: center;
-    background: var(--color-neutral-surface);
+    background: #0a0a0a;
   }
 }

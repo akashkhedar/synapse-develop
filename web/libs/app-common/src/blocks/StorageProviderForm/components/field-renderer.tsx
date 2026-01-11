@@ -1,7 +1,7 @@
 import type React from "react";
 import { Label, Toggle, Select } from "@synapse/ui";
-import Counter from "apps/Synapse/src/components/Form/Elements/Counter/Counter";
-import Input from "apps/Synapse/src/components/Form/Elements/Input/Input";
+import Counter from "apps/synapse/src/components/Form/Elements/Counter/Counter";
+import Input from "apps/synapse/src/components/Form/Elements/Input/Input";
 import type { FieldDefinition } from "../types/common";
 import { isFieldRequired } from "../types/provider";
 

@@ -271,7 +271,7 @@ export const AppStore = types
           maxWait -= 1;
         }
 
-        if (self.sf) {
+        if (self.SF) {
           const annotation = self.SF?.currentAnnotation;
           const id = annotation?.pk ?? annotation?.id;
 

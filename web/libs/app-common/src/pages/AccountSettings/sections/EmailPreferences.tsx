@@ -7,7 +7,7 @@ import { ff, useAPI } from "@synapse/core";
  * FIXME: This is legacy imports. We're not supposed to use such statements
  * each one of these eventually has to be migrated to core/ui
  */
-import { useConfig } from "apps/Synapse/src/providers/ConfigProvider";
+import { useConfig } from "apps/synapse/src/providers/ConfigProvider";
 
 type NotificationCheckboxProps = {
   id: string;

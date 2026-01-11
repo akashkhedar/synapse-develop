@@ -12,3 +12,25 @@
   font-family: var(--font-sans) !important;
 }
 
+// Context menu button styling (Settings link in header)
+.dm-context-button {
+  --background-color: rgba(139, 92, 246, 0.08) !important;
+  --border-color: rgba(139, 92, 246, 0.3) !important;
+  --text-color: #a78bfa !important;
+  --background-color-hover: rgba(139, 92, 246, 0.15) !important;
+  --border-color-hover: rgba(139, 92, 246, 0.5) !important;
+  
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  margin-left: 12px !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  
+  &:hover {
+    --text-color: #c4b5fd !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  }
+}
+

@@ -1,7 +1,7 @@
 import { settingsAtom, TOKEN_SETTINGS_KEY } from "@synapse/app-common/pages/AccountSettings/atoms";
 import type { AuthTokenSettings } from "@synapse/app-common/pages/AccountSettings/types";
 import { Button } from "@synapse/ui";
-import { Form, Input, Toggle } from "apps/Synapse/src/components/Form";
+import { Form, Input, Toggle } from "apps/synapse/src/components/Form";
 import { useAtomValue } from "jotai";
 import { queryClientAtom } from "jotai-tanstack-query";
 import { type ChangeEvent, useState } from "react";

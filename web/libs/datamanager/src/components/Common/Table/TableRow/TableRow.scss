@@ -3,4 +3,10 @@
   z-index: 5;
   position: relative;
   display: inline-flex;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.5);
+  transition: all 200ms ease;
+  
+  &:last-child {
+    border-bottom: none;
+  }
 }

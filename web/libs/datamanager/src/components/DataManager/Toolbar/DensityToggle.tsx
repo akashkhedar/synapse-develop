@@ -47,13 +47,26 @@ export const DensityToggle = densityInjector(
       return null;
     }
 
+    // Modern toggle container style
+    const toggleContainerStyle = {
+      display: 'flex',
+      gap: '2px',
+      background: 'rgba(31, 41, 55, 0.5)',
+      border: '1px solid rgba(55, 65, 81, 0.5)',
+      borderRadius: '10px',
+      padding: '3px',
+    };
+
     return (
       <RadioGroup
         size={size}
         value={density}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDensity(e.target.value as Density)}
         {...rest}
-        style={{ "--button-padding": "0 var(--spacing-tighter)" } as React.CSSProperties}
+        style={{ 
+          ...toggleContainerStyle,
+          "--button-padding": "0 var(--spacing-tighter)",
+        } as React.CSSProperties}
         data-testid="density-toggle"
       >
         <Tooltip title="Comfortable density">
@@ -62,15 +75,35 @@ export const DensityToggle = densityInjector(
               value={DENSITY_COMFORTABLE}
               aria-label="Comfortable density"
               data-testid="density-comfortable"
+              style={{
+                background: density === DENSITY_COMFORTABLE ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                border: 'none',
+                borderRadius: '7px',
+                padding: '6px 10px',
+                color: density === DENSITY_COMFORTABLE ? '#a78bfa' : '#6b7280',
+                transition: 'all 0.2s ease',
+              }}
             >
-              <IconRows3 />
+              <IconRows3 style={{ width: 18, height: 18 }} />
             </RadioGroup.Button>
           </div>
         </Tooltip>
         <Tooltip title="Compact density">
           <div>
-            <RadioGroup.Button value={DENSITY_COMPACT} aria-label="Compact density" data-testid="density-compact">
-              <IconRows4 />
+            <RadioGroup.Button 
+              value={DENSITY_COMPACT} 
+              aria-label="Compact density" 
+              data-testid="density-compact"
+              style={{
+                background: density === DENSITY_COMPACT ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                border: 'none',
+                borderRadius: '7px',
+                padding: '6px 10px',
+                color: density === DENSITY_COMPACT ? '#a78bfa' : '#6b7280',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <IconRows4 style={{ width: 18, height: 18 }} />
             </RadioGroup.Button>
           </div>
         </Tooltip>

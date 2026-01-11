@@ -1,5 +1,5 @@
 import { Label, Toggle, Select, Tooltip, cn } from "@synapse/ui";
-import { Form, Input } from "apps/Synapse/src/components/Form";
+import { Form, Input } from "apps/synapse/src/components/Form";
 import { IconDocument, IconSearch } from "@synapse/icons";
 import { formatDistanceToNow } from "date-fns";
 import type { ForwardedRef } from "react";

@@ -15,6 +15,18 @@ import os
 import re
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
+
+# Load .env file before any settings are read
+try:
+    from dotenv import load_dotenv
+    # Find the root .env file (synapse-develop/.env)
+    _settings_dir = Path(__file__).resolve().parent
+    _env_path = _settings_dir.parent.parent.parent / '.env'
+    if _env_path.exists():
+        load_dotenv(_env_path, override=True)
+except ImportError:
+    pass
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -609,11 +621,11 @@ TASK_API_PAGE_SIZE_MAX = int(get_env("TASK_API_PAGE_SIZE_MAX", 0)) or None
 # For development: use console backend (prints to terminal)
 # For production: use smtp backend (sends real emails)
 EMAIL_BACKEND = get_env(
-    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+    "EMAIL_BACKEND", "django.core.mail.smtp.EmailBackend"
 )
 
 # Email settings
-DEFAULT_FROM_EMAIL = get_env("DEFAULT_FROM_EMAIL", "Synapse <hello@synapse.io>")
+DEFAULT_FROM_EMAIL = get_env("DEFAULT_FROM_EMAIL", "Synapse <akashkhedar262@gmail.com>")
 FROM_EMAIL = DEFAULT_FROM_EMAIL  # Backward compatibility
 
 # SMTP Configuration (only used when EMAIL_BACKEND is smtp)

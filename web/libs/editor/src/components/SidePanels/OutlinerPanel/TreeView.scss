@@ -6,18 +6,20 @@
   }
 
   &-treenode {
-    min-height: 32px;
+    min-height: 36px;
     display: flex;
-    padding: 0 4px;
+    padding: 0 8px;
     align-items: center;
     position: relative;
     max-width: 100%;
     box-sizing: border-box;
-    transition: all 150ms ease-out;
+    transition: all 200ms ease;
+    border-radius: 6px;
+    margin: 2px 4px;
 
     &:hover,
     &-selected {
-      background-color: var(--selection-color, var(--color-neutral-emphasis-subtle));
+      background-color: var(--selection-color, rgba(139, 92, 246, 0.1));
     }
 
     &:hover .outliner-item__controls {
@@ -36,11 +38,14 @@
   &-switcher {
     width: 24px;
     height: 24px;
-    opacity: 0.4;
+    opacity: 0.5;
     transform: rotate(-90deg);
+    color: #6b7280;
+    transition: all 200ms ease;
 
     &_open {
       transform: rotate(0deg);
+      color: #8b5cf6;
     }
 
     &-noop {
@@ -52,7 +57,7 @@
   &-node {
     &-content-wrapper {
       flex: 1;
-      padding: var(--spacing-tighter);
+      padding: 8px;
       display: flex;
       align-items: flex-start;
     }
@@ -66,7 +71,7 @@
     width: min-content;
     align-items: center;
     justify-content: center;
-    color: var(--icon-color);
+    color: var(--icon-color, #8b5cf6);
 
     svg {
       width: 24px;
@@ -86,13 +91,14 @@
 
   &-title {
     flex: 1;
-    padding-left: 5px;
+    padding-left: 8px;
     min-width: 0;
+    color: #e8e4d9;
 
     .labels-list {
       display: inline;
-      line-height: 1.2; // make it dense for multiline labels
-      padding: 2px 0; // + add a little padding so it won't be too close to the item edges
+      line-height: 1.3;
+      padding: 4px 0;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -104,7 +110,7 @@
     &_type_tool {
       .tree-iconEle,
       .outliner-item__title {
-        color: var(--color-neutral-content);
+        color: #e8e4d9;
       }
     }
 
@@ -113,13 +119,13 @@
     }
 
     &_isDrawing {
-      border-color: var(--incomplete-warning-color, var(--canteloupe_400));
+      border-color: #f59e0b;
     }
   }
 }
 
 .outliner-item {
-  min-height: 32px;
+  min-height: 36px;
   position: relative;
 
   &__wrapper {
@@ -128,32 +134,33 @@
 
   &__content {
     display: flex;
-    min-height: 32px;
+    min-height: 36px;
     align-items: center;
     justify-content: space-between;
-    gap: var(--spacing-tighter);
+    gap: 8px;
   }
 
   &__index {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     display: flex;
     flex: none;
     font-size: 9px;
-    color: var(--color-sand-000); // TODO: Revisit this with a css variable that can be calculated against --text-color for a dynamically high contrast value.
+    color: #000000;
     text-align: center;
     align-items: center;
     border-radius: 4px;
     justify-content: center;
-    background-color: var(--text-color, var(--color-neutral-inverted-background));
+    background-color: var(--text-color, #e8e4d9);
   }
 
   &__title {
     align-items: center;
     display: inline-flex;
     flex: 1;
-    color: var(--text-color, var(--color-neutral-content));
+    color: var(--text-color, #e8e4d9);
     min-width: 50px;
+    font-size: 13px;
   }
 
   &__ocr {
@@ -162,34 +169,36 @@
   }
 
   &__text {
-    margin-left: 5px;
-    color: var(--color-neutral-content);
+    margin-left: 8px;
+    color: #9ca3af;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    font-size: 12px;
   }
 
   &__incomplete {
     display: inline-flex;
-    margin-left: 5px;
+    margin-left: 8px;
     align-items: center;
 
     svg {
       width: 20px;
       height: 17px;
-      fill: var(--incomplete-warning-color, #FA8C16);
+      fill: #f59e0b;
     }
   }
 
   &__controls {
     top: 0;
     right: 0;
-    height: 32px;
+    height: 36px;
     display: none;
     position: absolute;
     align-items: center;
     justify-content: center;
     grid-template-columns: repeat(5, 32px);
+    gap: 4px;
 
     &_newUI {
       display: flex;
@@ -201,7 +210,8 @@
       }
 
       .outliner-item__control_type_score {
-        font-size: 12px;
+        font-size: 11px;
+        color: #6b7280;
       }
 
       .outliner-item__control_type_predict:empty,
@@ -221,6 +231,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 6px;
+    transition: all 200ms ease;
+    color: #6b7280;
+
+    &:hover {
+      background: rgba(139, 92, 246, 0.15);
+      color: #8b5cf6;
+    }
 
     &-wrapper {
       display: flex;
@@ -255,7 +273,7 @@
   }
 
   &_collapsed {
-    height: 36px;
+    height: 40px;
     overflow-y: hidden;
   }
 
@@ -263,15 +281,22 @@
     position: absolute;
     width: 24px;
     height: 24px;
-    top: 6px;
+    top: 8px;
     right: 8px;
-    opacity: 0.25;
+    opacity: 0.4;
     padding: 0;
+    color: #6b7280;
+    transition: all 200ms ease;
+
+    &:hover {
+      opacity: 1;
+      color: #8b5cf6;
+    }
   }
 
   &_hidden {
     & .ocr {
-      background: var(--color-neutral-background);
+      background: rgba(31, 41, 55, 0.3);
     }
   }
 }

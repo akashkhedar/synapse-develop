@@ -1,15 +1,16 @@
 @import "../../../assets/styles/global";
 
 .tabs {
-  --tab-row-height: 33px;
-  --tab-height: 32px;
+  --tab-row-height: 40px;
+  --tab-height: 39px;
 
   height: 100%;
+  background: #000000;
 
   &__tabs-row {
     display: flex;
-    background: var(--color-neutral-surface);
-    border-bottom: 1px solid var(--color-neutral-border);
+    background: #0a0a0a;
+    border-bottom: 1px solid #1f2937;
     height: var(--tab-row-height);
   }
 
@@ -23,11 +24,28 @@
   }
 
   &__contents {
-    background: var(--color-neutral-background);
+    background: #000000;
     height: calc(100% - var(--tab-row-height));
     position: relative;
     z-index: 1;
     overflow: hidden auto;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #8b5cf6;
+      border-radius: 3px;
+
+      &:hover {
+        background: #7c3aed;
+      }
+    }
 
     & .main-content {
       overflow: auto;
@@ -65,7 +83,7 @@
         &::before {
           content: '';
           position: absolute;
-          background: var(--grape_400);
+          background: #8b5cf6;
           width: 4px;
           height: 100%;
         }
@@ -76,27 +94,36 @@
 
 .panel-tabs {
   &__draggable-tab {
-    transform: translateY(2px);
+    transform: translateY(1px);
   }
 
   &__tab {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 4px 24px 6px;
+    padding: 8px 20px;
     height: var(--tab-height);
     width: 100%;
     font-weight: 500;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 24px;
-    letter-spacing: 0.15px;
-    border-color: var(--color-neutral-border);
-    margin: 0 2px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-color: #1f2937;
+    margin: 0 1px;
     display: block;
     cursor: grab;
     user-select: none;
-    border-top-left-radius: var(--corner-radius-smaller);
-    border-top-right-radius: var(--corner-radius-smaller);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    color: #6b7280;
+    background: transparent;
+    transition: all 200ms ease;
+
+    &:hover {
+      color: #e8e4d9;
+      background: rgba(139, 92, 246, 0.05);
+    }
 
     &_active {
       overflow: visible;
@@ -104,8 +131,10 @@
       border-width: 1px 1px 0;
       transform: translate(-1px, -1px);
       border-style: solid;
-      background: var(--color-neutral-background);
-      box-shadow: 1px 4px 0 rgba(var(--color-neutral-shadow-raw) / 4%), -1px 4px 0 rgba(var(--color-neutral-shadow-raw) / 4%);
+      background: #000000;
+      border-color: #8b5cf6;
+      color: #e8e4d9;
+      box-shadow: 0 -2px 8px rgba(139, 92, 246, 0.2);
     }
 
     &:hover svg {
@@ -123,7 +152,7 @@
   }
 
   &__contents {
-    background: var(--color-neutral-background);
+    background: #000000;
   }
 
   &__icon {
@@ -141,10 +170,11 @@
     content: '';
     position: absolute;
     left: 0;
-    background: var(--grape_400);
+    background: #8b5cf6;
     width: 4px;
-    height: 30px;
+    height: 38px;
     transform: translateY(-4px);
+    border-radius: 2px;
   }
 }
 
@@ -153,10 +183,11 @@
     content: '';
     position: absolute;
     right: 0;
-    background: var(--grape_400);
+    background: #8b5cf6;
     width: 4px;
-    height: 30px;
+    height: 38px;
     transform: translateY(-4px);
+    border-radius: 2px;
   }
 }
 
@@ -165,8 +196,9 @@
     content: '';
     transform: translate(-4px, 2px);
     position: absolute;
-    background: var(--grape_400);
+    background: #8b5cf6;
     width: 4px;
-    height: 30px;
+    height: 38px;
+    border-radius: 2px;
   }
 }

@@ -9,6 +9,13 @@
     .input-dm {
       min-width: 110px;
       text-align: center;
+      background-color: transparent;
+      border-color: #374151;
+      color: #e8e4d9;
+      
+      &:focus {
+        border-color: #8b5cf6;
+      }
     }
 
     &_range {
@@ -20,6 +27,7 @@
     margin: 0 10px;
     display: flex;
     align-items: center;
+    color: #6b7280;
   }
 
   &__wrapper {

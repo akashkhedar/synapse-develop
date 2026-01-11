@@ -10,20 +10,22 @@
     z-index: 1000;
     height: 28px;
     width: 28px;
-    background-color: var(--white);
-    box-shadow: 0 2px 5px 0 var(--black_20);
+    background-color: #0a0a0a;
+    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
     margin: 6.5px 20px;
-    border-radius: 4px;
+    border-radius: 6px;
+    border: 1px solid #1f2937;
+    transition: all 200ms ease;
 
     &:hover {
-      border: none;
+      border: 1px solid #8b5cf6;
       filter: none;
-      background: #ebf3fc;
+      background: rgba(139, 92, 246, 0.1);
     }
 
     &:active {
-      background: linear-gradient(0deg, var(--black_2), var(--black_2)), #FFF;
-      box-shadow: 0 0 5px 0 var(--black_20);
+      background: rgba(139, 92, 246, 0.2);
+      box-shadow: 0 0 8px 0 rgba(139, 92, 246, 0.3);
     }
   }
 }
@@ -34,7 +36,21 @@
   display: flex;
   flex-direction: column;
   overflow: auto;
-  background-color: var(--color-neutral-background);
+  background-color: #000000;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #8b5cf6;
+    border-radius: 4px;
+  }
 
   &_fit {
     width: max-content;
@@ -66,7 +82,8 @@
     min-width: fit-content;
     position: relative;
     cursor: pointer;
-    background-color: var(--color-neutral-background);
+    background-color: #000000;
+    transition: all 200ms ease;
 
     &_disabled,
     &_loading {
@@ -75,15 +92,15 @@
     }
 
     &_even:not(.table__row_wrapper_selected) {
-      background-color: var(--color-neutral-surface);
+      background-color: #0a0a0a;
     }
 
     &_selected {
-      background-color: var(--color-primary-surface-content);
+      background-color: rgba(139, 92, 246, 0.15);
     }
 
     &:not(.table__row_wrapper_selected):hover {
-      background-color: var(--color-primary-surface-content);
+      background-color: rgba(139, 92, 246, 0.1);
     }
 
     &_highlighted:not(.table__row_wrapper_selected)::after {
@@ -95,7 +112,7 @@
       z-index: 50;
       position: absolute;
       pointer-events: none;
-      box-shadow: 0 0 0 1px rgb(var(--accent_color-raw) / 80%) inset;
+      box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.8) inset;
     }
   }
 
@@ -104,12 +121,14 @@
     width: fit-content;
     min-width: min-content;
     max-width: min-content;
-    padding: 10px;
+    padding: 12px;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     position: relative;
     word-break: break-word;
+    color: #e8e4d9;
+    font-size: 13px;
   }
 
   &__cell-content {

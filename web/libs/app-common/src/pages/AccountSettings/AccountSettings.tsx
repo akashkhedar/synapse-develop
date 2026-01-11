@@ -14,7 +14,7 @@ import { useAuth } from "@synapse/core/providers/AuthProvider";
  * FIXME: This is legacy imports. We're not supposed to use such statements
  * each one of these eventually has to be migrated to core/ui
  */
-import { SidebarMenu } from "apps/Synapse/src/components/SidebarMenu/SidebarMenu";
+import { SidebarMenu } from "apps/synapse/src/components/SidebarMenu/SidebarMenu";
 
 const AccountSettingsSection = () => {
   const { user, permissions } = useAuth();

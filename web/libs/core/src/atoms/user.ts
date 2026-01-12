@@ -4,7 +4,7 @@ import { atomWithMutation, atomWithQuery, queryClientAtom } from "jotai-tanstack
 
 // Helper function to check if current path is public
 const isPublicRoute = () => {
-  const publicPaths = ['/', '/login', '/signup-client', '/annotators', '/services', '/about', '/contact', '/security', '/careers', '/blog'];
+  const publicPaths = ['/', '/login', '/signup-client', '/annotators', '/services', '/about', '/contact', '/security', '/careers', '/blog', '/docs'];
   return publicPaths.some(path => window.location.pathname === path || window.location.pathname.startsWith(path + '/'));
 };
 

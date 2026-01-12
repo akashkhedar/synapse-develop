@@ -49,6 +49,8 @@ urlpatterns = [
     re_path(r"^careers/$", views.main, name="careers"),
     re_path(r"^blog/$", views.main, name="blog-list"),
     re_path(r"^blog/(?P<slug>[\w-]+)/$", views.main, name="blog-detail"),
+    # API Documentation page (React frontend)
+    re_path(r"^docs/$", views.main, name="docs"),
     re_path(r"^register-annotator/$", views.main, name="register-annotator"),
     # Annotator pages
     re_path(r"^annotators/signup/$", views.main, name="annotator-signup"),

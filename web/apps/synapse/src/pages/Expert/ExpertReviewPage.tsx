@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { Button, useToast, ToastType } from "@synapse/ui";
-import { Navbar } from "../../components/Navbar/Navbar";
 import { Footer } from "../../components/Footer/Footer";
 import { Spinner } from "../../components";
 import "./ExpertReviewPage.scss";
@@ -217,7 +216,6 @@ export const ExpertReviewPage: React.FC = () => {
   if (loading) {
     return (
       <div className="expert-review-page">
-        <Navbar />
         <div className="expert-review-page__loading">
           <Spinner size={48} className="" style={{}} />
           <p>Loading review details...</p>
@@ -230,7 +228,6 @@ export const ExpertReviewPage: React.FC = () => {
   if (!reviewData || !reviewData.success) {
     return (
       <div className="expert-review-page">
-        <Navbar />
         <div className="expert-review-page__error">
           <h2>Failed to Load Review</h2>
           <p>{reviewData?.error || "Unable to load review details"}</p>
@@ -247,7 +244,6 @@ export const ExpertReviewPage: React.FC = () => {
 
   return (
     <div className="expert-review-page">
-      <Navbar />
 
       <div className="expert-review-page__content">
         {/* Header */}

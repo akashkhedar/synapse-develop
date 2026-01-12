@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { Button, useToast, ToastType } from "@synapse/ui";
-import { Navbar } from "../../components/Navbar/Navbar";
 import { Footer } from "../../components/Footer/Footer";
 import { Spinner } from "../../components";
 import "./ExpertProjectReview.scss";
@@ -91,7 +90,6 @@ export const ExpertProjectReview: React.FC = () => {
   if (loading) {
     return (
       <div className="expert-project-review">
-        <Navbar />
         <div className="expert-project-review__loading">
           <Spinner size={48} className="" style={{}} />
           <p>Loading review tasks...</p>
@@ -104,7 +102,6 @@ export const ExpertProjectReview: React.FC = () => {
   if (!data) {
     return (
       <div className="expert-project-review">
-        <Navbar />
         <div className="expert-project-review__error">
           <h2>Unable to Load Project</h2>
           <Button onClick={() => history.push("/expert/projects")}>
@@ -118,7 +115,6 @@ export const ExpertProjectReview: React.FC = () => {
 
   return (
     <div className="expert-project-review">
-      <Navbar />
 
       <div className="expert-project-review__content">
         {/* Header */}

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { Button } from "@synapse/ui";
-import { Navbar } from "../../components/Navbar/Navbar";
 import { Footer } from "../../components/Footer/Footer";
 import "./VerifyEmail.css";
 
@@ -60,7 +59,6 @@ export const VerifyEmail = () => {
 
   return (
     <>
-      <Navbar />
       <div className="verify-email-container">
         <div className="verify-email-card">
           {status === "verifying" && (

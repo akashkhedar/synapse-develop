@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useHistory } from "react-router-dom";
 import { Button, useToast, ToastType } from "@synapse/ui";
 import { ExpertProjectCard } from "./ExpertProjectCard";
-import { Navbar } from "../../components/Navbar/Navbar";
 import { Footer } from "../../components/Footer/Footer";
 import { Spinner } from "../../components";
 import "./ExpertProjects.scss";
@@ -118,7 +117,6 @@ export const ExpertProjects: React.FC = () => {
   if (loading && projects.length === 0) {
     return (
       <div className="expert-projects">
-        <Navbar />
         <div className="expert-projects__loading">
           <Spinner size={48} className="" style={{}} />
           <p>Loading projects...</p>
@@ -130,7 +128,6 @@ export const ExpertProjects: React.FC = () => {
 
   return (
     <div className="expert-projects">
-      <Navbar />
 
       <div className="expert-projects__content">
         <div className="expert-projects__header">

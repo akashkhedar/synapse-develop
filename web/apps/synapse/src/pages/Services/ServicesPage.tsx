@@ -1,6 +1,5 @@
 import { Typography } from "@synapse/ui";
 import { Footer } from "../../components/Footer/Footer";
-import { Navbar } from "../../components/Navbar/Navbar";
 import type { Page } from "../types/Page";
 
 const services = [
@@ -129,7 +128,6 @@ const pricingPlans = [
 export const ServicesPage: Page = () => {
   return (
     <div className="min-h-screen bg-neutral-surface-emphasis">
-      <Navbar />
 
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-black to-neutral-surface-emphasis py-20">

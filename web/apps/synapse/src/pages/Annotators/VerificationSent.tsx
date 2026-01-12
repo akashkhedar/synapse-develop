@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { Button, useToast, ToastType } from '@synapse/ui';
-import { Navbar } from '../../components/Navbar/Navbar';
 import { Footer } from '../../components/Footer/Footer';
 import './VerificationSent.css';
 
@@ -66,7 +65,6 @@ export const VerificationSent = () => {
 
   return (
     <>
-      <Navbar />
       <div className="verification-sent-container">
         <div className="verification-sent-card">
         <div className="email-icon">

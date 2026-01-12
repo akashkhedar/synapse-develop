@@ -14,14 +14,19 @@
 
 {% block user_content %}
 <div class="auth-form-container">
-  <h2>Create Account</h2>
-  <p class="subtitle">Join Synapse to start annotating and managing your data projects.</p>
+  <!-- Section Label - matching FeaturesSection number style -->
+  <div class="auth-section-label">
+    <span>01/</span>
+  </div>
+  
+  <h2>Get started</h2>
+  <p class="subtitle">Create your account to start building with Synapse.</p>
   
   <form class="auth-form" action="{% url 'user-signup' %}?next={{ next }}{% if token %}&token={{ token }}{% endif %}" method="post">
     {% csrf_token %}
     <div class="form-field">
-      <label for="email">Email address *</label>
-      <input type="text" name="email" id="email" value="{{ user_form.data.email }}" placeholder="you@example.com" required>
+      <label for="email">Email</label>
+      <input type="email" name="email" id="email" value="{{ user_form.data.email }}" placeholder="you@example.com" required autocomplete="email">
       {% if user_form.errors.email %}
         <ul class="field-errors">
           {% for error in user_form.errors.email %}<li>{{ error }}</li>{% endfor %}
@@ -29,8 +34,8 @@
       {% endif %}
     </div>
     <div class="form-field">
-      <label for="password">Password *</label>
-      <input type="password" name="password" id="password" placeholder="Create a strong password" required>
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password" placeholder="Create a strong password" required autocomplete="new-password">
       {% if user_form.errors.password %}
         <ul class="field-errors">
           {% for error in user_form.errors.password %}<li>{{ error }}</li>{% endfor %}
@@ -38,15 +43,15 @@
       {% endif %}
     </div>
     <div class="form-field">
-      <label for="user_role">I want to use Synapse as *</label>
+      <label for="user_role">Role</label>
       <select name="user_role" id="user_role" required>
-        <option value="" disabled selected>Select one</option>
-        <option value="client">Client (create projects)</option>
-        <option value="annotator">Annotator (label data)</option>
+        <option value="" disabled selected>Select your role</option>
+        <option value="client">Client — Create & manage projects</option>
+        <option value="annotator">Annotator — Label data & earn</option>
       </select>
     </div>
     <div class="form-field">
-      <label for="how_find_us">How did you hear about Synapse?</label>
+      <label for="how_find_us">How did you find us?</label>
       <select name="how_find_us" id="how_find_us">
         <option disabled value="" {% if not form.data.how_find_us %}selected{% endif %}>Select an option</option>
         {% for choice in found_us_options %}
@@ -55,15 +60,21 @@
       </select>
     </div>
     <div class="form-field" id="elaborateContainer" {% if user_form.data.how_find_us != elaborate %}style="display:none;"{% endif %}>
-      <label for="elaborate">Please elaborate</label>
-      <input name="elaborate" id="elaborate" {% if user_form.data.how_find_us == elaborate %}value="{{ user_form.data.elaborate }}"{% endif %} placeholder="Tell us more">
+      <label for="elaborate">Details</label>
+      <input name="elaborate" id="elaborate" {% if user_form.data.how_find_us == elaborate %}value="{{ user_form.data.elaborate }}"{% endif %} placeholder="Tell us more...">
     </div>
     {% if form.non_field_errors %}
       {% for error in form.non_field_errors %}
         <p class="error-message">{{ error }}</p>
       {% endfor %}
     {% endif %}
-    <button type="submit" class="auth-submit-btn">Create Account</button>
+    <button type="submit" class="auth-submit-btn btn-purple">
+      CREATE ACCOUNT
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14"></path>
+        <path d="m12 5 7 7-7 7"></path>
+      </svg>
+    </button>
   </form>
   
   <p class="auth-bottom-link">Already have an account? <a href="{% url 'user-login' %}{% querystring %}">Log in</a></p>

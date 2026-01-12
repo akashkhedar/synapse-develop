@@ -5,10 +5,117 @@ import { getApiInstance } from "@synapse/core";
 import { useMemo } from "react";
 import type { WrappedResponse } from "@synapse/core/lib/api-proxy/types";
 import { useAuth } from "@synapse/core/providers/AuthProvider";
+import { ROLES } from "./index";
 
 function formatDate(date?: string) {
   return format(new Date(date ?? ""), "dd MMM yyyy, KK:mm a");
 }
+
+// Role badge component
+const RoleBadge = ({ role }: { role: string }) => {
+  const roleColors: Record<string, { bg: string; border: string; text: string }> = {
+    Owner: { bg: 'rgba(139, 92, 246, 0.15)', border: 'rgba(139, 92, 246, 0.3)', text: '#a78bfa' },
+    Administrator: { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.3)', text: '#60a5fa' },
+    Manager: { bg: 'rgba(34, 197, 94, 0.15)', border: 'rgba(34, 197, 94, 0.3)', text: '#4ade80' },
+    Annotator: { bg: 'rgba(251, 191, 36, 0.15)', border: 'rgba(251, 191, 36, 0.3)', text: '#fbbf24' },
+    Reviewer: { bg: 'rgba(236, 72, 153, 0.15)', border: 'rgba(236, 72, 153, 0.3)', text: '#f472b6' },
+    Pending: { bg: 'rgba(107, 114, 128, 0.15)', border: 'rgba(107, 114, 128, 0.3)', text: '#9ca3af' },
+    Deactivated: { bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.3)', text: '#f87171' },
+  };
+
+  const colors = roleColors[role] || roleColors.Pending;
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '4px 12px',
+        background: colors.bg,
+        border: `1px solid ${colors.border}`,
+        color: colors.text,
+        fontSize: '11px',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+      }}
+    >
+      {role}
+    </span>
+  );
+};
+
+// Stat card component
+const StatCard = ({ 
+  label, 
+  value, 
+  icon 
+}: { 
+  label: string; 
+  value: string | number | undefined; 
+  icon?: React.ReactNode;
+}) => (
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+      padding: '20px',
+      background: 'rgba(255, 255, 255, 0.02)',
+      border: '1px solid #1f1f1f',
+    }}
+  >
+    <span
+      style={{
+        fontSize: '12px',
+        color: '#6b7280',
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        fontFamily: 'monospace',
+      }}
+    >
+      {label}
+    </span>
+    <span
+      style={{
+        fontSize: '24px',
+        fontWeight: 700,
+        color: '#fff',
+        letterSpacing: '-0.02em',
+      }}
+    >
+      {value ?? '—'}
+    </span>
+  </div>
+);
+
+// Info row component
+const InfoRow = ({ 
+  label, 
+  value, 
+  highlight 
+}: { 
+  label: string; 
+  value: React.ReactNode; 
+  highlight?: boolean;
+}) => (
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '14px 0',
+      borderBottom: '1px solid #1f1f1f',
+    }}
+  >
+    <span style={{ color: '#6b7280', fontFamily: 'monospace', fontSize: '14px' }}>
+      {label}
+    </span>
+    <span style={{ color: highlight ? '#8b5cf6' : '#fff', fontSize: '14px', fontWeight: 500 }}>
+      {value}
+    </span>
+  </div>
+);
 
 export const MembershipInfo = () => {
   const { user } = useAuth();
@@ -37,6 +144,7 @@ export const MembershipInfo = () => {
       const annotationCount = response?.annotations_count;
       const contributions = response?.contributed_projects_count;
       let role = "Owner";
+      let roleCode = response.role;
 
       switch (response.role) {
         case "OW":
@@ -66,6 +174,7 @@ export const MembershipInfo = () => {
         annotationCount,
         contributions,
         role,
+        roleCode,
       };
     },
   });
@@ -98,60 +207,89 @@ export const MembershipInfo = () => {
     },
   });
 
+  const isAnnotator = membership.data?.roleCode === ROLES.ANNOTATOR;
+
   return (
     <div className={styles.membershipInfo} id="membership-info">
-      <div className="flex gap-2 w-full justify-between">
-        <div>User ID</div>
-        <div>{user?.id}</div>
+      {/* Stats Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '1px',
+          background: '#1f1f1f',
+          border: '1px solid #1f1f1f',
+        }}
+      >
+        <StatCard
+          label="Annotations"
+          value={membership.data?.annotationCount?.toLocaleString()}
+        />
+        <StatCard
+          label="Projects"
+          value={membership.data?.contributions}
+        />
+        <StatCard
+          label="Member Since"
+          value={dateJoined ? format(new Date(user?.date_joined ?? ""), "MMM yyyy") : "—"}
+        />
       </div>
 
-      <div className="flex gap-2 w-full justify-between">
-        <div>Registration date</div>
-        <div>{dateJoined}</div>
-      </div>
-
-      <div className="flex gap-2 w-full justify-between">
-        <div>Annotations Submitted</div>
-        <div>{membership.data?.annotationCount}</div>
-      </div>
-
-      <div className="flex gap-2 w-full justify-between">
-        <div>Projects contributed to</div>
-        <div>{membership.data?.contributions}</div>
-      </div>
-
-      <div className={styles.divider} />
-
-      {user?.active_organization_meta && (
-        <div className="flex gap-2 w-full justify-between">
-          <div>Organization</div>
-          <div>{user.active_organization_meta.title}</div>
+      {/* User Info Section */}
+      <div style={{ marginTop: '2rem' }}>
+        <h3
+          style={{
+            fontSize: '14px',
+            fontWeight: 600,
+            color: '#8b5cf6',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            marginBottom: '1rem',
+            fontFamily: 'monospace',
+          }}
+        >
+          Account Details
+        </h3>
+        <div>
+          <InfoRow label="User ID" value={user?.id} />
+          <InfoRow label="Registration Date" value={dateJoined} />
+          {membership.data?.role && (
+            <InfoRow 
+              label="My Role" 
+              value={<RoleBadge role={membership.data.role} />}
+            />
+          )}
         </div>
-      )}
-
-      {membership.data?.role && (
-        <div className="flex gap-2 w-full justify-between">
-          <div>My role</div>
-          <div>{membership.data.role}</div>
-        </div>
-      )}
-
-      <div className="flex gap-2 w-full justify-between">
-        <div>Organization ID</div>
-        <div>{user?.active_organization}</div>
       </div>
 
-      {user?.active_organization_meta && (
-        <div className="flex gap-2 w-full justify-between">
-          <div>Owner</div>
-          <div>{user.active_organization_meta.email}</div>
-        </div>
-      )}
-
-      {organization.data?.createdAt && (
-        <div className="flex gap-2 w-full justify-between">
-          <div>Created</div>
-          <div>{organization.data?.createdAt}</div>
+      {/* Organization Section - Only for non-annotators */}
+      {!isAnnotator && user?.active_organization_meta && (
+        <div style={{ marginTop: '2rem' }}>
+          <h3
+            style={{
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#8b5cf6',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginBottom: '1rem',
+              fontFamily: 'monospace',
+            }}
+          >
+            Organization
+          </h3>
+          <div>
+            <InfoRow 
+              label="Name" 
+              value={user.active_organization_meta.title}
+              highlight
+            />
+            <InfoRow label="Organization ID" value={user.active_organization} />
+            <InfoRow label="Owner" value={user.active_organization_meta.email} />
+            {organization.data?.createdAt && (
+              <InfoRow label="Created" value={organization.data.createdAt} />
+            )}
+          </div>
         </div>
       )}
     </div>

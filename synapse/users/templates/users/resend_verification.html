@@ -1,60 +1,414 @@
-{% extends "base.html" %}
+{% extends "simple.html" %}
 {% load static %}
 
 {% block title %}Resend Verification Email{% endblock %}
 
+{% block head %}
+<!-- Google Fonts - matching landing page -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  .resend-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+  }
+
+  /* Grid Background - matching landing CTASection */
+  .resend-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(to right, #ffffff 1px, transparent 1px),
+      linear-gradient(to bottom, #ffffff 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.03;
+    pointer-events: none;
+  }
+
+  /* Purple glow - matching CTASection */
+  .resend-page::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 500px;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+  }
+
+  .resend-card {
+    position: relative;
+    z-index: 10;
+    background: transparent;
+    border: 1px solid #1f1f1f;
+    padding: 64px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .logo-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-decoration: none;
+    margin-bottom: 48px;
+  }
+
+  .logo-symbol {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #333;
+    font-size: 18px;
+    color: #fff;
+    font-family: 'Georgia', serif;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: #fff;
+    letter-spacing: 0.05em;
+  }
+
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 24px;
+  }
+
+  .section-label span {
+    color: #8b5cf6;
+    font-size: 14px;
+    font-family: monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .resend-card h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+
+  .resend-card > p {
+    font-size: 15px;
+    color: #6b7280;
+    line-height: 1.7;
+    margin-bottom: 40px;
+    font-family: monospace;
+  }
+
+  /* Messages */
+  .message {
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    text-align: left;
+    font-family: monospace;
+  }
+
+  .message svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .message-success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+  }
+
+  .message-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+
+  .message-warning {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+  }
+
+  .message-info {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+  }
+
+  /* Form */
+  .resend-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+  }
+
+  .form-field label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .form-field input {
+    width: 100%;
+    padding: 16px 18px;
+    font-size: 16px;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #fff;
+    background: transparent;
+    border: 1px solid #1f1f1f;
+    transition: border-color 0.2s;
+  }
+
+  .form-field input::placeholder {
+    color: #4b5563;
+  }
+
+  .form-field input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 18px 32px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #000;
+    background: #e8e4d9;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  .submit-btn:hover {
+    background: #d8d4c9;
+  }
+
+  .submit-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .or-divider::before,
+  .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #1f1f1f;
+  }
+
+  .or-divider span {
+    font-size: 12px;
+    color: #6b7280;
+    font-family: monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 16px 32px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #fff;
+    background: transparent;
+    border: 1px solid #333;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    text-decoration: none;
+  }
+
+  .login-btn:hover {
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+  }
+
+  .login-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .footer-links {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid #1f1f1f;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .footer-links a {
+    font-size: 13px;
+    color: #6b7280;
+    text-decoration: none;
+    transition: color 0.2s;
+    font-family: monospace;
+  }
+
+  .footer-links a:hover {
+    color: #fff;
+  }
+
+  @media (max-width: 480px) {
+    .resend-card {
+      padding: 40px 24px;
+    }
+
+    .resend-card h1 {
+      font-size: 26px;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width: 500px; margin: 100px auto; padding: 40px;">
-    <div style="background: white; padding: 50px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-        <div style="font-size: 48px; text-align: center; margin-bottom: 20px;">🔄</div>
-        
-        <h1 style="color: #333; text-align: center; margin-bottom: 30px;">Resend Verification Email</h1>
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div style="padding: 15px; margin-bottom: 20px; border-radius: 5px; 
-                            {% if message.tags == 'success' %}background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;
-                            {% elif message.tags == 'error' %}background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b;
-                            {% elif message.tags == 'warning' %}background: #fef3c7; border: 1px solid #fcd34d; color: #92400e;
-                            {% else %}background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af;{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-        
-        <p style="color: #666; text-align: center; margin-bottom: 30px;">
-            Enter your email address and we'll send you a new verification link.
-        </p>
-        
-        <form method="post" action="{% url 'resend-verification' %}">
-            {% csrf_token %}
-            
-            <div style="margin-bottom: 20px;">
-                <label for="email" style="display: block; color: #333; font-weight: bold; margin-bottom: 8px;">
-                    Email Address
-                </label>
-                <input type="email" 
-                       id="email" 
-                       name="email" 
-                       required 
-                       style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 16px; box-sizing: border-box;"
-                       placeholder="your@email.com">
-            </div>
-            
-            <button type="submit" 
-                    style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                Send Verification Email
-            </button>
-        </form>
-        
-        <div style="margin-top: 30px; text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-            <p style="color: #666; font-size: 14px;">
-                Already verified? <a href="{% url 'user-login' %}" style="color: #667eea; text-decoration: none; font-weight: bold;">Log In</a>
-            </p>
-            <p style="color: #666; font-size: 14px; margin-top: 10px;">
-                Need help? <a href="{% url 'contact' %}" style="color: #667eea; text-decoration: none;">Contact Support</a>
-            </p>
-        </div>
+<div class="resend-page">
+  <div class="resend-card">
+    <a href="/" class="logo-link">
+      <div class="logo-symbol">λ</div>
+      <span class="logo-text">Synapse</span>
+    </a>
+
+    <div class="section-label">
+      <span>03/</span>
     </div>
+
+    <h1>Resend verification</h1>
+    
+    <p>Enter your email address and we'll send you a new verification link. If your email is already verified, you'll be redirected to log in.</p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="message {% if message.tags == 'success' %}message-success{% elif message.tags == 'error' %}message-error{% elif message.tags == 'warning' %}message-warning{% else %}message-info{% endif %}">
+          {% if message.tags == 'success' %}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" />
+            </svg>
+          {% elif message.tags == 'error' %}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clip-rule="evenodd" />
+            </svg>
+          {% else %}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 0 1 .67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 1 1-.671-1.34l.041-.022ZM12 9a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+            </svg>
+          {% endif %}
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" action="{% url 'resend-verification' %}" class="resend-form">
+      {% csrf_token %}
+      
+      <div class="form-field">
+        <label for="email">Email Address</label>
+        <input type="email" 
+               id="email" 
+               name="email" 
+               required 
+               autocomplete="email"
+               placeholder="you@example.com">
+      </div>
+
+      <button type="submit" class="submit-btn">
+        SEND VERIFICATION EMAIL
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"></path>
+          <path d="m12 5 7 7-7 7"></path>
+        </svg>
+      </button>
+    </form>
+
+    <div class="or-divider">
+      <span>OR</span>
+    </div>
+
+    <a href="{% url 'user-login' %}" class="login-btn">
+      ALREADY VERIFIED? LOG IN
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+        <polyline points="10 17 15 12 10 7"></polyline>
+        <line x1="15" y1="12" x2="3" y2="12"></line>
+      </svg>
+    </a>
+
+    <div class="footer-links">
+      <a href="{% url 'user-login' %}">Back to login</a>
+      <a href="{% url 'contact' %}">Contact support</a>
+    </div>
+  </div>
 </div>
 {% endblock %}

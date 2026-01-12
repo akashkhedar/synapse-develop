@@ -7,7 +7,7 @@ from core.feature_flags import flag_set
 from core.middleware import enforce_csrf_checks
 from core.utils.common import load_func
 from django.conf import settings
-from django.contrib import auth
+from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render, reverse
@@ -172,23 +172,30 @@ def user_login(request):
             # Check if annotator has passed the test (skip for experts)
             if user.is_annotator and not user.is_expert:
                 if user.annotator_status != "approved":
-                    if user.annotator_status in [
-                        "pending_test",
-                        "pending_verification",
-                    ]:
-                        error_msg = "Please complete the test before logging in. Check your email for the test link."
+                    # Allow pending_test annotators to log in - they need to take the test
+                    if user.annotator_status == "pending_test":
+                        # Log them in and redirect to test page
+                        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+                        if form.cleaned_data["persist_session"] is not True:
+                            request.session["keep_me_logged_in"] = False
+                            request.session.set_expiry(0)
+                        messages.info(request, "Please complete the test to activate your account.")
+                        return redirect("/annotators/skill-test/")
+                    elif user.annotator_status == "pending_verification":
+                        error_msg = "Please verify your email first."
+                        annotator_action = "resend_verification"
                     elif user.annotator_status in ["test_submitted", "under_review"]:
                         error_msg = "Your test is under review. You will be notified once it's approved."
+                        annotator_action = None
                     elif user.annotator_status == "rejected":
                         error_msg = "Your application has been rejected. Please contact support for more information."
+                        annotator_action = None
                     elif user.annotator_status == "suspended":
-                        error_msg = (
-                            "Your account has been suspended. Please contact support."
-                        )
+                        error_msg = "Your account has been suspended. Please contact support."
+                        annotator_action = None
                     else:
-                        error_msg = (
-                            "Your account is not yet active. Please contact support."
-                        )
+                        error_msg = "Your account is not yet active. Please contact support."
+                        annotator_action = None
 
                     form.add_error(None, error_msg)
                     return render(
@@ -200,7 +207,12 @@ def user_login(request):
                             )
                             else "users/new-ui/user_login.html"
                         ),
-                        {"form": form, "next": quote(next_page)},
+                        {
+                            "form": form,
+                            "next": quote(next_page),
+                            "annotator_action": annotator_action,
+                            "annotator_email": email,
+                        },
                     )
 
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")

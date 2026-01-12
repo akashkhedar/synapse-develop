@@ -4,6 +4,138 @@
 {% load filters %}
 
 {% block head %}
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style nonce="{{request.csp_nonce}}">
+  :root {
+    --lambda-black: #000000;
+    --lambda-purple: #8b5cf6;
+    --lambda-purple-light: #a78bfa;
+    --lambda-purple-dark: #7c3aed;
+    --lambda-white: #ffffff;
+    --lambda-gray-400: rgba(255, 255, 255, 0.4);
+    --lambda-gray-500: rgba(255, 255, 255, 0.6);
+    --lambda-border: #1a1a1a;
+    --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--lambda-black) !important;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(-15px); opacity: 0.8; }
+  }
+
+  .login_page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .login_page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .login_page::after {
+    content: '';
+    position: absolute;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .login_page h1 {
+    position: relative;
+    z-index: 10;
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--lambda-white);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .login_page h2 {
+    position: relative;
+    z-index: 10;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--lambda-gray-500);
+    margin-bottom: 40px;
+  }
+
+  .login_page img {
+    position: relative;
+    z-index: 10;
+    opacity: 0.9;
+    margin-bottom: 40px;
+    filter: drop-shadow(0 4px 20px rgba(139, 92, 246, 0.3));
+  }
+
+  .toggle {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--lambda-border);
+    border-radius: 10px;
+    padding: 6px;
+    margin-bottom: 40px;
+  }
+
+  .toggle a {
+    padding: 12px 32px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--lambda-gray-500);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .toggle a:hover {
+    color: var(--lambda-white);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .toggle a.active {
+    color: var(--lambda-white);
+    background: linear-gradient(135deg, var(--lambda-purple) 0%, var(--lambda-purple-dark) 100%);
+  }
+</style>
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-129877673-1"></script>
 <script nonce="{{request.csp_nonce}}">
@@ -16,10 +148,10 @@ gtag('config', 'UA-129877673-1');
 
 {% block content %}
 <div class="login_page">
-  <h1>Welcome to Synapse Community Edition {{versions.package.short_version}}</h1>
-  <h2>A full-fledged open source solution for data labeling</h2>
+  <h1>Welcome to Synapse</h1>
+  <h2>The open-source data labeling platform</h2>
 
-  <img src="{{ settings.HOSTNAME }}{% static 'images/opossum_hanging.svg' %}" height="128px" />
+  <img src="{{ settings.HOSTNAME }}{% static 'images/opossum_hanging.svg' %}" height="128px" alt="Synapse Logo" />
 
   <div class="toggle">
     {% if not settings.DISABLE_SIGNUP_WITHOUT_LINK %}

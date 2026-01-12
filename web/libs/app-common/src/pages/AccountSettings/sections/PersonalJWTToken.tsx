@@ -98,16 +98,29 @@ const revokeTokenAtom = atomWithMutation((get) => {
   };
 });
 
+// Styled label component
+const StyledLabel = ({ text }: { text: string }) => (
+  <div
+    style={{
+      fontSize: '12px',
+      fontWeight: 500,
+      color: '#9ca3af',
+      textTransform: 'uppercase',
+      letterSpacing: '0.1em',
+      marginBottom: '10px',
+      fontFamily: 'monospace',
+    }}
+  >
+    {text}
+  </div>
+);
+
 export function PersonalJWTToken() {
   const [dialogOpened, setDialogOpened] = useState(false);
   const tokens = useAtomValue(tokensListAtom);
   const revokeToken = useAtomValue(revokeTokenAtom);
   const createToken = useAtomValue(refreshTokenAtom);
   const queryClient = useAtomValue(queryClientAtom);
-
-  const tokensListClassName = clsx({
-    [styles.tokensList]: tokens.data && tokens.data.length,
-  });
 
   const revoke = useCallback(
     async (token: string) => {
@@ -148,39 +161,120 @@ export function PersonalJWTToken() {
 
   return (
     <div className={styles.personalAccessToken}>
-      <div className={tokensListClassName}>
-        {tokens.isLoading ? (
-          <div>loading...</div>
-        ) : tokens.isSuccess && tokens.data && tokens.data.length ? (
-          <div>
-            <Label text="Access Token" className={styles.label} />
-            <div className="flex flex-col gap-2">
-              {tokens.data.map((token, index) => {
-                return (
-                  <div key={`${token.expires_at}${index}`} className={styles.token}>
-                    <div className={styles.tokenWrapper}>
-                      <div className={styles.expirationDate}>
-                        {token.expires_at
-                          ? `Expires on ${format(new Date(token.expires_at), "MMM dd, yyyy HH:mm")}`
-                          : "Personal access token"}
-                      </div>
-                      <div className={styles.tokenString}>{token.token}</div>
-                    </div>
-                    <Button variant="negative" look="outlined" onClick={() => revoke(token.token)}>
-                      Revoke
-                    </Button>
+      {/* Tokens List */}
+      {tokens.isLoading ? (
+        <div 
+          style={{ 
+            padding: '20px', 
+            color: '#6b7280', 
+            fontFamily: 'monospace',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid #1f1f1f',
+          }}
+        >
+          Loading tokens...
+        </div>
+      ) : tokens.isSuccess && tokens.data && tokens.data.length ? (
+        <div
+          style={{
+            padding: '20px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid #1f1f1f',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <StyledLabel text="Active Tokens" />
+          <div className="flex flex-col gap-3">
+            {tokens.data.map((token, index) => (
+              <div
+                key={`${token.expires_at}${index}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 1fr) auto',
+                  gap: '1rem',
+                  alignItems: 'center',
+                  padding: '16px',
+                  background: 'rgba(139, 92, 246, 0.05)',
+                  border: '1px solid rgba(139, 92, 246, 0.15)',
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      color: '#8b5cf6',
+                      marginBottom: '6px',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {token.expires_at
+                      ? `Expires on ${format(new Date(token.expires_at), "MMM dd, yyyy HH:mm")}`
+                      : "Personal access token"}
                   </div>
-                );
-              })}
-            </div>
+                  <div
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: '13px',
+                      color: '#fff',
+                      opacity: 0.6,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {token.token}
+                  </div>
+                </div>
+                <Button
+                  variant="negative"
+                  look="outlined"
+                  onClick={() => revoke(token.token)}
+                  style={{
+                    borderRadius: 0,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    fontSize: '11px',
+                  }}
+                >
+                  Revoke
+                </Button>
+              </div>
+            ))}
           </div>
-        ) : tokens.isError ? (
-          <div>Unable to load tokens list</div>
-        ) : null}
-      </div>
+        </div>
+      ) : tokens.isError ? (
+        <div
+          style={{
+            padding: '20px',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            color: '#f87171',
+            fontFamily: 'monospace',
+            marginBottom: '1.5rem',
+          }}
+        >
+          Unable to load tokens list
+        </div>
+      ) : null}
+
+      {/* Create Token Button */}
       <Tooltip title="You can only have one active token" disabled={!disallowAddingTokens}>
         <div style={{ width: "max-content" }}>
-          <Button disabled={disallowAddingTokens || dialogOpened} onClick={openDialog}>
+          <Button
+            disabled={disallowAddingTokens || dialogOpened}
+            onClick={openDialog}
+            style={{
+              background: '#e8e4d9',
+              color: '#000',
+              borderRadius: 0,
+              padding: '14px 28px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.15em',
+              fontSize: '13px',
+              fontWeight: 600,
+              border: 'none',
+            }}
+          >
             Create New Token
           </Button>
         </div>
@@ -198,26 +292,56 @@ function CreateTokenForm() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-2">
-      <p>Copy your new access token from below and keep it secure. </p>
+    <div className="flex flex-col gap-4">
+      <p style={{ color: '#6b7280', fontFamily: 'monospace', fontSize: '14px', margin: 0 }}>
+        Copy your new access token from below and keep it secure.
+      </p>
 
-      <div className="flex items-end w-full gap-2">
-        <Input
-          label="Access Token"
-          labelProps={{ className: "flex-1", rawClassName: "flex-1" }}
-          className="w-full"
-          readOnly
-          value={data ?? ""}
-        />
-        <Button onClick={() => copy()} disabled={copied} variant="neutral" look="outlined">
-          {copied ? "Copied!" : "Copy"}
-        </Button>
+      <div
+        style={{
+          padding: '16px',
+          background: 'rgba(139, 92, 246, 0.05)',
+          border: '1px solid rgba(139, 92, 246, 0.15)',
+        }}
+      >
+        <div className="flex items-end w-full gap-3">
+          <div className="flex-1">
+            <StyledLabel text="Access Token" />
+            <input
+              readOnly
+              value={data ?? ""}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: '1px solid #1f1f1f',
+                color: '#fff',
+                padding: '14px 16px',
+                fontSize: '13px',
+                fontFamily: 'monospace',
+              }}
+            />
+          </div>
+          <Button
+            onClick={() => copy()}
+            disabled={copied}
+            variant="neutral"
+            look="outlined"
+            style={{
+              borderRadius: 0,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              fontSize: '11px',
+            }}
+          >
+            {copied ? "Copied!" : "Copy"}
+          </Button>
+        </div>
       </div>
 
       {data?.expires_at && (
-        <div>
-          <Label text="Token Expiry Date" />
-          {data && format(new Date(data?.expires_at), "MMM dd, yyyy HH:mm z")}
+        <div style={{ fontFamily: 'monospace', fontSize: '13px', color: '#6b7280' }}>
+          <span style={{ color: '#9ca3af' }}>Expires: </span>
+          {format(new Date(data?.expires_at), "MMM dd, yyyy HH:mm z")}
         </div>
       )}
 

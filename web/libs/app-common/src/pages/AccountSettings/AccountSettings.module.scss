@@ -2,12 +2,30 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: var(--color-bg-primary, #0a0a0a);
+  min-height: 100vh;
+  position: relative;
+
+  // Grid overlay like landing page
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
   &__content {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-wide);
-    max-width: 660px;
+    gap: var(--spacing-wide, 1.5rem);
+    max-width: 720px;
+    position: relative;
+    z-index: 1;
 
     h1 {
       font-size: var(--font-size-header, 28px);
@@ -17,20 +35,104 @@
 }
 
 .accountSettingsPadding {
-  padding: var(--spacing-wide);
+  padding: var(--spacing-wide, 1.5rem);
 }
 
+// Page Header
+.pageHeader {
+  padding: 2rem var(--spacing-wide, 1.5rem);
+  border-bottom: 1px solid var(--color-neutral-border, #1f1f1f);
+  position: relative;
+  z-index: 1;
+}
+
+.pageHeaderContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #fff);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+// Card Styles
+.accountCard {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid var(--color-neutral-border, #1f1f1f) !important;
+  border-radius: 0 !important;
+}
+
+.cardHeader {
+  border-bottom: 1px solid var(--color-neutral-border, #1f1f1f);
+  padding: 1.5rem !important;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #fff);
+  letter-spacing: -0.01em;
+}
+
+.cardDescription {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+  font-family: monospace;
+  margin-top: 0.5rem;
+}
+
+.cardContent {
+  padding: 1.5rem !important;
+}
+
+// Section Number (01/, 02/, etc.)
+.sectionNumber {
+  color: #8b5cf6;
+  font-size: 14px;
+  font-family: monospace;
+  letter-spacing: 0.1em;
+  margin-right: 1rem;
+}
+
+// Menu Item Number
+.menuItemNumber {
+  color: #8b5cf6;
+  font-size: 12px;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+  margin-right: 0.5rem;
+}
+
+// Section Content
 .sectionContent {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: var(--spacing-wide);
+  gap: var(--spacing-wide, 1.5rem);
 }
 
 .flexRow {
   display: flex;
   align-items: center;
-  gap: var(--spacing-wide);
+  gap: var(--spacing-wide, 1.5rem);
 
   &.flexEnd {
     justify-content: flex-end;

@@ -8,6 +8,7 @@ import {
   VerificationSent,
   VerifyEmail,
   AnnotatorTest,
+  AnnotatorSkillTest,
   TestResult,
   EarningsDashboard,
   PayoutRequest,
@@ -56,6 +57,10 @@ VerifyEmail.exact = true;
 AnnotatorTest.title = "Qualification Test";
 AnnotatorTest.path = "/annotators/test";
 AnnotatorTest.exact = true;
+
+AnnotatorSkillTest.title = "Skill Assessment";
+AnnotatorSkillTest.path = "/annotators/skill-test";
+AnnotatorSkillTest.exact = true;
 
 TestResult.title = "Test Results";
 TestResult.path = "/annotators/test-result";
@@ -106,6 +111,7 @@ export const Pages = [
   VerifyEmail,
 
   AnnotatorTest,
+  AnnotatorSkillTest,
   TestResult,
   EarningsDashboard,
   PayoutRequest,

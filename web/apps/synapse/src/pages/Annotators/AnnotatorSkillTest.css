@@ -1,0 +1,192 @@
+.annotator-skill-test {
+  min-height: 100vh;
+  background: #0a0a0a;
+}
+
+/* Instructions Phase */
+.test-instructions {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.test-instructions__content {
+  max-width: 600px;
+  width: 100%;
+}
+
+.test-instructions__number {
+  font-family: monospace;
+  font-size: 14px;
+  color: #8b5cf6;
+  margin-bottom: 1rem;
+  letter-spacing: 0.1em;
+}
+
+.test-instructions__title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 2rem;
+  letter-spacing: -0.02em;
+}
+
+.test-instructions__summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.test-instructions__summary-item {
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid #1f1f1f;
+  text-align: center;
+}
+
+.test-instructions__summary-label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.test-instructions__summary-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.test-instructions__rules {
+  padding: 1.5rem;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  margin-bottom: 2rem;
+}
+
+.test-instructions__rules h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #8b5cf6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 1rem;
+}
+
+.test-instructions__rules ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.test-instructions__rules li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 14px;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+.test-instructions__rule-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.test-instructions__rule-icon svg {
+  width: 18px;
+  height: 18px;
+  color: #8b5cf6;
+}
+
+.test-instructions__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #1f1f1f;
+}
+
+.test-instructions__back {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #2f2f2f;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.test-instructions__back:hover {
+  color: #fff;
+  border-color: #3f3f3f;
+}
+
+.test-instructions__start {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: #8b5cf6;
+  color: #fff;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.test-instructions__start:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.test-instructions__start:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.test-instructions__start svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .test-instructions {
+    padding: 1.5rem;
+    align-items: flex-start;
+    padding-top: 3rem;
+  }
+
+  .test-instructions__title {
+    font-size: 1.75rem;
+  }
+
+  .test-instructions__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .test-instructions__actions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .test-instructions__back,
+  .test-instructions__start {
+    width: 100%;
+    justify-content: center;
+  }
+}

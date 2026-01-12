@@ -1,14 +1,16 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@synapse/ui/lib/card-new/card";
-import { useMemo, isValidElement } from "react";
+import { useMemo, isValidElement, useState, useEffect } from "react";
 import { Redirect, Route, Switch, useParams, useRouteMatch } from "react-router-dom";
-import { useUpdatePageTitle, createTitleFromSegments } from "@synapse/core";
+import { useUpdatePageTitle, createTitleFromSegments, getApiInstance } from "@synapse/core";
 import styles from "./AccountSettings.module.scss";
-import { accountSettingsSections } from "./sections";
+import { accountSettingsSections, ROLES } from "./sections";
 import { HotkeysHeaderButtons } from "./sections/Hotkeys";
 import clsx from "clsx";
 import { useAtomValue } from "jotai";
 import { settingsAtom } from "./atoms";
 import { useAuth } from "@synapse/core/providers/AuthProvider";
+import { useQuery } from "@tanstack/react-query";
+import type { WrappedResponse } from "@synapse/core/lib/api-proxy/types";
 
 /**
  * FIXME: This is legacy imports. We're not supposed to use such statements
@@ -16,17 +18,51 @@ import { useAuth } from "@synapse/core/providers/AuthProvider";
  */
 import { SidebarMenu } from "apps/synapse/src/components/SidebarMenu/SidebarMenu";
 
+// Hook to get user's role in the organization
+const useUserRole = () => {
+  const { user } = useAuth();
+
+  const membership = useQuery({
+    queryKey: [user?.active_organization, user?.id, "user-membership-role"],
+    enabled: !!user,
+    async queryFn() {
+      if (!user) return null;
+      const api = getApiInstance();
+      const response = (await api.invoke("userMemberships", {
+        pk: user.active_organization,
+        userPk: user.id,
+      })) as WrappedResponse<{
+        role: string;
+      }>;
+
+      return response.role || null;
+    },
+  });
+
+  return {
+    role: membership.data,
+    isLoading: membership.isLoading,
+    isAnnotator: membership.data === ROLES.ANNOTATOR,
+    isAdmin: membership.data === ROLES.ADMIN || membership.data === ROLES.OWNER,
+    isManager: membership.data === ROLES.MANAGER,
+    isReviewer: membership.data === ROLES.REVIEWER,
+  };
+};
+
 const AccountSettingsSection = () => {
   const { user, permissions } = useAuth();
   const { sectionId } = useParams<{ sectionId: string }>();
   const settings = useAtomValue(settingsAtom);
+  const { role, isLoading: roleLoading } = useUserRole();
   const contentClassName = clsx(styles.accountSettings__content, {
     [styles.accountSettingsPadding]: window.APP_SETTINGS.billing !== undefined,
   });
 
   const resolvedSections = useMemo(() => {
-    return settings.data && !("error" in settings.data) ? accountSettingsSections(settings.data, permissions) : [];
-  }, [settings.data, user]);
+    // Get settings data, or null if there's an error (e.g., annotator without token permissions)
+    const settingsData = settings.data && !("error" in settings.data) ? settings.data : null;
+    return accountSettingsSections(settingsData, permissions, role || undefined);
+  }, [settings.data, permissions, role]);
 
   const currentSection = useMemo(
     () => resolvedSections.find((section) => section.id === sectionId),
@@ -59,11 +95,14 @@ const AccountSettingsSection = () => {
 
   return currentSection ? (
     <div className={contentClassName}>
-      <Card key={currentSection.id}>
-        <CardHeader>
+      <Card key={currentSection.id} className={styles.accountCard}>
+        <CardHeader className={styles.cardHeader}>
           <div className="flex flex-col gap-tight">
             <div className="flex justify-between items-center">
-              <CardTitle>{currentSection.title}</CardTitle>
+              <div className={styles.sectionNumber}>
+                {String(resolvedSections.findIndex((s) => s.id === currentSection.id) + 1).padStart(2, "0")}/
+              </div>
+              <CardTitle className={styles.cardTitle}>{currentSection.title}</CardTitle>
               {currentSection.id === "hotkeys" && (
                 <div className="flex-shrink-0">
                   <HotkeysHeaderButtons />
@@ -71,7 +110,7 @@ const AccountSettingsSection = () => {
               )}
             </div>
             {currentSection.description && (
-              <CardDescription>
+              <CardDescription className={styles.cardDescription}>
                 {isValidElement(currentSection.description) ? (
                   currentSection.description
                 ) : (
@@ -81,7 +120,7 @@ const AccountSettingsSection = () => {
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className={styles.cardContent}>
           <currentSection.component />
         </CardContent>
       </Card>
@@ -94,23 +133,40 @@ const AccountSettingsPage = () => {
   const match = useRouteMatch();
   const { sectionId } = useParams<{ sectionId: string }>();
   const { user, permissions } = useAuth();
+  const { role, isAnnotator, isLoading: roleLoading } = useUserRole();
+
   const resolvedSections = useMemo(() => {
-    return settings.data && !("error" in settings.data) ? accountSettingsSections(settings.data, permissions) : [];
-  }, [settings.data, user]);
+    // Get settings data, or null if there's an error (e.g., annotator without token permissions)
+    const settingsData = settings.data && !("error" in settings.data) ? settings.data : null;
+    return accountSettingsSections(settingsData, permissions, role || undefined);
+  }, [settings.data, permissions, role]);
 
   const menuItems = useMemo(
     () =>
-      resolvedSections.map(({ title, id }) => ({
+      resolvedSections.map(({ title, id }, index) => ({
         title,
         path: `/${id}`,
         active: sectionId === id,
         exact: true,
+        icon: (
+          <span className={styles.menuItemNumber}>
+            {String(index + 1).padStart(2, "0")}
+          </span>
+        ),
       })),
     [resolvedSections, sectionId],
   );
 
   return (
     <div className={styles.accountSettings}>
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderContent}>
+          <h1 className={styles.pageTitle}>Account Settings</h1>
+          {isAnnotator && (
+            <span className={styles.roleBadge}>Annotator</span>
+          )}
+        </div>
+      </div>
       <SidebarMenu menuItems={menuItems} path={AccountSettingsPage.path}>
         <Switch>
           <Route path={`${match.path}/:sectionId`} component={AccountSettingsSection} />

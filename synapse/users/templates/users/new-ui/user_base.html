@@ -3,72 +3,463 @@
 <!-- Disable react-app CSS on auth pages -->
 {% endblock %}
 {% block head %}
+<!-- Google Fonts - matching landing page -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 <style nonce="{{request.csp_nonce}}">
-  /* Critical inline styles - Lambda-inspired design with pure black background */
+  /* Landing Page Design System - Auth Pages */
+  
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
   html, body { 
     margin: 0 !important; 
     padding: 0 !important; 
-    background: #000000 !important;
-    background-color: #000000 !important;
+    background: #000 !important;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
   body::before, body::after {
     display: none !important;
   }
+
+  ::selection {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  /* Auth Page Container */
   .auth-page { 
     display: flex !important; 
     min-height: 100vh;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    background: #000000 !important;
-    background-color: #000000 !important;
-    font-family: 'Hellix', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    background: #000 !important;
+    position: relative;
   }
+
+  /* Grid Background - matching landing CTASection */
+  .auth-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(to right, #ffffff 1px, transparent 1px),
+      linear-gradient(to bottom, #ffffff 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.03;
+    pointer-events: none;
+  }
+
+  /* Main Layout - Two Panel */
   .auth-card {
-    display: flex !important;
-    flex-direction: row !important;
-    max-width: 1200px;
+    display: flex;
     width: 100%;
-    min-height: 700px;
-    background: #fff !important;
-    overflow: hidden;
-    border-radius: 0 !important;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
   }
+
+  /* Left Panel - Form */
   .auth-form-panel {
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     justify-content: center;
-    padding: 60px 80px;
-    background: #F5F1E8 !important;
+    padding: 80px;
+    max-width: 640px;
+    border-right: 1px solid #1f1f1f;
   }
+
+  /* Logo - matching Navigation.tsx */
+  .auth-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 64px;
+  }
+
+  .auth-logo-icon {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .auth-logo-icon span {
+    color: #fff;
+    font-weight: 300;
+    font-size: 18px;
+  }
+
+  .auth-logo-text {
+    color: #fff;
+    font-weight: 500;
+    font-size: 28px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Form Container */
+  .auth-form-container {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  /* Section Label - matching Features number style */
+  .auth-section-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 24px;
+  }
+
+  .auth-section-label span {
+    color: #8b5cf6;
+    font-size: 14px;
+    font-family: monospace;
+    letter-spacing: 0.1em;
+  }
+
+  /* Headings */
+  .auth-form-container h2 {
+    font-size: 48px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    margin: 0 0 16px 0 !important;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .auth-form-container .subtitle {
+    font-size: 16px !important;
+    color: #6b7280 !important;
+    margin: 0 0 40px 0 !important;
+    line-height: 1.6;
+    font-family: monospace;
+  }
+
+  /* Form */
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Form Fields */
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-field label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #9ca3af !important;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  .form-field input,
+  .form-field select {
+    width: 100% !important;
+    padding: 16px 20px !important;
+    font-size: 15px !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    color: #fff !important;
+    background: transparent !important;
+    border: 1px solid #374151 !important;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+
+  .form-field input:hover,
+  .form-field select:hover {
+    border-color: #4b5563 !important;
+  }
+
+  .form-field input:focus,
+  .form-field select:focus {
+    border-color: #8b5cf6 !important;
+  }
+
+  .form-field input::placeholder {
+    color: #4b5563 !important;
+  }
+
+  .form-field select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 20px center !important;
+    padding-right: 48px !important;
+  }
+
+  .form-field select option {
+    background: #111;
+    color: #fff;
+    padding: 12px;
+  }
+
+  /* Submit Button - matching landing CTA buttons */
+  .auth-submit-btn {
+    width: 100% !important;
+    padding: 20px 40px !important;
+    margin: 16px 0 0 0 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    color: #000 !important;
+    background: #e8e4d9 !important;
+    border: none !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .auth-submit-btn:hover {
+    background: #d8d4c9 !important;
+  }
+
+  .auth-submit-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Alternate button style - purple */
+  .auth-submit-btn.btn-purple {
+    background: #8b5cf6 !important;
+    color: #fff !important;
+  }
+
+  .auth-submit-btn.btn-purple:hover {
+    background: #7c5ce0 !important;
+  }
+
+  /* Bottom Link */
+  .auth-bottom-link {
+    margin: 32px 0 0 0 !important;
+    font-size: 14px !important;
+    color: #6b7280 !important;
+  }
+
+  .auth-bottom-link a {
+    color: #fff !important;
+    font-weight: 500 !important;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .auth-bottom-link a:hover {
+    opacity: 0.7;
+  }
+
+  /* Error Messages */
+  .error-message,
+  .field-errors {
+    margin: 8px 0 0 0 !important;
+    padding: 12px 16px !important;
+    font-size: 13px !important;
+    color: #f87171 !important;
+    background: rgba(248, 113, 113, 0.1);
+    border-left: 2px solid #f87171;
+    list-style: none;
+    font-family: monospace;
+  }
+
+  .field-errors li {
+    margin: 0 !important;
+    padding: 2px 0 !important;
+  }
+
+  /* Annotator Action Container */
+  .annotator-action-container {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+  }
+
+  .annotator-action-hint {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 12px;
+    font-family: monospace;
+    line-height: 1.5;
+  }
+
+  .annotator-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #8b5cf6;
+    background: transparent;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .annotator-action-btn:hover {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.5);
+  }
+
+  .annotator-action-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Right Panel - Image/Content */
   .auth-image-panel {
     flex: 1;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
-    background: #1a1a2e !important;
     overflow: hidden;
   }
-  .auth-image-wrapper {
-    width: 100%;
-    height: 100%;
+
+  /* Purple gradient glow - matching CTASection */
+  .auth-image-panel::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 500px;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
   }
-  .auth-image-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    opacity: 0.95;
+
+  .auth-image-content {
+    position: relative;
+    z-index: 2;
+    padding: 60px;
+    max-width: 480px;
+  }
+
+  .auth-image-content h3 {
+    font-size: 40px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .auth-image-content h3 .gradient-text {
+    background: linear-gradient(to right, #a78bfa, #ec4899, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .auth-image-content > p {
+    font-size: 15px;
+    color: #6b7280;
+    line-height: 1.7;
+    margin-bottom: 40px;
+    font-family: monospace;
+  }
+
+  /* Stats - matching CTASection stats */
+  .auth-stats {
+    display: flex;
+    gap: 32px;
+    padding-top: 32px;
+    border-top: 1px solid #1f1f1f;
+  }
+
+  .auth-stat {
+    text-align: left;
+  }
+
+  .auth-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .auth-stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    font-family: monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* Vertical text - matching HeroSection */
+  .auth-vertical-text {
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .auth-vertical-text span {
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    color: #374151;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    font-family: monospace;
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .auth-form-panel {
+      padding: 60px;
+      max-width: 100%;
+      border-right: none;
+    }
+
+    .auth-image-panel {
+      display: none;
+    }
+
+    .auth-form-container h2 {
+      font-size: 36px !important;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .auth-form-panel {
+      padding: 40px 24px;
+    }
+
+    .auth-form-container h2 {
+      font-size: 28px !important;
+    }
+
+    .auth-logo {
+      margin-bottom: 48px;
+    }
   }
 </style>
-<link
-  rel="stylesheet"
-  href="{{ settings.HOSTNAME }}{% static 'css/fonts.hellix.css' %}"
-/>
-<link
-  rel="stylesheet"
-  href="{{ settings.HOSTNAME }}{% static 'css/auth-pages.css' %}"
-/>
 
 <script
   async
@@ -88,10 +479,6 @@
   window.APP_SETTINGS = window.APP_SETTINGS ?? {};
   window.APP_SETTINGS.collect_analytics = {{ settings.COLLECT_ANALYTICS|yesno:"true,false" }};
 
-  // Log event to the server, if analytics are enabled
-  // This is a fallback for when the __lsa global is not defined
-  // Normally this is a part of our main bundle but these pages do not use the main bundle
-  // and this allows us to log events from these pages
   const logEvent = (eventName, metadata = {}) => {
     if (!window.APP_SETTINGS?.collect_analytics) return;
 
@@ -141,13 +528,49 @@
 
 <div class="auth-page">
   <div class="auth-card">
+    <!-- Left Panel - Form -->
     <div class="auth-form-panel">
+      <!-- Logo - matching Navigation.tsx style -->
+      <div class="auth-logo">
+        <div class="auth-logo-icon">
+          <span>λ</span>
+        </div>
+        <span class="auth-logo-text">Synapse</span>
+      </div>
       
       {% block user_content %}{% endblock %}
     </div>
+
+    <!-- Right Panel - Content -->
     <div class="auth-image-panel">
-      <div class="auth-image-wrapper">
-        <img src="https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=1200&q=80" alt="VR Experience" />
+      <!-- Vertical text - matching HeroSection -->
+      <div class="auth-vertical-text">
+        <span>// SYNAPSE PLATFORM //</span>
+      </div>
+
+      <div class="auth-image-content">
+        <h3>
+          Start building
+          <br />
+          <span class="gradient-text">better AI today</span>
+        </h3>
+        <p>Join thousands of AI teams using Synapse to create high-quality training data at scale.</p>
+        
+        <!-- Stats - matching CTASection -->
+        <div class="auth-stats">
+          <div class="auth-stat">
+            <div class="auth-stat-value">10M+</div>
+            <div class="auth-stat-label">Annotations</div>
+          </div>
+          <div class="auth-stat">
+            <div class="auth-stat-value">500+</div>
+            <div class="auth-stat-label">Clients</div>
+          </div>
+          <div class="auth-stat">
+            <div class="auth-stat-value">99.9%</div>
+            <div class="auth-stat-label">Quality</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

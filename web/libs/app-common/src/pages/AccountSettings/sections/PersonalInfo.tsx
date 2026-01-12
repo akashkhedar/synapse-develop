@@ -32,12 +32,42 @@ const updateUserAvatarAtom = atomWithMutation(() => ({
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        errorFilter: () => true,
       },
     );
     return response;
   },
 }));
+
+// Custom styled input component matching landing page design
+const StyledInput = ({ 
+  label, 
+  ...props 
+}: { 
+  label: string; 
+  [key: string]: any;
+}) => (
+  <div className="flex flex-col gap-2">
+    <label 
+      className="text-xs font-medium uppercase tracking-wider"
+      style={{ color: '#9ca3af', letterSpacing: '0.1em' }}
+    >
+      {label}
+    </label>
+    <Input 
+      {...props}
+      style={{
+        background: 'transparent',
+        border: '1px solid #1f1f1f',
+        color: '#fff',
+        padding: '14px 16px',
+        fontSize: '15px',
+        borderRadius: 0,
+        transition: 'border-color 0.2s',
+        ...props.style,
+      }}
+    />
+  </div>
+);
 
 export const PersonalInfo = () => {
   const toast = useToast();
@@ -48,6 +78,7 @@ export const PersonalInfo = () => {
   const [lname, setLname] = useState(user?.last_name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const avatarRef = useRef<HTMLInputElement>();
+  
   const fileChangeHandler: FormEventHandler<HTMLInputElement> = useCallback(
     async (e) => {
       if (!user) return;
@@ -63,6 +94,7 @@ export const PersonalInfo = () => {
       if (!response.$meta.ok) {
         toast?.show({ message: response?.response?.detail ?? "Error updating avatar", type: ToastType.error });
       } else {
+        toast?.show({ message: "Avatar updated successfully", type: ToastType.info });
         refetchUser();
       }
       input.value = "";
@@ -73,6 +105,7 @@ export const PersonalInfo = () => {
   const deleteUserAvatar = async () => {
     if (!user) return;
     await updateUserAvatar.mutateAsync({ userId: user.id, isDelete: true });
+    toast?.show({ message: "Avatar removed", type: ToastType.info });
     refetchUser();
   };
 
@@ -85,8 +118,10 @@ export const PersonalInfo = () => {
       const response = await updateUser(json);
 
       refetchUser();
-      if (!response?.$meta.ok) {
-        toast?.show({ message: response?.response?.detail ?? "Error updating user", type: ToastType.error });
+      if (!response) {
+        toast?.show({ message: "Error updating user", type: ToastType.error });
+      } else {
+        toast?.show({ message: "Profile updated successfully", type: ToastType.info });
       }
     },
     [user?.id],
@@ -105,58 +140,162 @@ export const PersonalInfo = () => {
   return (
     <div className={styles.section} id="personal-info">
       <div className={styles.sectionContent}>
-        <div className={styles.flexRow}>
-          <Userpic user={user} isInProgress={userInProgress} size={92} style={{ flex: "none" }} />
-          <form className={styles.flex1}>
-            <InputFile
-              name="avatar"
-              onChange={fileChangeHandler}
-              accept="image/png, image/jpeg, image/jpg"
-              ref={avatarRef}
+        {/* Avatar Section */}
+        <div 
+          className="flex items-center gap-6 p-6"
+          style={{ 
+            background: 'rgba(139, 92, 246, 0.05)', 
+            border: '1px solid rgba(139, 92, 246, 0.15)' 
+          }}
+        >
+          <div className="relative">
+            <Userpic 
+              user={user} 
+              isInProgress={userInProgress} 
+              size={96} 
+              style={{ 
+                flex: "none",
+                border: '2px solid #1f1f1f',
+              }} 
             />
-          </form>
-          {user?.avatar && (
-            <Button type="submit" variant="negative" look="outlined" size="medium" onClick={deleteUserAvatar}>
-              Delete
-            </Button>
-          )}
+            <div 
+              className="absolute -bottom-1 -right-1 w-8 h-8 flex items-center justify-center"
+              style={{ 
+                background: '#8b5cf6',
+                cursor: 'pointer',
+              }}
+              onClick={() => avatarRef.current?.click()}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                style={{ width: 16, height: 16, color: '#fff' }}
+              >
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            <div>
+              <h3 className="text-lg font-semibold" style={{ color: '#fff', margin: 0 }}>
+                {user?.first_name} {user?.last_name}
+              </h3>
+              <p className="text-sm" style={{ color: '#6b7280', fontFamily: 'monospace', margin: '4px 0 0 0' }}>
+                {user?.email}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <form className="hidden">
+                <InputFile
+                  name="avatar"
+                  onChange={fileChangeHandler}
+                  accept="image/png, image/jpeg, image/jpg"
+                  ref={avatarRef}
+                />
+              </form>
+              <Button 
+                variant="neutral" 
+                look="outlined" 
+                size="small"
+                onClick={() => avatarRef.current?.click()}
+                style={{ 
+                  borderRadius: 0,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  fontSize: '11px',
+                }}
+              >
+                Change Avatar
+              </Button>
+              {user?.avatar && (
+                <Button 
+                  variant="negative" 
+                  look="outlined" 
+                  size="small" 
+                  onClick={deleteUserAvatar}
+                  style={{ 
+                    borderRadius: 0,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    fontSize: '11px',
+                  }}
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Form Section */}
         <form onSubmit={userFormSubmitHandler} className={styles.sectionContent}>
-          <div className={styles.flexRow}>
-            <div className={styles.flex1}>
-              <Input
-                label="First Name"
-                value={fname}
-                onChange={(e: React.KeyboardEvent<HTMLInputElement>) => setFname(e.currentTarget.value)}
-                name="first_name"
-              />
-            </div>
-            <div className={styles.flex1}>
-              <Input
-                label="Last Name"
-                value={lname}
-                onChange={(e: React.KeyboardEvent<HTMLInputElement>) => setLname(e.currentTarget.value)}
-                name="last_name"
-              />
-            </div>
+          <div 
+            className="grid gap-6"
+            style={{ 
+              gridTemplateColumns: 'repeat(2, 1fr)',
+            }}
+          >
+            <StyledInput
+              label="First Name"
+              value={fname}
+              onChange={(e: React.KeyboardEvent<HTMLInputElement>) => setFname(e.currentTarget.value)}
+              name="first_name"
+              placeholder="Enter first name"
+            />
+            <StyledInput
+              label="Last Name"
+              value={lname}
+              onChange={(e: React.KeyboardEvent<HTMLInputElement>) => setLname(e.currentTarget.value)}
+              name="last_name"
+              placeholder="Enter last name"
+            />
           </div>
-          <div className={styles.flexRow}>
-            <div className={styles.flex1}>
-              <Input label="E-mail" type="email" readOnly={true} value={user?.email ?? ""} />
-            </div>
-            <div className={styles.flex1}>
-              <Input
-                label="Phone"
-                type="phone"
-                onChange={(e: React.KeyboardEvent<HTMLInputElement>) => setPhone(e.currentTarget.value)}
-                value={phone}
-                name="phone"
-              />
-            </div>
+          
+          <div 
+            className="grid gap-6"
+            style={{ 
+              gridTemplateColumns: 'repeat(2, 1fr)',
+            }}
+          >
+            <StyledInput
+              label="Email Address"
+              type="email"
+              readOnly={true}
+              value={user?.email ?? ""}
+              style={{ opacity: 0.6 }}
+            />
+            <StyledInput
+              label="Phone Number"
+              type="phone"
+              onChange={(e: React.KeyboardEvent<HTMLInputElement>) => setPhone(e.currentTarget.value)}
+              value={phone}
+              name="phone"
+              placeholder="Enter phone number"
+            />
           </div>
-          <div className={clsx(styles.flexRow, styles.flexEnd)}>
-            <Button style={{ width: 125 }} waiting={isInProgress}>
-              Save
+
+          <div className={clsx(styles.flexRow, styles.flexEnd)} style={{ marginTop: '1rem' }}>
+            <Button 
+              waiting={isInProgress}
+              style={{ 
+                background: '#e8e4d9',
+                color: '#000',
+                borderRadius: 0,
+                padding: '14px 32px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.15em',
+                fontSize: '13px',
+                fontWeight: 600,
+                border: 'none',
+              }}
+            >
+              Save Changes
             </Button>
           </div>
         </form>

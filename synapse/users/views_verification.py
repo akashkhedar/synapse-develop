@@ -29,17 +29,49 @@ def verify_email(request, token):
     """
     try:
         verification_token = get_object_or_404(EmailVerificationToken, token=token)
+        user = verification_token.user
 
         # Check if token is valid
         if not verification_token.is_valid():
             if verification_token.is_used:
-                messages.warning(
-                    request, "This verification link has already been used."
-                )
+                # Token already used - but check if user is already verified
+                if user.email_verified:
+                    # Log them in and redirect appropriately
+                    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+                    
+                    if user.is_annotator:
+                        # Check annotator profile status
+                        try:
+                            profile = user.annotator_profile
+                            if profile.status == "pending_test":
+                                messages.info(
+                                    request, "Your email is already verified. Please complete the test."
+                                )
+                                return redirect("/annotators/skill-test/")
+                            elif profile.status == "approved":
+                                messages.success(request, "Welcome back!")
+                                return redirect(reverse("projects:project-index"))
+                            elif profile.status in ["test_submitted", "under_review"]:
+                                messages.info(
+                                    request, "Your test is being reviewed. We'll notify you once approved."
+                                )
+                                return redirect("/annotators/test-result/")
+                            else:
+                                messages.info(request, f"Your account status: {profile.get_status_display()}")
+                                return redirect(reverse("user-login"))
+                        except Exception:
+                            return redirect(reverse("projects:project-index"))
+                    else:
+                        messages.success(request, "Welcome back!")
+                        return redirect(reverse("projects:project-index"))
+                else:
+                    messages.warning(
+                        request, "This verification link has already been used. Please request a new one below."
+                    )
             else:
                 messages.error(
                     request,
-                    "This verification link has expired. Please request a new one.",
+                    "This verification link has expired. Please request a new one below.",
                 )
             return redirect("resend-verification")
 
@@ -68,7 +100,7 @@ def verify_email(request, token):
                 "Your email has been verified! Please complete the test to activate your account.",
             )
             # Redirect to test page
-            return redirect("/annotators/test/")
+            return redirect("/annotators/skill-test/")
         else:
             # For clients, log them in and redirect to dashboard
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
@@ -108,9 +140,34 @@ def resend_verification(request):
 
             # Check if already verified
             if user.email_verified:
-                messages.info(
-                    request, "Your email is already verified. You can log in."
-                )
+                # For annotators, check their status and redirect appropriately
+                if user.is_annotator:
+                    try:
+                        profile = user.annotator_profile
+                        if profile.status == "pending_test":
+                            messages.info(
+                                request, "Your email is already verified! Please log in to take the test."
+                            )
+                        elif profile.status in ["test_submitted", "under_review"]:
+                            messages.info(
+                                request, "Your email is verified and test submitted. Please log in to check status."
+                            )
+                        elif profile.status == "approved":
+                            messages.success(
+                                request, "Your account is fully approved! Please log in."
+                            )
+                        else:
+                            messages.info(
+                                request, "Your email is already verified. Please log in."
+                            )
+                    except Exception:
+                        messages.info(
+                            request, "Your email is already verified. You can log in."
+                        )
+                else:
+                    messages.info(
+                        request, "Your email is already verified. You can log in."
+                    )
                 return redirect("user-login")
 
             # Resend verification email

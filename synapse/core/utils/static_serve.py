@@ -54,8 +54,15 @@ def serve(request, path, document_root=None, show_indexes=False, manifest_asset_
         manifest_asset_prefix = (
             f'/{manifest_asset_prefix}' if not manifest_asset_prefix.startswith('/') else manifest_asset_prefix
         )
+        # Remove any hostname prefix (http://...) from the asset path
+        if possible_asset.startswith('http://') or possible_asset.startswith('https://'):
+            from urllib.parse import urlparse
+            parsed = urlparse(possible_asset)
+            possible_asset = parsed.path
         if possible_asset.startswith(manifest_asset_prefix):
             possible_asset = possible_asset[len(manifest_asset_prefix) :]
+        # Strip leading slash to prevent absolute path interpretation on Windows
+        possible_asset = possible_asset.lstrip('/')
         fullpath = Path(safe_join(document_root, possible_asset))
     if not fullpath.exists():
         raise Http404(_('“%(path)s” does not exist') % {'path': fullpath})

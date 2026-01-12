@@ -40,6 +40,53 @@ const curlStringAtom = atom((get) => {
   return curlString;
 });
 
+// Styled label component
+const StyledLabel = ({ text }: { text: string }) => (
+  <div
+    style={{
+      fontSize: '12px',
+      fontWeight: 500,
+      color: '#9ca3af',
+      textTransform: 'uppercase',
+      letterSpacing: '0.1em',
+      marginBottom: '10px',
+      fontFamily: 'monospace',
+    }}
+  >
+    {text}
+  </div>
+);
+
+// Styled button matching landing page
+const ActionButton = ({ 
+  children, 
+  onClick, 
+  disabled, 
+  variant = 'primary' 
+}: { 
+  children: React.ReactNode; 
+  onClick: () => void; 
+  disabled?: boolean;
+  variant?: 'primary' | 'negative';
+}) => (
+  <Button
+    onClick={onClick}
+    disabled={disabled}
+    variant={variant === 'negative' ? 'negative' : 'neutral'}
+    look="outlined"
+    style={{
+      borderRadius: 0,
+      textTransform: 'uppercase',
+      letterSpacing: '0.1em',
+      fontSize: '11px',
+      padding: '12px 20px',
+      border: variant === 'negative' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #1f1f1f',
+    }}
+  >
+    {children}
+  </Button>
+);
+
 export const PersonalAccessToken = () => {
   const token = useAtomValue(currentTokenAtom);
   const reset = useAtomValue(resetTokenAtom);
@@ -50,45 +97,74 @@ export const PersonalAccessToken = () => {
   return (
     <div id="personal-access-token">
       <div className="flex flex-col gap-6">
-        <div>
-          <Label text="Access Token" className={styles.label} />
-          <div className="flex gap-2 w-full justify-between">
-            <Input name="token" className={styles.input} readOnly value={token ?? ""} />
-            <Button
-              leading={<IconFileCopy />}
-              onClick={() => copyToken()}
-              disabled={tokenCopied}
-              variant="primary"
-              look="outlined"
-              className="w-[116px]"
-            >
-              {tokenCopied ? "Copied!" : "Copy"}
-            </Button>
-            <Button variant="negative" look="outlined" onClick={() => reset.mutate()}>
+        {/* Access Token Section */}
+        <div
+          style={{
+            padding: '20px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid #1f1f1f',
+          }}
+        >
+          <StyledLabel text="Access Token" />
+          <div className="flex gap-3 w-full items-center">
+            <input
+              name="token"
+              readOnly
+              value={token ?? ""}
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: '1px solid #1f1f1f',
+                color: '#fff',
+                padding: '14px 16px',
+                fontSize: '14px',
+                fontFamily: 'monospace',
+              }}
+            />
+            <ActionButton onClick={() => copyToken()} disabled={tokenCopied}>
+              <span className="flex items-center gap-2">
+                <IconFileCopy style={{ width: 14, height: 14 }} />
+                {tokenCopied ? "Copied!" : "Copy"}
+              </span>
+            </ActionButton>
+            <ActionButton onClick={() => reset.mutate()} variant="negative">
               Reset
-            </Button>
+            </ActionButton>
           </div>
         </div>
-        <div>
-          <Label text="Example CURL Request" className={styles.label} />
-          <div className="flex gap-2 w-full justify-between">
-            <TextArea
+
+        {/* CURL Example Section */}
+        <div
+          style={{
+            padding: '20px',
+            background: 'rgba(139, 92, 246, 0.05)',
+            border: '1px solid rgba(139, 92, 246, 0.15)',
+          }}
+        >
+          <StyledLabel text="Example CURL Request" />
+          <div className="flex gap-3 w-full items-start">
+            <textarea
               name="example-curl"
               readOnly
-              className={styles.textarea}
-              rawClassName={styles.textarea}
               value={curl ?? ""}
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: '1px solid #1f1f1f',
+                color: '#fff',
+                padding: '14px 16px',
+                fontSize: '13px',
+                fontFamily: 'monospace',
+                minHeight: '80px',
+                resize: 'none',
+              }}
             />
-            <Button
-              leading={<IconFileCopy />}
-              onClick={() => copyCurl()}
-              disabled={curlCopied}
-              variant="primary"
-              look="outlined"
-              className="w-[116px]"
-            >
-              {curlCopied ? "Copied!" : "Copy"}
-            </Button>
+            <ActionButton onClick={() => copyCurl()} disabled={curlCopied}>
+              <span className="flex items-center gap-2">
+                <IconFileCopy style={{ width: 14, height: 14 }} />
+                {curlCopied ? "Copied!" : "Copy"}
+              </span>
+            </ActionButton>
           </div>
         </div>
       </div>
@@ -98,21 +174,30 @@ export const PersonalAccessToken = () => {
 
 export function PersonalAccessTokenDescription() {
   return (
-    <Typography>
+    <span style={{ fontFamily: 'monospace', color: '#6b7280' }}>
       Authenticate with our API using your personal access token.
       {!window.APP_SETTINGS?.whitelabel_is_active && (
         <>
           {" "}
           See{" "}
-          <a href="https://synapse.io/guide/api.html" target="_blank" rel="noreferrer" className="inline-flex gap-1">
-            Docs{" "}
-            <span>
-              <IconLaunch className="h-6 w-6" />
-            </span>
+          <a 
+            href="https://synapse.io/guide/api.html" 
+            target="_blank" 
+            rel="noreferrer" 
+            style={{ 
+              color: '#8b5cf6', 
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            Documentation
+            <IconLaunch style={{ width: 14, height: 14 }} />
           </a>
         </>
       )}
-    </Typography>
+    </span>
   );
 }
 

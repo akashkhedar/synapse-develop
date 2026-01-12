@@ -18,7 +18,10 @@ export const RootPage = ({ content }) => {
     "/login",
     "/signup-client",
     "/register-annotator",
-    "/annotators",
+    "/annotators/login",
+    "/annotators/signup",
+    "/annotators/test",
+    "/annotators/verify",
     "/annotator",
     "/invite",
     "/services",
@@ -44,11 +47,7 @@ export const RootPage = ({ content }) => {
     "/expert/payouts",
   ];
 
-  const isPublicRoute = publicRoutes.some(
-    (route) =>
-      location.pathname === route || location.pathname.startsWith(route + "/")
-  );
-
+  // Check annotator and expert routes FIRST (more specific)
   const isAnnotatorRoute = annotatorRoutes.some(
     (route) =>
       location.pathname === route || location.pathname.startsWith(route)
@@ -57,6 +56,12 @@ export const RootPage = ({ content }) => {
   const isExpertRoute = expertRoutes.some(
     (route) =>
       location.pathname === route || location.pathname.startsWith(route)
+  );
+
+  // Then check public routes - but exclude if already matched as annotator/expert route
+  const isPublicRoute = !isAnnotatorRoute && !isExpertRoute && publicRoutes.some(
+    (route) =>
+      location.pathname === route || location.pathname.startsWith(route + "/")
   );
 
   // Always call hooks unconditionally (React rules), but control execution via parameter

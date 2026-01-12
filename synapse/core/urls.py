@@ -67,6 +67,16 @@ urlpatterns = [
     re_path(r"^annotators/test-result/$", views.main, name="annotator-test-result"),
     re_path(r"^annotators/tasks/$", views.main, name="annotator-tasks"),
     re_path(r"^annotator/projects/$", views.main, name="annotator-projects"),
+    re_path(r"^annotators/earnings/$", views.main, name="annotator-earnings"),
+    re_path(r"^annotators/payouts/$", views.main, name="annotator-payouts"),
+    re_path(r"^annotators/transactions/$", views.main, name="annotator-transactions"),
+    # Expert pages (authenticated)
+    re_path(r"^expert/dashboard/$", views.main, name="expert-dashboard"),
+    re_path(r"^expert/earnings/$", views.main, name="expert-earnings"),
+    re_path(r"^expert/payouts/$", views.main, name="expert-payouts"),
+    re_path(r"^expert/projects/$", views.main, name="expert-projects"),
+    re_path(r"^expert/review/(?P<project_id>\d+)/$", views.main, name="expert-review"),
+    re_path(r"^expert/task/(?P<task_id>\d+)/$", views.main, name="expert-task"),
     re_path(r"^invite/$", views.main, name="accept-invite"),
     # Billing pages (authenticated)
     re_path(r"^billing/$", views.main, name="billing"),

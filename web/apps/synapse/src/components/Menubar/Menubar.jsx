@@ -85,6 +85,7 @@ export const Menubar = ({
   const isAnnotator = !!user?.is_annotator;
   const isClient = !!user?.is_client;
   const isExpert = !!user?.is_expert;
+  console.log(isExpert)
   // Experts and annotators have limited menu (no org, no billing, but show earnings)
   // Only show limited menu if user data is loaded AND user has limited role
   const hasLimitedMenu = !isLoading && user && (isAnnotator || isExpert);
@@ -323,7 +324,8 @@ export const Menubar = ({
                     <Menu.Item
                       label="Earnings"
                       to={
-                        isExpert ? "/expert/earnings" : "/annotators/earnings"
+                        // Only pure experts go to expert earnings; annotators (even with expert flag) go to annotator earnings
+                        isExpert && !isAnnotator ? "/expert/earnings" : "/annotators/earnings"
                       }
                       icon={<IconSpark />}
                       data-external

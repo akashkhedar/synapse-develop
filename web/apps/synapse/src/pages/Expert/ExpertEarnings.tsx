@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useHistory } from "react-router-dom";
-import { Button, useToast, ToastType } from "@synapse/ui";
+import { motion } from "framer-motion";
+import { useToast, ToastType } from "@synapse/ui";
 import "./ExpertEarnings.css";
 
 interface ExpertEarningsSummary {
@@ -25,15 +26,36 @@ interface Transaction {
   review_task_id?: number;
 }
 
+// Floating pixels decoration
+const FloatingPixels = () => {
+  const pixels = [
+    { x: "5%", y: "15%", size: 3, opacity: 0.2 },
+    { x: "90%", y: "30%", size: 4, opacity: 0.25 },
+    { x: "12%", y: "75%", size: 3, opacity: 0.2 },
+  ];
+  
+  return (
+    <div className="floating-pixels">
+      {pixels.map((p, i) => (
+        <motion.div
+          key={i}
+          className="pixel"
+          style={{ left: p.x, top: p.y, width: p.size, height: p.size, opacity: p.opacity }}
+          animate={{ opacity: [p.opacity * 0.5, p.opacity, p.opacity * 0.5], scale: [0.9, 1, 0.9] }}
+          transition={{ duration: 4 + Math.random() * 2, repeat: Infinity, ease: "linear" }}
+        />
+      ))}
+    </div>
+  );
+};
+
 export const ExpertEarnings: React.FC = () => {
   const history = useHistory();
   const toast = useToast();
 
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<ExpertEarningsSummary | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "transactions">(
-    "overview"
-  );
+  const [activeTab, setActiveTab] = useState<"overview" | "transactions">("overview");
 
   const fetchEarnings = useCallback(async () => {
     try {
@@ -42,7 +64,12 @@ export const ExpertEarnings: React.FC = () => {
       });
 
       if (response.status === 403) {
-        history.push("/user/login");
+        history.push("/annotators/login");
+        return;
+      }
+      
+      if (response.status === 401) {
+        history.push("/annotators/login");
         return;
       }
 
@@ -68,204 +95,248 @@ export const ExpertEarnings: React.FC = () => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
-      minimumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-IN", {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 
   if (loading) {
     return (
-      <div className="expert-earnings-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading earnings...</p>
+      <div className="expert-earnings-page">
+        <div className="earnings-loading">
+          <motion.div
+            className="loader-dot"
+            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <span className="loader-text">Loading earnings...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="expert-earnings-container">
-      <div className="earnings-header">
-        <h1>Expert Earnings</h1>
-        <p className="subtitle">Track your review earnings and payouts</p>
-      </div>
+    <div className="expert-earnings-page">
+      <FloatingPixels />
+      <div className="bg-grid" />
+      <div className="bg-glow" />
 
-      {/* Summary Cards */}
-      <div className="summary-cards">
-        <div className="summary-card available">
-          <div className="card-icon">💰</div>
-          <div className="card-content">
-            <h3>Available Balance</h3>
-            <p className="amount">
-              {formatCurrency(summary?.available_balance || 0)}
-            </p>
+      <div className="earnings-container">
+        {/* Header */}
+        <motion.header 
+          className="earnings-header"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="header-left">
+            <span className="header-tag">// EXPERT EARNINGS</span>
+            <h1 className="header-title">Earnings</h1>
           </div>
-          <Button
-            look="filled"
-            size="small"
-            onClick={() => history.push("/expert/payouts")}
+          <div className="header-actions">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="action-btn secondary"
+              onClick={() => history.push("/expert/dashboard")}
+            >
+              Dashboard
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(34, 197, 94, 0.3)" }}
+              whileTap={{ scale: 0.98 }}
+              className="action-btn primary green"
+              onClick={() => history.push("/expert/payouts")}
+            >
+              Request Payout →
+            </motion.button>
+          </div>
+        </motion.header>
+
+        {/* Balance Cards */}
+        <motion.div 
+          className="balance-cards"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <div className="balance-card available">
+            <div className="balance-label">AVAILABLE BALANCE</div>
+            <div className="balance-value">{formatCurrency(summary?.available_balance || 0)}</div>
+            <div className="balance-hint">Ready to withdraw</div>
+          </div>
+          <div className="balance-card pending">
+            <div className="balance-label">PENDING PAYOUT</div>
+            <div className="balance-value">{formatCurrency(summary?.pending_payout || 0)}</div>
+            <div className="balance-hint">Processing</div>
+          </div>
+          <div className="balance-card total">
+            <div className="balance-label">TOTAL EARNED</div>
+            <div className="balance-value">{formatCurrency(summary?.total_earned || 0)}</div>
+            <div className="balance-hint">Lifetime</div>
+          </div>
+          <div className="balance-card withdrawn">
+            <div className="balance-label">WITHDRAWN</div>
+            <div className="balance-value">{formatCurrency(summary?.total_withdrawn || 0)}</div>
+            <div className="balance-hint">Paid out</div>
+          </div>
+        </motion.div>
+
+        {/* Stats Section */}
+        <motion.section 
+          className="section-card stats-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <div className="section-header">
+            <span className="section-number">01/</span>
+            <h2 className="section-title">Performance Stats</h2>
+          </div>
+          
+          <div className="stats-grid">
+            <div className="stat-item">
+              <span className="stat-value">{summary?.total_reviews || 0}</span>
+              <span className="stat-label">Total Reviews</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{(summary?.approval_rate || 0).toFixed(0)}%</span>
+              <span className="stat-label">Approval Rate</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{Math.round((summary?.average_review_time || 0) / 60)}m</span>
+              <span className="stat-label">Avg Review Time</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value accent">{formatCurrency(summary?.weekly_earnings || 0)}</span>
+              <span className="stat-label">This Week</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value accent">{formatCurrency(summary?.monthly_earnings || 0)}</span>
+              <span className="stat-label">This Month</span>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Tabs */}
+        <div className="tabs-container">
+          <button
+            className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
+            onClick={() => setActiveTab("overview")}
           >
-            Request Payout
-          </Button>
+            Overview
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "transactions" ? "active" : ""}`}
+            onClick={() => setActiveTab("transactions")}
+          >
+            Transactions
+          </button>
         </div>
 
-        <div className="summary-card pending">
-          <div className="card-icon">⏳</div>
-          <div className="card-content">
-            <h3>Pending Payout</h3>
-            <p className="amount">
-              {formatCurrency(summary?.pending_payout || 0)}
-            </p>
-          </div>
-        </div>
+        {/* Tab Content */}
+        {activeTab === "overview" && (
+          <motion.section 
+            className="section-card info-section"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <div className="section-header">
+              <span className="section-number">02/</span>
+              <h2 className="section-title">How Earnings Work</h2>
+            </div>
+            
+            <div className="info-grid">
+              <div className="info-item">
+                <span className="info-icon">◈</span>
+                <div className="info-content">
+                  <h4>Per Review</h4>
+                  <p>Fixed amount for each review completed</p>
+                </div>
+              </div>
+              <div className="info-item">
+                <span className="info-icon">◈</span>
+                <div className="info-content">
+                  <h4>Correction Bonus</h4>
+                  <p>Extra earnings when you correct annotations</p>
+                </div>
+              </div>
+              <div className="info-item">
+                <span className="info-icon">◈</span>
+                <div className="info-content">
+                  <h4>Quality Bonus</h4>
+                  <p>Monthly bonus based on review quality</p>
+                </div>
+              </div>
+              <div className="info-item">
+                <span className="info-icon">◈</span>
+                <div className="info-content">
+                  <h4>Payouts</h4>
+                  <p>Request when balance exceeds ₹500</p>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+        )}
 
-        <div className="summary-card total">
-          <div className="card-icon">💎</div>
-          <div className="card-content">
-            <h3>Total Earned</h3>
-            <p className="amount">
-              {formatCurrency(summary?.total_earned || 0)}
-            </p>
-          </div>
-        </div>
-
-        <div className="summary-card withdrawn">
-          <div className="card-icon">✅</div>
-          <div className="card-content">
-            <h3>Total Withdrawn</h3>
-            <p className="amount">
-              {formatCurrency(summary?.total_withdrawn || 0)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Row */}
-      <div className="stats-row">
-        <div className="stat-item">
-          <span className="stat-label">Total Reviews</span>
-          <span className="stat-value">{summary?.total_reviews || 0}</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">Approval Rate</span>
-          <span className="stat-value">
-            {(summary?.approval_rate || 0).toFixed(1)}%
-          </span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">Avg Review Time</span>
-          <span className="stat-value">
-            {Math.round((summary?.average_review_time || 0) / 60)} min
-          </span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">This Week</span>
-          <span className="stat-value">
-            {formatCurrency(summary?.weekly_earnings || 0)}
-          </span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">This Month</span>
-          <span className="stat-value">
-            {formatCurrency(summary?.monthly_earnings || 0)}
-          </span>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === "overview" ? "active" : ""}`}
-          onClick={() => setActiveTab("overview")}
-        >
-          Overview
-        </button>
-        <button
-          className={`tab ${activeTab === "transactions" ? "active" : ""}`}
-          onClick={() => setActiveTab("transactions")}
-        >
-          Transactions
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === "overview" && (
-        <div className="overview-content">
-          <div className="info-card">
-            <h3>How Expert Earnings Work</h3>
-            <ul>
-              <li>
-                <strong>Per Review:</strong> You earn a fixed amount for each
-                review completed
-              </li>
-              <li>
-                <strong>Correction Bonus:</strong> Extra earnings when you
-                correct annotations
-              </li>
-              <li>
-                <strong>Quality Bonus:</strong> Monthly bonus based on review
-                quality
-              </li>
-              <li>
-                <strong>Payouts:</strong> Request payouts when your available
-                balance exceeds ₹500
-              </li>
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "transactions" && (
-        <div className="transactions-content">
-          <h3>Recent Transactions</h3>
-          {summary?.recent_transactions &&
-          summary.recent_transactions.length > 0 ? (
-            <table className="transactions-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.recent_transactions.map((tx) => (
-                  <tr key={tx.id}>
-                    <td>{formatDate(tx.created_at)}</td>
-                    <td>
-                      <span className={`tx-type ${tx.type}`}>
-                        {tx.type.replace(/_/g, " ")}
+        {activeTab === "transactions" && (
+          <motion.section 
+            className="section-card transactions-section"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <div className="section-header">
+              <span className="section-number">02/</span>
+              <h2 className="section-title">Recent Transactions</h2>
+            </div>
+            
+            <div className="transactions-list">
+              {summary?.recent_transactions && summary.recent_transactions.length > 0 ? (
+                summary.recent_transactions.map((tx) => (
+                  <div key={tx.id} className="transaction-item">
+                    <div className="tx-left">
+                      <span className={`tx-indicator ${tx.amount >= 0 ? 'positive' : 'negative'}`} />
+                      <div className="tx-info">
+                        <span className="tx-type">{tx.type.replace(/_/g, " ")}</span>
+                        <span className="tx-desc">{tx.description}</span>
+                      </div>
+                    </div>
+                    <div className="tx-right">
+                      <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
+                        {tx.amount >= 0 ? "+" : ""}{formatCurrency(tx.amount)}
                       </span>
-                    </td>
-                    <td>{tx.description}</td>
-                    <td
-                      className={
-                        tx.amount >= 0 ? "amount-positive" : "amount-negative"
-                      }
-                    >
-                      {tx.amount >= 0 ? "+" : ""}
-                      {formatCurrency(tx.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="no-transactions">No transactions yet</p>
-          )}
-        </div>
-      )}
+                      <span className="tx-date">{formatDate(tx.created_at)}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-transactions">
+                  <span className="empty-icon">○</span>
+                  <span className="empty-text">No transactions yet</span>
+                </div>
+              )}
+            </div>
+          </motion.section>
+        )}
+      </div>
     </div>
   );
 };

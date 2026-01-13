@@ -77,7 +77,7 @@ export const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-gray-300 text-base md:text-lg tracking-normal mb-8 font-medium"
         >
-          Supercomputers for training and inference
+          Enterprise data annotation for AI training at scale
         </motion.p>
 
         {/* Main heading - matching Lambda size with hover glitch effect */}
@@ -89,7 +89,7 @@ export const HeroSection = () => {
           style={{ fontFamily: "'Space Grotesk', sans-serif" }}
         >
           <GlitchTextBlock
-            lines={["The Superintelligence", "Cloud"]}
+            lines={["Transform Data Into", "Intelligence"]}
             className="text-white"
           />
         </motion.h1>
@@ -107,7 +107,7 @@ export const HeroSection = () => {
             className="bg-[#e8e4d9] text-black px-10 py-5 text-[13px] font-semibold tracking-[0.2em] transition-colors uppercase hover:bg-[#d8d4c9]"
             style={{ willChange: "transform" }}
           >
-            Launch GPU Instance
+            Start Annotating Free
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -115,7 +115,7 @@ export const HeroSection = () => {
             className="bg-[#8b5cf6] text-white px-10 py-5 text-[13px] font-semibold tracking-[0.2em] transition-colors uppercase hover:bg-[#7c5ce0]"
             style={{ willChange: "transform" }}
           >
-            Talk to Our Team
+            View Python SDK
           </motion.button>
         </motion.div>
       </div>
@@ -130,7 +130,7 @@ export const HeroSection = () => {
         <div className="flex flex-col items-center gap-4">
           <div className="w-px h-20 bg-gradient-to-b from-transparent via-gray-600 to-transparent" />
           <span className="text-gray-500 text-[10px] tracking-[0.3em] [writing-mode:vertical-lr] rotate-180">
-            // Synapse Agent Terminal //
+            // Human-in-the-loop AI //
           </span>
           <div className="w-px h-20 bg-gradient-to-b from-transparent via-gray-600 to-transparent" />
         </div>

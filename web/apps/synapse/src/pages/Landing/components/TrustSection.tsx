@@ -56,21 +56,21 @@ export const TrustSection = () => {
   const features = [
     {
       number: "01",
-      title: "Enterprise Security",
+      title: "Data Never Leaves Your Cloud",
       description:
-        "SOC 2 Type II certified infrastructure with end-to-end encryption and single-tenant deployment options for ultimate data protection.",
+        "Connect directly to your S3, GCS, or Azure storage. Annotators work through secure presigned URLs — raw data stays in your infrastructure.",
     },
     {
       number: "02",
-      title: "Scalable Workforce",
+      title: "Elastic Annotation Capacity",
       description:
-        "Access thousands of trained annotators on-demand. Scale your labeling capacity instantly without compromising quality standards.",
+        "From 100 to 1M+ tasks, scale annotation capacity on-demand. Trained domain experts for medical, autonomous vehicles, retail, and more.",
     },
     {
       number: "03",
-      title: "Global Compliance",
+      title: "Transparent Credit-Based Billing",
       description:
-        "GDPR, HIPAA, and ISO 27001 compliant. Your data stays in your preferred region with full audit trails.",
+        "Pay only for completed annotations. Security deposits, real-time cost tracking, and detailed breakdowns per annotation type.",
     },
   ];
 
@@ -82,9 +82,9 @@ export const TrustSection = () => {
         {/* Header */}
         <div className="mb-20">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-            Infrastructure that
+            Enterprise-grade
             <br />
-            scales with ambition
+            from day one
           </h2>
           
           {/* Corner bracket with subtitle */}
@@ -94,7 +94,7 @@ export const TrustSection = () => {
               <div className="w-[2px] h-6 bg-gray-600" />
             </div>
             <p className="text-gray-400 font-mono text-sm max-w-md">
-              From one project to thousands — enterprise-grade annotation that keeps pace.
+              Security, compliance, and scale built into every annotation workflow.
             </p>
           </div>
         </div>

@@ -129,6 +129,127 @@ class TruncatedLSAPIToken(LSAPIToken):
         super().__init__(token, verify=False, *args, **kwargs)
 
 
+import secrets
+from django.conf import settings as django_settings
+
+
+def generate_api_key():
+    """Generate a secure random API key with a synapse prefix."""
+    return f"syn_{secrets.token_urlsafe(32)}"
+
+
+class APIKey(models.Model):
+    """
+    API Key model for SDK and programmatic API access.
+    
+    This provides a simple key-based authentication mechanism for SDK users
+    that is separate from session-based web UI authentication.
+    """
+    
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(
+        django_settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='api_keys',
+        help_text='The user who owns this API key'
+    )
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='api_keys',
+        null=True,
+        blank=True,
+        help_text='Organization this API key is associated with'
+    )
+    name = models.CharField(
+        _('name'),
+        max_length=255,
+        help_text='A descriptive name for this API key (e.g., "Production SDK", "CI/CD Pipeline")'
+    )
+    key = models.CharField(
+        _('key'),
+        max_length=64,
+        unique=True,
+        default=generate_api_key,
+        help_text='The API key value'
+    )
+    key_prefix = models.CharField(
+        _('key prefix'),
+        max_length=12,
+        blank=True,
+        help_text='First few characters of the key for identification'
+    )
+    description = models.TextField(
+        _('description'),
+        blank=True,
+        default='',
+        help_text='Optional description of what this API key is used for'
+    )
+    is_active = models.BooleanField(
+        _('active'),
+        default=True,
+        help_text='Whether this API key can be used for authentication'
+    )
+    last_used_at = models.DateTimeField(
+        _('last used at'),
+        null=True,
+        blank=True,
+        help_text='When this API key was last used'
+    )
+    expires_at = models.DateTimeField(
+        _('expires at'),
+        null=True,
+        blank=True,
+        help_text='When this API key expires (null = never expires)'
+    )
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('API Key')
+        verbose_name_plural = _('API Keys')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['key']),
+            models.Index(fields=['user', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.key_prefix}...)"
+    
+    def save(self, *args, **kwargs):
+        # Set the key prefix for display purposes
+        if self.key and not self.key_prefix:
+            self.key_prefix = self.key[:8]
+        # Set organization from user if not specified
+        if not self.organization and self.user:
+            self.organization = self.user.active_organization
+        super().save(*args, **kwargs)
+    
+    def is_valid(self):
+        """Check if this API key is valid for authentication."""
+        from django.utils import timezone
+        
+        if not self.is_active:
+            return False
+        if self.expires_at and self.expires_at < timezone.now():
+            return False
+        return True
+    
+    def update_last_used(self):
+        """Update the last_used_at timestamp."""
+        from django.utils import timezone
+        
+        self.last_used_at = timezone.now()
+        self.save(update_fields=['last_used_at'])
+    
+    def regenerate(self):
+        """Regenerate the API key value."""
+        self.key = generate_api_key()
+        self.key_prefix = self.key[:8]
+        self.save(update_fields=['key', 'key_prefix', 'updated_at'])
+
+
 
 
 

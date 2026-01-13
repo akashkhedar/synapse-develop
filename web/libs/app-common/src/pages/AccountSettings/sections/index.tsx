@@ -4,6 +4,7 @@ import { MembershipInfo } from "./MembershipInfo";
 import { HotkeysManager } from "./Hotkeys";
 import type React from "react";
 import { PersonalJWTToken } from "./PersonalJWTToken";
+import { ApiKeyManagement, ApiKeyDescription } from "./ApiKeyManagement";
 import type { AuthTokenSettings } from "../types";
 import { ABILITY, type AuthPermissions } from "@synapse/core/providers/AuthProvider";
 import { ff } from "@synapse/core";
@@ -92,6 +93,17 @@ export const accountSettingsSections = (
 
   // Token sections - only for users with permission (typically not annotators)
   // Settings might be null if the user doesn't have permission to access token settings
+  
+  // API Keys section - primary method for SDK access (always show for users with permission)
+  if (canCreateTokens) {
+    sections.push({
+      title: "API Keys",
+      id: "api-keys",
+      component: ApiKeyManagement,
+      description: ApiKeyDescription,
+    });
+  }
+
   if (settings?.api_tokens_enabled && canCreateTokens && ff.isActive(ff.FF_AUTH_TOKENS)) {
     sections.push({
       title: "Personal Access Token",

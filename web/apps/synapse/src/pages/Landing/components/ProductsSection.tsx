@@ -39,10 +39,10 @@ export const ProductsSection = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-8">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Powering the AI Revolution
+            Every Data Type. Every Annotation.
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            From raw data to intelligent AI systems - see how Synapse transforms unstructured information into training-ready datasets
+            From bounding boxes to named entities — Synapse supports 50+ annotation types across images, text, audio, video, and multi-modal data
           </p>
         </div>
 

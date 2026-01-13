@@ -324,6 +324,7 @@ PROJECT_GRACE_PERIOD_DAYS = int(get_env("PROJECT_GRACE_PERIOD_DAYS", 30))
 REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "jwt_auth.auth.APIKeyAuthentication",
         "jwt_auth.auth.TokenAuthenticationPhaseout",
         "rest_framework.authentication.SessionAuthentication",
     ),

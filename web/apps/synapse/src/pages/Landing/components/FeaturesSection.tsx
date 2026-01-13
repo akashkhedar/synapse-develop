@@ -74,31 +74,31 @@ export const FeaturesSection = () => {
   const features = [
     {
       number: "01",
-      title: "You bring models. We bring the compute.",
+      title: "You bring data. We bring expert annotators.",
       description:
-        "Get complete AI factories integrating high-density power, liquid cooling, and NVIDIA GPUs into one system designed for peak AI performance.",
+        "Connect your S3, GCS, or Azure storage. Our trained annotators handle images, text, audio, and video with domain-specific expertise and quality guarantees.",
       image: "https://wallpapers.com/images/hd/4k-tech-105e3a4x7aw7coqd.jpg",
     },
     {
       number: "02",
-      title: "Your supercomputer. Your rules.",
+      title: "Your labels. Your quality standards.",
       description:
-        "Full control over your infrastructure with customizable configurations, dedicated resources, and direct access to hardware for maximum performance.",
+        "Define custom annotation schemas with our visual editor. Set consensus requirements, review workflows, and accuracy thresholds that match your ML pipeline needs.",
       image: "https://cdn.wallpapersafari.com/64/96/9m8BVu.jpg",
     },
     {
       number: "03",
-      title: "Orchestration, handled.",
+      title: "SDK-first automation.",
       description:
-        "Deploy and manage your ML workloads seamlessly with automated orchestration, load balancing, and intelligent resource allocation.",
+        "Integrate directly with your ML pipeline using our Python SDK. Create projects, import from cloud storage, monitor progress, and export COCO, YOLO, or custom formats programmatically.",
       image:
         "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aW5mb3JtYXRpb24lMjB0ZWNobm9sb2d5fGVufDB8fDB8fHww",
     },
     {
       number: "04",
-      title: "Experts included.",
+      title: "Quality built into every label.",
       description:
-        "Work with our team of ML infrastructure specialists who understand your needs and help optimize your training pipelines from day one.",
+        "Multi-annotator consensus, automated agreement scoring, expert reviews, and continuous accuracy monitoring ensure your training data meets production standards.",
       image: "https://wallpapers.com/images/hd/4k-tech-2k2jzc0qemh7y38n.jpg",
     },
   ];
@@ -140,9 +140,9 @@ export const FeaturesSection = () => {
       <div className="min-h-[20vh] flex items-center">
         <div className="max-w-7xl mx-auto px-6 w-full">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight max-w-2xl">
-            Built for AI.
+            Built for ML teams.
             <br />
-            Ready for superintelligence.
+            Scales with your data.
           </h2>
         </div>
       </div>

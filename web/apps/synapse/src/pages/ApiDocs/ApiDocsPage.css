@@ -724,3 +724,214 @@
 .api-sidebar::-webkit-scrollbar-thumb:hover {
   background: #4b5563;
 }
+
+/* ============================================
+   SDK METHOD CARDS
+   ============================================ */
+.methods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.method-card {
+  background: #111;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 24px;
+  transition: border-color 0.2s ease;
+}
+
+.method-card:hover {
+  border-color: #374151;
+}
+
+.method-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.method-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #8b5cf6;
+}
+
+.method-signature {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #0a0a0a;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.method-description {
+  color: #d1d5db;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.method-params {
+  margin-bottom: 16px;
+}
+
+.method-params h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.params-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.params-table th,
+.params-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #1f2937;
+}
+
+.params-table th {
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.params-table td {
+  color: #d1d5db;
+}
+
+.params-table td code {
+  color: #a78bfa;
+  font-size: 0.8rem;
+}
+
+.method-returns {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.method-returns code {
+  color: #10b981;
+}
+
+/* ============================================
+   ANNOTATION TYPES SECTION
+   ============================================ */
+.annotation-types-section,
+.export-formats-section {
+  margin-top: 48px;
+  padding: 32px;
+  background: #111;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+}
+
+.annotation-types-section h3,
+.export-formats-section h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 24px;
+}
+
+.types-table-wrapper {
+  overflow-x: auto;
+}
+
+.types-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.types-table th,
+.types-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #1f2937;
+}
+
+.types-table th {
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #0a0a0a;
+}
+
+.types-table td {
+  color: #d1d5db;
+}
+
+.types-table td code {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* ============================================
+   EXPORT FORMATS GRID
+   ============================================ */
+.formats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.format-card {
+  background: #0a0a0a;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.format-card:hover {
+  border-color: #374151;
+}
+
+.format-name {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #8b5cf6;
+  margin-bottom: 8px;
+}
+
+.format-description {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.format-usecase {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  background: #1f2937;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+

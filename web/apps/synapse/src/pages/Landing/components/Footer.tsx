@@ -1,12 +1,12 @@
 export const Footer = () => {
   const links = [
-    "Product",
-    "FAQ", 
-    "Features",
-    "Careers",
-    "Case studies",
-    "Terms and conditions",
-    "How it works"
+    "Platform",
+    "SDK Documentation", 
+    "Pricing",
+    "Annotation Types",
+    "Enterprise",
+    "API Reference",
+    "Support"
   ];
 
   const socialIcons = [

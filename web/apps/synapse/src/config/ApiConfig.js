@@ -117,6 +117,14 @@ export const API_CONFIG = {
     accessTokenSettings: "GET:/jwt/settings",
     accessTokenUpdateSettings: "POST:/jwt/settings",
 
+    // API Keys (SDK)
+    apiKeysList: "GET:/api-keys",
+    apiKeysCreate: "POST:/api-keys",
+    apiKeysGet: "GET:/api-keys/:id",
+    apiKeysUpdate: "PATCH:/api-keys/:id",
+    apiKeysDelete: "DELETE:/api-keys/:id",
+    apiKeysRegenerate: "POST:/api-keys/:id/regenerate",
+
     // FSM
     fsmStateHistory: "GET:/fsm/entities/:entityType/:entityId/history",
   },

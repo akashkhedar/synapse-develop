@@ -5,13 +5,18 @@ from core.permissions import ViewClassPermission, all_permissions
 from django.utils.decorators import method_decorator
 from drf_spectacular.utils import extend_schema
 from jwt_auth.auth import TokenAuthenticationPhaseout
-from jwt_auth.models import LSAPIToken, TruncatedLSAPIToken
+from jwt_auth.models import LSAPIToken, TruncatedLSAPIToken, APIKey
 from jwt_auth.serializers import (
     JWTSettingsSerializer,
     LSAPITokenCreateSerializer,
     LSAPITokenListSerializer,
     TokenRefreshResponseSerializer,
     TokenRotateResponseSerializer,
+    APIKeyCreateSerializer,
+    APIKeyListSerializer,
+    APIKeyDetailSerializer,
+    APIKeyUpdateSerializer,
+    APIKeyRegenerateSerializer,
 )
 from rest_framework import generics, status
 from rest_framework.authentication import SessionAuthentication
@@ -260,6 +265,176 @@ class LSAPITokenRotateView(TokenViewBase):
     def create_token(self, user):
         """Create a new token for the user. Can be overridden by child classes to use different token classes."""
         return self.token_class.for_user(user)
+
+
+# =============================================================================
+# API Key Views for SDK Authentication
+# =============================================================================
+
+
+@method_decorator(
+    name='get',
+    decorator=extend_schema(
+        tags=['API Keys'],
+        summary='List API Keys',
+        description='List all API keys for the current user.',
+        responses={
+            status.HTTP_200_OK: APIKeyListSerializer(many=True),
+        },
+        extensions={
+            'x-fern-sdk-group-name': 'api_keys',
+            'x-fern-sdk-method-name': 'list',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+@method_decorator(
+    name='post',
+    decorator=extend_schema(
+        tags=['API Keys'],
+        summary='Create API Key',
+        description='Create a new API key for SDK/API access. The full key is only returned once upon creation.',
+        request=APIKeyCreateSerializer,
+        responses={
+            status.HTTP_201_CREATED: APIKeyDetailSerializer,
+        },
+        extensions={
+            'x-fern-sdk-group-name': 'api_keys',
+            'x-fern-sdk-method-name': 'create',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+class APIKeyListCreateView(generics.ListCreateAPIView):
+    """
+    List and create API keys for the current user.
+    
+    GET: Returns all API keys for the user (with masked key values).
+    POST: Creates a new API key (full key value returned only on creation).
+    """
+    permission_required = all_permissions.users_token_any
+    
+    def get_queryset(self):
+        return APIKey.objects.filter(user=self.request.user).order_by('-created_at')
+    
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return APIKeyCreateSerializer
+        return APIKeyListSerializer
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        api_key = serializer.save()
+        
+        # Return full key details using the detail serializer
+        response_serializer = APIKeyDetailSerializer(api_key)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+@method_decorator(
+    name='get',
+    decorator=extend_schema(
+        tags=['API Keys'],
+        summary='Get API Key',
+        description='Retrieve details of a specific API key (key value is masked).',
+        responses={
+            status.HTTP_200_OK: APIKeyListSerializer,
+        },
+        extensions={
+            'x-fern-sdk-group-name': 'api_keys',
+            'x-fern-sdk-method-name': 'get',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+@method_decorator(
+    name='patch',
+    decorator=extend_schema(
+        tags=['API Keys'],
+        summary='Update API Key',
+        description='Update the name, description, or active status of an API key.',
+        request=APIKeyUpdateSerializer,
+        responses={
+            status.HTTP_200_OK: APIKeyListSerializer,
+        },
+        extensions={
+            'x-fern-sdk-group-name': 'api_keys',
+            'x-fern-sdk-method-name': 'update',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+@method_decorator(
+    name='delete',
+    decorator=extend_schema(
+        tags=['API Keys'],
+        summary='Delete API Key',
+        description='Permanently delete an API key.',
+        responses={
+            status.HTTP_204_NO_CONTENT: None,
+        },
+        extensions={
+            'x-fern-sdk-group-name': 'api_keys',
+            'x-fern-sdk-method-name': 'delete',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+class APIKeyDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update, or delete a specific API key.
+    """
+    permission_required = all_permissions.users_token_any
+    lookup_field = 'id'
+    
+    def get_queryset(self):
+        return APIKey.objects.filter(user=self.request.user)
+    
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return APIKeyUpdateSerializer
+        return APIKeyListSerializer
+
+
+class APIKeyRegenerateView(generics.UpdateAPIView):
+    """
+    Regenerate the key value for an existing API key.
+    
+    This invalidates the old key and returns the new key value.
+    """
+    permission_required = all_permissions.users_token_any
+    serializer_class = APIKeyRegenerateSerializer
+    lookup_field = 'id'
+    
+    def get_queryset(self):
+        return APIKey.objects.filter(user=self.request.user)
+    
+    @extend_schema(
+        tags=['API Keys'],
+        summary='Regenerate API Key',
+        description='Regenerate the key value for an existing API key. The new key is only returned once.',
+        responses={
+            status.HTTP_200_OK: APIKeyDetailSerializer,
+        },
+        extensions={
+            'x-fern-sdk-group-name': 'api_keys',
+            'x-fern-sdk-method-name': 'regenerate',
+            'x-fern-audiences': ['public'],
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        api_key = self.get_object()
+        api_key.regenerate()
+        
+        # Return full key details
+        response_serializer = APIKeyDetailSerializer(api_key)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 

@@ -38,7 +38,9 @@ export const Navigation = () => {
 
           {/* Center section - Nav Links */}
           <div className="hidden md:flex items-center gap-14 flex-1 justify-center">
-            <span className="text-gray-300 hover:text-white text-[13px] font-medium tracking-[0.2em] cursor-pointer transition-colors">
+            <span className="text-gray-300 hover:text-white text-[13px] font-medium tracking-[0.2em] cursor-pointer transition-colors" onClick={() => {
+              history.push("/docs/")
+            }}>
               DOCS
             </span>
 

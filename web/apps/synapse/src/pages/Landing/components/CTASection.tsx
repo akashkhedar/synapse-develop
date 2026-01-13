@@ -32,7 +32,7 @@ export const CTASection = () => {
             className="inline-block mb-6"
           >
             <span className="text-gray-500 font-mono text-sm tracking-wider uppercase">
-              Ready to scale?
+              pip install synapse-sdk
             </span>
           </motion.div>
 
@@ -43,10 +43,10 @@ export const CTASection = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 leading-tight"
           >
-            Start building
+            Start labeling
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">
-              better AI today
+              in minutes, not months
             </span>
           </motion.h2>
 
@@ -57,7 +57,7 @@ export const CTASection = () => {
             viewport={{ once: true }}
             className="text-gray-400 text-lg max-w-xl mx-auto mb-12 font-mono"
           >
-            Join thousands of AI teams using Synapse to create high-quality training data at scale.
+            Create a project, connect your cloud storage, and get production-quality annotations delivered to your ML pipeline.
           </motion.p>
 
           {/* Buttons */}
@@ -73,14 +73,14 @@ export const CTASection = () => {
               whileTap={{ scale: 0.98 }}
               className="bg-white text-black px-10 py-4 text-base font-semibold hover:bg-gray-100 transition-all"
             >
-              Get Started Free →
+              Create Free Account →
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.05)" }}
               whileTap={{ scale: 0.98 }}
               className="border border-gray-700 text-white px-10 py-4 text-base font-semibold transition-all"
             >
-              Schedule Demo
+              Read SDK Docs
             </motion.button>
           </motion.div>
         </div>
@@ -94,9 +94,9 @@ export const CTASection = () => {
           className="flex flex-wrap justify-center gap-12 pt-12 border-t border-gray-800"
         >
           {[
-            { value: "10M+", label: "Annotations delivered" },
-            { value: "500+", label: "Enterprise clients" },
-            { value: "99.9%", label: "Quality guarantee" },
+            { value: "50M+", label: "Annotations delivered" },
+            { value: "15+", label: "Export formats" },
+            { value: "99.2%", label: "Avg. accuracy rate" },
           ].map((stat, index) => (
             <div key={index} className="text-center">
               <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>

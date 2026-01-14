@@ -48,14 +48,18 @@ export const loadLiveTipsCollection = () => {
   const fetchedAt = localStorage.getItem(CACHE_FETCHED_AT_KEY);
 
   // Read from local storage if the cachedData is less than CACHE_STALE_TIME milliseconds old
-  if (cachedData && fetchedAt && Date.now() - Number.parseInt(fetchedAt) < CACHE_STALE_TIME) {
+  if (
+    cachedData &&
+    fetchedAt &&
+    Date.now() - Number.parseInt(fetchedAt) < CACHE_STALE_TIME
+  ) {
     return JSON.parse(cachedData);
   }
 
   const abortController = new AbortController();
 
   // Abort the request after MAX_TIMEOUT milliseconds to ensure we won't wait for too long, something might be wrong with the network or it could be an air-gapped instance
-  const abortTimeout = setTimeout(abortController.abort, MAX_TIMEOUT);
+  const abortTimeout = setTimeout(() => abortController.abort(), MAX_TIMEOUT);
 
   // Fetch from github raw liveContent.json proxied through the server
   fetch("/heidi-tips", {
@@ -128,13 +132,18 @@ export function dismissTip(collection: string) {
 }
 
 export function isTipDismissed(collection: string) {
-  const cookies = Object.fromEntries(document.cookie.split(";").map((item) => item.trim().split("=")));
+  const cookies = Object.fromEntries(
+    document.cookie.split(";").map((item) => item.trim().split("="))
+  );
   const finalKey = getKey(collection);
 
   return cookies[finalKey] === "true";
 }
 
-export function createURL(url: string, params?: Record<string, string>): string {
+export function createURL(
+  url: string,
+  params?: Record<string, string>
+): string {
   const base = new URL(url);
 
   Object.entries(params ?? {}).forEach(([key, value]) => {
@@ -149,4 +158,3 @@ export function createURL(url: string, params?: Record<string, string>): string 
 
   return base.toString();
 }
-

@@ -15,32 +15,35 @@ const injector = inject(({ store }) => {
 
 // Modern order button styles
 const orderButtonStyle = {
-  background: 'rgba(139, 92, 246, 0.08)',
-  border: '1px solid rgba(139, 92, 246, 0.3)',
-  color: '#a78bfa',
-  borderRadius: '8px 0 0 8px',
+  "--background-color": "rgba(139, 92, 246, 0.08)",
+  "--border-color": "rgba(139, 92, 246, 0.3)",
+  "--border-outline": "rgba(139, 92, 246, 0.3)",
+  "--text-color": "#a78bfa",
+  "--text-outline": "#a78bfa",
+  "--background-color-hover": "rgba(139, 92, 246, 0.15)",
+  borderRadius: "8px 0 0 8px",
   fontWeight: 500,
-  fontSize: '13px',
+  fontSize: "13px",
 };
 
 const sortToggleStyle = {
-  background: 'rgba(55, 65, 81, 0.4)',
-  border: '1px solid rgba(75, 85, 99, 0.5)',
-  borderLeft: 'none',
-  color: '#9ca3af',
-  borderRadius: '0 8px 8px 0',
-  padding: '8px 10px',
-  minWidth: '36px',
+  background: "rgba(55, 65, 81, 0.4)",
+  border: "1px solid rgba(75, 85, 99, 0.5)",
+  borderLeft: "none",
+  color: "#9ca3af",
+  borderRadius: "0 8px 8px 0",
+  padding: "8px 10px",
+  minWidth: "36px",
 };
 
 const sortToggleActiveStyle = {
-  background: 'rgba(139, 92, 246, 0.15)',
-  border: '1px solid rgba(139, 92, 246, 0.4)',
-  borderLeft: 'none',
-  color: '#a78bfa',
-  borderRadius: '0 8px 8px 0',
-  padding: '8px 10px',
-  minWidth: '36px',
+  background: "rgba(139, 92, 246, 0.15)",
+  border: "1px solid rgba(139, 92, 246, 0.4)",
+  borderLeft: "none",
+  color: "#a78bfa",
+  borderRadius: "0 8px 8px 0",
+  padding: "8px 10px",
+  minWidth: "36px",
 };
 
 export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
@@ -69,7 +72,7 @@ export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: '#8b5cf6',
+                  color: "#8b5cf6",
                 }}
               >
                 {column?.icon}
@@ -78,11 +81,7 @@ export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
           )}
           openUpwardForShortViewport={false}
         />
-
-        
       </ButtonGroup>
     </Space>
   );
 });
-
-

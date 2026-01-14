@@ -26,7 +26,7 @@ export const Filters = injector(({ views, currentView, filters }) => {
             s
               .split("")
               .map((c, i) => (i === 0 ? c.toUpperCase() : c))
-              .join(""),
+              .join("")
           )
           .join(" ");
 
@@ -44,12 +44,19 @@ export const Filters = injector(({ views, currentView, filters }) => {
 
         return { ...res, [target]: group };
       }, {}),
-    [currentView.availableFilters],
+    [currentView.availableFilters]
   );
 
   return (
-    <div className={cn("filters").mod({ sidebar: sidebarEnabled }).toClassName()}>
-      <div className={cn("filters").elem("list").mod({ withFilters: !!filters.length }).toClassName()}>
+    <div
+      className={cn("filters").mod({ sidebar: sidebarEnabled }).toClassName()}
+    >
+      <div
+        className={cn("filters")
+          .elem("list")
+          .mod({ withFilters: !!filters.length })
+          .toClassName()}
+      >
         {filters.length ? (
           filters.map((filter, i) => (
             <FilterLine
@@ -64,7 +71,9 @@ export const Filters = injector(({ views, currentView, filters }) => {
             />
           ))
         ) : (
-          <div className={cn("filters").elem("empty").toClassName()}>No filters applied</div>
+          <div className={cn("filters").elem("empty").toClassName()}>
+            No filters applied
+          </div>
         )}
       </div>
       <div className={cn("filters").elem("actions").toClassName()}>
@@ -76,8 +85,8 @@ export const Filters = injector(({ views, currentView, filters }) => {
           style={{
             fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
             fontWeight: 500,
-            color: '#a78bfa',
-            transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+            color: "#a78bfa",
+            transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
           Add {filters.length ? "Another Filter" : "Filter"}
@@ -92,9 +101,10 @@ export const Filters = injector(({ views, currentView, filters }) => {
             onClick={() => views.expandFilters()}
             aria-label="Pin filters to sidebar"
             style={{
-              fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
-              color: '#a78bfa',
-              transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+              fontFamily:
+                "'Space Grotesk', system-ui, -apple-system, sans-serif",
+              color: "#a78bfa",
+              transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
             <IconChevronRight className="!w-4 !h-4" />
@@ -104,4 +114,3 @@ export const Filters = injector(({ views, currentView, filters }) => {
     </div>
   );
 });
-

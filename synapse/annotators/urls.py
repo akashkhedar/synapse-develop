@@ -2,7 +2,7 @@
 
 from django.urls import path
 from django.conf import settings
-from . import api, views
+from . import api, views, honeypot_api
 
 app_name = "annotators"
 
@@ -405,9 +405,37 @@ urlpatterns = [
         api.AdminExpertPaymentAnalyticsAPI.as_view(),
         name="admin-expert-analytics",
     ),
+    # ============================================================================
+    # HONEYPOT MANAGEMENT URLS
+    # ============================================================================
+    # List/Create honeypots for a project
+    path(
+        "honeypots/project/<int:project_id>",
+        honeypot_api.ProjectHoneypotsAPI.as_view(),
+        name="project-honeypots",
+    ),
+    # Get/Update/Delete specific honeypot
+    path(
+        "honeypots/project/<int:project_id>/<int:honeypot_id>",
+        honeypot_api.ProjectHoneypotDetailAPI.as_view(),
+        name="project-honeypot-detail",
+    ),
+    # Honeypot statistics
+    path(
+        "honeypots/project/<int:project_id>/stats",
+        honeypot_api.ProjectHoneypotStatsAPI.as_view(),
+        name="project-honeypot-stats",
+    ),
+    # Honeypot configuration
+    path(
+        "honeypots/project/<int:project_id>/config",
+        honeypot_api.ProjectHoneypotConfigAPI.as_view(),
+        name="project-honeypot-config",
+    ),
+    # Bulk create honeypots
+    path(
+        "honeypots/project/<int:project_id>/bulk",
+        honeypot_api.ProjectHoneypotBulkCreateAPI.as_view(),
+        name="project-honeypot-bulk",
+    ),
 ]
-
-
-
-
-

@@ -11,60 +11,73 @@ const injector = inject(({ store }) => {
   };
 });
 
-const FieldsMenu = observer(({ columns, WrapperComponent, onClick, onReset, selected, resetTitle }) => {
-  const MenuItem = (col, onClick) => {
+const FieldsMenu = observer(
+  ({ columns, WrapperComponent, onClick, onReset, selected, resetTitle }) => {
+    const MenuItem = (col, onClick) => {
+      return (
+        <Menu.Item
+          key={col.key}
+          name={col.key}
+          onClick={onClick}
+          disabled={col.disabled}
+        >
+          {WrapperComponent && col.wra !== false ? (
+            <WrapperComponent column={col} disabled={col.disabled}>
+              {col.title}
+            </WrapperComponent>
+          ) : (
+            col.title
+          )}
+        </Menu.Item>
+      );
+    };
+
     return (
-      <Menu.Item key={col.key} name={col.key} onClick={onClick} disabled={col.disabled}>
-        {WrapperComponent && col.wra !== false ? (
-          <WrapperComponent column={col} disabled={col.disabled}>
-            {col.title}
-          </WrapperComponent>
-        ) : (
-          col.title
-        )}
-      </Menu.Item>
+      <Menu
+        size="small"
+        selectedKeys={selected ? [selected] : ["none"]}
+        closeDropdownOnItemClick={false}
+      >
+        {onReset &&
+          MenuItem(
+            {
+              key: "none",
+              title: resetTitle ?? "Default",
+              wrap: false,
+            },
+            onReset
+          )}
+
+        {columns.map((col) => {
+          if (col.children) {
+            return (
+              <Menu.Group key={col.key} title={col.title}>
+                {col.children.map((col) => MenuItem(col, () => onClick?.(col)))}
+              </Menu.Group>
+            );
+          }
+          if (!col.parent) {
+            return MenuItem(col, () => onClick?.(col));
+          }
+
+          return null;
+        })}
+      </Menu>
     );
-  };
-
-  return (
-    <Menu size="small" selectedKeys={selected ? [selected] : ["none"]} closeDropdownOnItemClick={false}>
-      {onReset &&
-        MenuItem(
-          {
-            key: "none",
-            title: resetTitle ?? "Default",
-            wrap: false,
-          },
-          onReset,
-        )}
-
-      {columns.map((col) => {
-        if (col.children) {
-          return (
-            <Menu.Group key={col.key} title={col.title}>
-              {col.children.map((col) => MenuItem(col, () => onClick?.(col)))}
-            </Menu.Group>
-          );
-        }
-        if (!col.parent) {
-          return MenuItem(col, () => onClick?.(col));
-        }
-
-        return null;
-      })}
-    </Menu>
-  );
-});
+  }
+);
 
 // Modern toolbar dropdown button style
 const toolbarDropdownStyle = {
-  background: 'rgba(139, 92, 246, 0.08)',
-  border: '1px solid rgba(139, 92, 246, 0.3)',
-  color: '#a78bfa',
-  borderRadius: '8px',
+  "--background-color": "rgba(139, 92, 246, 0.08)",
+  "--border-color": "rgba(139, 92, 246, 0.3)",
+  "--border-outline": "rgba(139, 92, 246, 0.3)",
+  "--text-color": "#a78bfa",
+  "--text-outline": "#a78bfa",
+  "--background-color-hover": "rgba(139, 92, 246, 0.15)",
+  borderRadius: "8px",
   fontWeight: 500,
-  fontSize: '13px',
-  transition: 'all 0.2s ease',
+  fontSize: "13px",
 };
 
 export const FieldsButton = injector(
@@ -89,12 +102,14 @@ export const FieldsButton = injector(
   }) => {
     const content = [];
 
-    if (title) content.push(<React.Fragment key="f-button-title">{title}</React.Fragment>);
+    if (title)
+      content.push(
+        <React.Fragment key="f-button-title">{title}</React.Fragment>
+      );
 
     const renderButton = () => {
       return (
         <Button
-          variant="neutral"
           size="small"
           look="outlined"
           leading={icon}
@@ -124,10 +139,14 @@ export const FieldsButton = injector(
         openUpwardForShortViewport={openUpwardForShortViewport}
       >
         {tooltip ? (
-          <div className={`${cn("field-button").toClassName()} h-[40px] flex items-center`} style={{ zIndex: 1000 }}>
+          <div
+            className={`${cn(
+              "field-button"
+            ).toClassName()} h-[40px] flex items-center`}
+            style={{ zIndex: 1000 }}
+          >
             <Button
               tooltip={tooltip}
-              variant="neutral"
               size={size}
               look="outlined"
               leading={icon}
@@ -143,7 +162,7 @@ export const FieldsButton = injector(
         )}
       </Dropdown.Trigger>
     );
-  },
+  }
 );
 
 FieldsButton.Checkbox = observer(({ column, children, disabled }) => {
@@ -159,4 +178,3 @@ FieldsButton.Checkbox = observer(({ column, children, disabled }) => {
     </Checkbox>
   );
 });
-

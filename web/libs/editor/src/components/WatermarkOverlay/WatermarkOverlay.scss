@@ -1,0 +1,31 @@
+.watermark-container {
+  position: relative;
+}
+
+.watermark-overlay {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.watermark-tile,
+.watermark-diagonal {
+  font-family: "Arial", sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* Print protection - hide content when printing */
+@media print {
+  .watermark-container > *:not(.watermark-overlay) {
+    display: none !important;
+  }
+
+  .watermark-overlay::after {
+    content: "PRINTING DISABLED FOR SECURITY";
+    display: block;
+    text-align: center;
+    padding: 100px;
+    font-size: 24px;
+    color: #333;
+  }
+}

@@ -20,9 +20,10 @@ from pathlib import Path
 # Load .env file before any settings are read
 try:
     from dotenv import load_dotenv
+
     # Find the root .env file (synapse-develop/.env)
     _settings_dir = Path(__file__).resolve().parent
-    _env_path = _settings_dir.parent.parent.parent / '.env'
+    _env_path = _settings_dir.parent.parent.parent / ".env"
     if _env_path.exists():
         load_dotenv(_env_path, override=True)
 except ImportError:
@@ -288,6 +289,8 @@ MIDDLEWARE = [
     "jwt_auth.middleware.JWTAuthenticationMiddleware",
     # API Rate Limiting - use BlockingAPIRateLimitMiddleware for hard limits
     "billing.middleware.BlockingAPIRateLimitMiddleware",
+    "core.middleware.SecurityHeadersMiddleware",
+    "core.middleware.DownloadPreventionMiddleware",
 ]
 
 # ============================================================================
@@ -621,9 +624,7 @@ TASK_API_PAGE_SIZE_MAX = int(get_env("TASK_API_PAGE_SIZE_MAX", 0)) or None
 # Email backend configuration
 # For development: use console backend (prints to terminal)
 # For production: use smtp backend (sends real emails)
-EMAIL_BACKEND = get_env(
-    "EMAIL_BACKEND", "django.core.mail.smtp.EmailBackend"
-)
+EMAIL_BACKEND = get_env("EMAIL_BACKEND", "django.core.mail.smtp.EmailBackend")
 
 # Email settings
 DEFAULT_FROM_EMAIL = get_env("DEFAULT_FROM_EMAIL", "Synapse <akashkhedar262@gmail.com>")
@@ -1039,9 +1040,7 @@ if CI:
 LOGOUT_REDIRECT_URL = get_env("LOGOUT_REDIRECT_URL", None)
 
 # Enable legacy tokens (useful for running with a pre-existing token via `SYNAPSE_USER_TOKEN`)
-SYNAPSE_ENABLE_LEGACY_API_TOKEN = get_bool_env(
-    "SYNAPSE_ENABLE_LEGACY_API_TOKEN", False
-)
+SYNAPSE_ENABLE_LEGACY_API_TOKEN = get_bool_env("SYNAPSE_ENABLE_LEGACY_API_TOKEN", False)
 RESOLVER_PROXY_BUFFER_SIZE = int(get_env("RESOLVER_PROXY_BUFFER_SIZE", 512 * 1024))
 RESOLVER_PROXY_TIMEOUT = int(get_env("RESOLVER_PROXY_TIMEOUT", 20))
 RESOLVER_PROXY_MAX_RANGE_SIZE = int(
@@ -1087,9 +1086,3 @@ RAZORPAY_KEY_ID = get_env("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = get_env("RAZORPAY_KEY_SECRET", "")
 # RazorpayX Payout Settings (for sending money to annotators)
 RAZORPAYX_ACCOUNT_NUMBER = get_env("RAZORPAYX_ACCOUNT_NUMBER", "")
-
-
-
-
-
-

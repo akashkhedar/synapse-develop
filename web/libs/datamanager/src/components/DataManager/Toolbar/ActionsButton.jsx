@@ -18,48 +18,51 @@ const injector = inject(({ store }) => ({
 
 // Modern actions button styles matching OrderButton design
 const actionsButtonStyle = {
-  background: 'rgba(139, 92, 246, 0.08)',
-  border: '1px solid rgba(139, 92, 246, 0.3)',
-  color: '#a78bfa',
-  borderRadius: '8px',
+  "--background-color": "rgba(139, 92, 246, 0.08)",
+  "--border-color": "rgba(139, 92, 246, 0.3)",
+  "--border-outline": "rgba(139, 92, 246, 0.3)",
+  "--text-color": "#a78bfa",
+  "--text-outline": "#a78bfa",
+  "--background-color-hover": "rgba(139, 92, 246, 0.15)",
+  borderRadius: "8px",
   fontWeight: 500,
-  fontSize: '13px',
-  fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
-  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+  fontSize: "13px",
 };
 
 const actionsButtonDisabledStyle = {
-  background: 'rgba(55, 65, 81, 0.3)',
-  border: '1px solid rgba(75, 85, 99, 0.4)',
-  color: '#6b7280',
-  borderRadius: '8px',
+  "--background-color": "rgba(55, 65, 81, 0.3)",
+  "--border-color": "rgba(75, 85, 99, 0.4)",
+  "--border-outline": "rgba(75, 85, 99, 0.4)",
+  "--text-color": "#6b7280",
+  "--text-outline": "#6b7280",
+  borderRadius: "8px",
   fontWeight: 500,
-  fontSize: '13px',
-  fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+  fontSize: "13px",
 };
 
 // Menu item styles
 const menuItemStyle = {
   fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
-  fontSize: '13px',
+  fontSize: "13px",
   fontWeight: 500,
-  letterSpacing: '0.02em',
-  transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+  letterSpacing: "0.02em",
+  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
 };
 
 const menuTitleStyle = {
   fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
-  fontSize: '11px',
+  fontSize: "11px",
   fontWeight: 600,
-  letterSpacing: '0.1em',
-  textTransform: 'uppercase',
-  color: '#a78bfa',
+  letterSpacing: "0.1em",
+  textTransform: "uppercase",
+  color: "#a78bfa",
 };
 
 const separatorStyle = {
-  height: '1px',
-  background: 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent)',
-  margin: '8px 0',
+  height: "1px",
+  background:
+    "linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent)",
+  margin: "8px 0",
 };
 
 const DialogContent = ({ text, form, formRef, store, action }) => {
@@ -84,7 +87,9 @@ const DialogContent = ({ text, form, formRef, store, action }) => {
 
   return (
     <div className={cn("dialog-content").toClassName()}>
-      <div className={cn("dialog-content").elem("text").toClassName()}>{text}</div>
+      <div className={cn("dialog-content").elem("text").toClassName()}>
+        {text}
+      </div>
       {isLoading && (
         <div
           className={cn("dialog-content").elem("loading").toClassName()}
@@ -94,8 +99,16 @@ const DialogContent = ({ text, form, formRef, store, action }) => {
         </div>
       )}
       {formData && (
-        <div className={cn("dialog-content").elem("form").toClassName()} style={{ paddingTop: 16 }}>
-          <Form.Builder ref={formRef} fields={fields} autosubmit={false} withActions={false} />
+        <div
+          className={cn("dialog-content").elem("form").toClassName()}
+          style={{ paddingTop: 16 }}
+        >
+          <Form.Builder
+            ref={formRef}
+            fields={fields}
+            autosubmit={false}
+            withActions={false}
+          />
         </div>
       )}
     </div>
@@ -116,7 +129,14 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
         : invokeAction(action, isDeleteAction, store, formRef);
       parentRef?.current?.close?.();
     },
-    [store.currentView?.selected, action, isDeleteAction, parentRef, store, formRef],
+    [
+      store.currentView?.selected,
+      action,
+      isDeleteAction,
+      parentRef,
+      store,
+      formRef,
+    ]
   );
 
   const titleContainer = (
@@ -135,12 +155,23 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
       size="small"
       onClick={onClick}
       aria-label={action.title}
-      style={action.isTitle ? menuTitleStyle : action.isSeparator ? separatorStyle : menuItemStyle}
+      style={
+        action.isTitle
+          ? menuTitleStyle
+          : action.isSeparator
+          ? separatorStyle
+          : menuItemStyle
+      }
     >
       <div
         className={cn("actionButton").elem("titleContainer").toClassName()}
         {...(action.disabled ? { title: action.disabledReason } : {})}
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          justifyContent: "space-between",
+        }}
       >
         <div style={{ flexGrow: 1 }}>{action.title}</div>
         {hasChildren ? <IconChevronRight style={{ opacity: 0.7 }} /> : null}
@@ -156,7 +187,7 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
         toggle={false}
         ref={submenuRef}
         content={
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+          <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
             {action.children.map((childAction) => (
               <ActionButton
                 key={childAction.id}
@@ -175,7 +206,12 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
   }
 
   return (
-    <Tooltip key={action.id} title={action.disabled_reason} disabled={!action.disabled} alignment="bottom-center">
+    <Tooltip
+      key={action.id}
+      title={action.disabled_reason}
+      disabled={!action.disabled}
+      alignment="bottom-center"
+    >
       <div>
         <Menu.Item
           size="small"
@@ -185,7 +221,13 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
           icon={isDeleteAction && <IconTrash />}
           title={action.disabled ? action.disabledReason : null}
           aria-label={action.title}
-          style={action.isSeparator ? separatorStyle : action.isTitle ? menuTitleStyle : menuItemStyle}
+          style={
+            action.isSeparator
+              ? separatorStyle
+              : action.isTitle
+              ? menuTitleStyle
+              : menuItemStyle
+          }
         >
           {action.title}
         </Menu.Item>
@@ -216,7 +258,9 @@ const invokeAction = (action, destructive, store, formRef) => {
         delete_ground_truths: "ground truths",
       };
 
-      const objectType = objectMap[action.id] || action.title.toLowerCase().replace("delete ", "");
+      const objectType =
+        objectMap[action.id] ||
+        action.title.toLowerCase().replace("delete ", "");
       dialogTitle = `Delete selected ${objectType}?`;
 
       // Convert to title case for button text
@@ -229,13 +273,27 @@ const invokeAction = (action, destructive, store, formRef) => {
 
     if (destructive && !form) {
       // Use standardized warning message for simple delete actions
-      const objectType = dialogTitle ? dialogTitle.replace("Delete selected ", "").replace("?", "") : "items";
+      const objectType = dialogTitle
+        ? dialogTitle.replace("Delete selected ", "").replace("?", "")
+        : "items";
       dialogText = `You are about to delete the selected ${objectType}.\n\nThis can't be undone.`;
     }
 
     dialog({
-      title: dialogTitle ? dialogTitle : destructive ? "Destructive action" : "Confirm action",
-      body: <DialogContent text={dialogText} form={form} formRef={formRef} store={store} action={action} />,
+      title: dialogTitle
+        ? dialogTitle
+        : destructive
+        ? "Destructive action"
+        : "Confirm action",
+      body: (
+        <DialogContent
+          text={dialogText}
+          form={form}
+          formRef={formRef}
+          store={store}
+          action={action}
+        />
+      ),
       buttonLook: destructive ? "negative" : "primary",
       okText: destructive ? okButtonText : undefined,
       onOk() {
@@ -268,12 +326,21 @@ export const ActionsButton = injector(
     });
 
     const actions = useMemo(() => {
-      return [...store.availableActions, ...serverActions].filter((a) => !a.hidden).sort((a, b) => a.order - b.order);
+      return [...store.availableActions, ...serverActions]
+        .filter((a) => !a.hidden)
+        .sort((a, b) => a.order - b.order);
     }, [store.availableActions, serverActions]);
     const actionButtons = actions.map((action) => (
-      <ActionButton key={action.id} action={action} parentRef={formRef} store={store} formRef={formRef} />
+      <ActionButton
+        key={action.id}
+        action={action}
+        parentRef={formRef}
+        store={store}
+        formRef={formRef}
+      />
     ));
-    const recordTypeLabel = isFFLOPSE3 && store.SDK.type === "DE" ? "Record" : "Task";
+    const recordTypeLabel =
+      isFFLOPSE3 && store.SDK.type === "DE" ? "Record" : "Task";
 
     return (
       <Dropdown.Trigger
@@ -294,7 +361,6 @@ export const ActionsButton = injector(
       >
         <Button
           size={size}
-          variant="neutral"
           look="outlined"
           disabled={!hasSelected}
           trailing={<IconChevronDown />}
@@ -302,10 +368,13 @@ export const ActionsButton = injector(
           style={hasSelected ? actionsButtonStyle : actionsButtonDisabledStyle}
           {...rest}
         >
-          {selectedCount > 0 ? `${selectedCount} ${recordTypeLabel}${selectedCount > 1 ? "s" : ""}` : "Actions"}
+          {selectedCount > 0
+            ? `${selectedCount} ${recordTypeLabel}${
+                selectedCount > 1 ? "s" : ""
+              }`
+            : "Actions"}
         </Button>
       </Dropdown.Trigger>
     );
-  }),
+  })
 );
-

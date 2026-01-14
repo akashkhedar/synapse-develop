@@ -486,6 +486,30 @@ class Project(ProjectMixin, FsmHistoryStateModel):
         help_text="Priority level for task assignment (higher = more urgent)",
     )
 
+    # Honeypot Configuration
+    honeypot_enabled = models.BooleanField(
+        _("honeypot enabled"),
+        default=True,
+        help_text="Enable honeypot quality control tasks",
+    )
+    honeypot_injection_rate = models.DecimalField(
+        _("honeypot injection rate"),
+        max_digits=4,
+        decimal_places=2,
+        default=0.10,
+        help_text="Percentage of tasks that are honeypots (0.0-1.0)",
+    )
+    honeypot_min_interval = models.IntegerField(
+        _("honeypot minimum interval"),
+        default=5,
+        help_text="Minimum tasks between honeypots per annotator",
+    )
+    honeypot_failure_threshold = models.IntegerField(
+        _("honeypot failure threshold"),
+        default=3,
+        help_text="Max consecutive honeypot failures before suspension",
+    )
+
     def __init__(self, *args, **kwargs):
         super(Project, self).__init__(*args, **kwargs)
         # This check is required because deferred fields cause issues with evaluating lazy (deferred) fields if read directly, which means that any attempt to optimize a queryset involving projects
@@ -2015,8 +2039,3 @@ class ProjectReimport(models.Model):
 
     def has_permission(self, user):
         return self.project.has_permission(user)
-
-
-
-
-

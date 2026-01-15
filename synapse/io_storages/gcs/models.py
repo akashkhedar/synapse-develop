@@ -1,5 +1,4 @@
-"""This file and its contents are licensed under the Apache License 2.0. Please see the included NOTICE for copyright information and LICENSE for a copy of the license.
-"""
+"""This file and its contents are licensed under the Apache License 2.0. Please see the included NOTICE for copyright information and LICENSE for a copy of the license."""
 
 import json
 import logging
@@ -35,26 +34,32 @@ logger = logging.getLogger(__name__)
 
 
 class GCSStorageMixin(models.Model):
-    bucket = models.TextField(_('bucket'), null=True, blank=True, help_text='GCS bucket name')
-    prefix = models.TextField(_('prefix'), null=True, blank=True, help_text='GCS bucket prefix')
+    bucket = models.TextField(
+        _("bucket"), null=True, blank=True, help_text="GCS bucket name"
+    )
+    prefix = models.TextField(
+        _("prefix"), null=True, blank=True, help_text="GCS bucket prefix"
+    )
     regex_filter = models.TextField(
-        _('regex_filter'),
+        _("regex_filter"),
         null=True,
         blank=True,
-        help_text='Cloud storage regex for filtering objects',
+        help_text="Cloud storage regex for filtering objects",
     )
     use_blob_urls = models.BooleanField(
-        _('use_blob_urls'),
+        _("use_blob_urls"),
         default=False,
-        help_text='Interpret objects as BLOBs and generate URLs',
+        help_text="Interpret objects as BLOBs and generate URLs",
     )
     google_application_credentials = models.TextField(
-        _('google_application_credentials'),
+        _("google_application_credentials"),
         null=True,
         blank=True,
-        help_text='The content of GOOGLE_APPLICATION_CREDENTIALS json file',
+        help_text="The content of GOOGLE_APPLICATION_CREDENTIALS json file",
     )
-    google_project_id = models.TextField(_('Google Project ID'), null=True, blank=True, help_text='Google project ID')
+    google_project_id = models.TextField(
+        _("Google Project ID"), null=True, blank=True, help_text="Google project ID"
+    )
 
     def get_client(self):
         return GCS.get_client(
@@ -73,7 +78,7 @@ class GCSStorageMixin(models.Model):
             self.google_project_id,
             self.google_application_credentials,
             # we don't need to validate path for export storage, it will be created automatically
-            None if 'Export' in self.__class__.__name__ else self.prefix,
+            None if "Export" in self.__class__.__name__ else self.prefix,
         )
 
     def get_bytes_stream(self, uri, range_header=None):
@@ -89,7 +94,7 @@ class GCSStorageMixin(models.Model):
         # Parse URI to get bucket and blob name
         parsed_uri = urlparse(uri, allow_fragments=False)
         bucket_name = parsed_uri.netloc
-        blob_name = parsed_uri.path.lstrip('/')
+        blob_name = parsed_uri.path.lstrip("/")
 
         try:
             client = self.get_client()
@@ -103,28 +108,35 @@ class GCSStorageMixin(models.Model):
             if start is None and end is None:
                 start, end = 0, blob.size
             # Browser is requesting just headers for streaming
-            if start == 0 and (end == 0 or end == ''):
+            if start == 0 and (end == 0 or end == ""):
                 start, end = 0, 1
 
             # Build the direct download URL because GCS doesn't support streaming out of the box
-            encoded = urllib.parse.quote(blob_name, safe='')
-            download_url = settings.RESOLVER_PROXY_GCS_DOWNLOAD_URL.format(bucket_name=bucket_name, blob_name=encoded)
+            encoded = urllib.parse.quote(blob_name, safe="")
+            download_url = settings.RESOLVER_PROXY_GCS_DOWNLOAD_URL.format(
+                bucket_name=bucket_name, blob_name=encoded
+            )
 
             # Prepare headers for range request if needed
             headers = {}
             if start > 0 or (end is not None and end != blob.size):
-                end_str = str(end) if end is not None else ''
-                headers['Range'] = f'bytes={start}-{end_str}'
+                end_str = str(end) if end is not None else ""
+                headers["Range"] = f"bytes={start}-{end_str}"
                 logger.debug(f"Using range header: {headers['Range']}")
 
             # Make a single streaming request
             session = AuthorizedSession(client._credentials)
-            logger.debug(f'Making streaming request to {download_url}')
+            logger.debug(f"Making streaming request to {download_url}")
             stream = session.get(
-                download_url, headers=headers, stream=True, timeout=settings.RESOLVER_PROXY_GCS_HTTP_TIMEOUT
+                download_url,
+                headers=headers,
+                stream=True,
+                timeout=settings.RESOLVER_PROXY_GCS_HTTP_TIMEOUT,
             )
             stream.raise_for_status()
-            logger.debug(f'Got response with status {stream.status_code}, headers: {stream.headers}')
+            logger.debug(
+                f"Got response with status {stream.status_code}, headers: {stream.headers}"
+            )
 
             # Define method to attach to the response
             def _iter_chunks(self_resp, chunk_size=256 * 1024):
@@ -135,16 +147,18 @@ class GCSStorageMixin(models.Model):
 
             # Monkey patch methods directly onto the response object
             stream.iter_chunks = types.MethodType(_iter_chunks, stream)
-            stream.close = types.MethodType(lambda self: self.close() if hasattr(self, 'close') else None, stream)
+            stream.close = types.MethodType(
+                lambda self: self.close() if hasattr(self, "close") else None, stream
+            )
 
             # Get content length from the response headers
-            total = int(stream.headers.get('Content-Length', '0'))
+            total = int(stream.headers.get("Content-Length", "0"))
 
             # Determine actual range of data we're getting
-            if 'Content-Range' in stream.headers:
+            if "Content-Range" in stream.headers:
                 # Parse the Content-Range header (format: bytes start-end/total)
-                range_parts = stream.headers['Content-Range'].split(' ')[1].split('/')
-                byte_range = range_parts[0].split('-')
+                range_parts = stream.headers["Content-Range"].split(" ")[1].split("/")
+                byte_range = range_parts[0].split("-")
                 actual_start = int(byte_range[0])
                 actual_end = int(byte_range[1])
                 file_size = int(range_parts[1])
@@ -155,32 +169,37 @@ class GCSStorageMixin(models.Model):
 
             # Build metadata matching S3 format
             metadata = {
-                'ETag': blob.etag or '',
-                'ContentLength': total,
-                'ContentRange': f'bytes {actual_start}-{actual_end}/{file_size}',
-                'LastModified': blob.updated,
-                'StatusCode': stream.status_code,
+                "ETag": blob.etag or "",
+                "ContentLength": total,
+                "ContentRange": f"bytes {actual_start}-{actual_end}/{file_size}",
+                "LastModified": blob.updated,
+                "StatusCode": stream.status_code,
             }
-            return stream, (blob.content_type or 'application/octet-stream'), metadata
+            return stream, (blob.content_type or "application/octet-stream"), metadata
 
         except Exception as e:
-            logger.error(f'Error getting direct stream from GCS for uri {uri}: {e}', exc_info=True)
+            logger.error(
+                f"Error getting direct stream from GCS for uri {uri}: {e}",
+                exc_info=True,
+            )
             return None, None, {}
 
 
 class GCSImportStorageBase(GCSStorageMixin, ImportStorage):
-    url_scheme = 'gs'
+    url_scheme = "gs"
 
-    presign = models.BooleanField(_('presign'), default=True, help_text='Generate presigned URLs')
+    presign = models.BooleanField(
+        _("presign"), default=True, help_text="Generate presigned URLs"
+    )
     presign_ttl = models.PositiveSmallIntegerField(
-        _('presign_ttl'), default=1, help_text='Presigned URLs TTL (in minutes)'
+        _("presign_ttl"), default=15, help_text="Presigned URLs TTL (in minutes)"
     )
     recursive_scan = models.BooleanField(
-        _('recursive scan'),
+        _("recursive scan"),
         default=False,
         db_default=False,
         null=True,
-        help_text=_('Perform recursive scan over the bucket content'),
+        help_text=_("Perform recursive scan over the bucket content"),
     )
 
     def iter_objects(self):
@@ -199,9 +218,9 @@ class GCSImportStorageBase(GCSStorageMixin, ImportStorage):
 
     def get_unified_metadata(self, obj):
         return {
-            'key': obj.name,
-            'last_modified': obj.updated,
-            'size': obj.size,
+            "key": obj.name,
+            "last_modified": obj.updated,
+            "size": obj.size,
         }
 
     def get_data(self, key) -> list[StorageObject]:
@@ -249,12 +268,14 @@ class GCSImportStorage(ProjectStorageMixin, GCSImportStorageBase):
 class GCSExportStorage(GCSStorageMixin, ExportStorage):
     def save_annotation(self, annotation):
         bucket = self.get_bucket()
-        logger.debug(f'Creating new object on {self.__class__.__name__} Storage {self} for annotation {annotation}')
+        logger.debug(
+            f"Creating new object on {self.__class__.__name__} Storage {self} for annotation {annotation}"
+        )
         ser_annotation = self._get_serialized_data(annotation)
 
         # get key that identifies this object in storage
         key = GCSExportStorageLink.get_key(annotation)
-        key = str(self.prefix) + '/' + key if self.prefix else key
+        key = str(self.prefix) + "/" + key if self.prefix else key
 
         # put object into storage
         blob = bucket.blob(key)
@@ -266,27 +287,26 @@ class GCSExportStorage(GCSStorageMixin, ExportStorage):
 
 def async_export_annotation_to_gcs_storages(annotation):
     project = annotation.project
-    if hasattr(project, 'io_storages_gcsexportstorages'):
+    if hasattr(project, "io_storages_gcsexportstorages"):
         for storage in project.io_storages_gcsexportstorages.all():
-            logger.debug(f'Export {annotation} to GCS storage {storage}')
+            logger.debug(f"Export {annotation} to GCS storage {storage}")
             storage.save_annotation(annotation)
 
 
 @receiver(post_save, sender=Annotation)
 def export_annotation_to_gcs_storages(sender, instance, **kwargs):
-    storages = getattr(instance.project, 'io_storages_gcsexportstorages', None)
+    storages = getattr(instance.project, "io_storages_gcsexportstorages", None)
     if storages and storages.exists():  # avoid excess jobs in rq
         start_job_async_or_sync(async_export_annotation_to_gcs_storages, instance)
 
 
 class GCSImportStorageLink(ImportStorageLink):
-    storage = models.ForeignKey(GCSImportStorage, on_delete=models.CASCADE, related_name='links')
+    storage = models.ForeignKey(
+        GCSImportStorage, on_delete=models.CASCADE, related_name="links"
+    )
 
 
 class GCSExportStorageLink(ExportStorageLink):
-    storage = models.ForeignKey(GCSExportStorage, on_delete=models.CASCADE, related_name='links')
-
-
-
-
-
+    storage = models.ForeignKey(
+        GCSExportStorage, on_delete=models.CASCADE, related_name="links"
+    )

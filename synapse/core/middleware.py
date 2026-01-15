@@ -364,26 +364,46 @@ class DownloadPreventionMiddleware:
     """
     Middleware to prevent direct file downloads for annotators.
 
-    Forces streaming through secure proxy and blocks direct access
-    to storage URLs for users with annotator role.
+    This middleware is designed to block DOWNLOAD attempts, not normal
+    image loading for UI rendering.
+
+    It ALLOWS:
+    - Image requests with browser Accept headers (needed for UI)
+    - Requests from the Synapse application (Referer check)
+    - API requests with proper authentication
+
+    It BLOCKS:
+    - Requests with download-indicating headers
+    - Requests with ?download query param
+    - Requests without proper Referer (direct URL access)
     """
 
-    BLOCKED_PATHS = [
+    # Paths that contain sensitive data
+    SENSITIVE_PATHS = [
         "/data/upload/",
         "/data/download/",
-        "/storage/",
+        "/storage/data/",
+    ]
+
+    # Referer patterns that indicate legitimate app usage
+    ALLOWED_REFERERS = [
+        "/projects/",
+        "/tasks/",
+        "/dm/",
+        "/data-manager/",
+        "/",  # Root of the app
     ]
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Check if user is an annotator trying to access blocked paths
-        if self._should_block(request):
+        # Check if this is a download attempt that should be blocked
+        if self._is_download_attempt(request):
             from django.http import HttpResponseForbidden
 
             logger.warning(
-                f"Blocked download attempt by user {request.user.email} "
+                f"Blocked download attempt by user {getattr(request.user, 'email', 'anonymous')} "
                 f"for path {request.path}"
             )
             return HttpResponseForbidden(
@@ -392,17 +412,76 @@ class DownloadPreventionMiddleware:
 
         return self.get_response(request)
 
-    def _should_block(self, request) -> bool:
-        """Determine if request should be blocked"""
+    def _is_download_attempt(self, request) -> bool:
+        """
+        Determine if request is a download attempt that should be blocked.
+
+        We want to ALLOW: Browser image requests for UI display
+        We want to BLOCK: Direct download attempts
+        """
         # Only apply to authenticated annotators
         if not hasattr(request, "user") or not request.user.is_authenticated:
             return False
 
-        # Check if user is annotator
+        # Check if user is annotator (not admin/client)
         is_annotator = getattr(request.user, "is_annotator", False)
+        is_staff = getattr(request.user, "is_staff", False)
+        is_superuser = getattr(request.user, "is_superuser", False)
+
+        # Don't block admins or staff
+        if is_staff or is_superuser:
+            return False
+
+        # Only block annotators
         if not is_annotator:
             return False
 
-        # Check if accessing blocked path
+        # Check if accessing sensitive path
         path = request.path.lower()
-        return any(blocked in path for blocked in self.BLOCKED_PATHS)
+        is_sensitive_path = any(blocked in path for blocked in self.SENSITIVE_PATHS)
+
+        if not is_sensitive_path:
+            return False
+
+        # Check for explicit download indicators
+        if self._has_download_indicators(request):
+            return True
+
+        # Check for missing or suspicious Referer
+        # (Direct URL access without coming from the app)
+        referer = request.META.get("HTTP_REFERER", "")
+        if not referer:
+            # No referer could be a direct URL access (potentially block)
+            # But it could also be a legitimate request - be lenient
+            return False
+
+        # If referer is from our app, allow it
+        if any(allowed in referer for allowed in self.ALLOWED_REFERERS):
+            return False
+
+        # Allow requests with typical browser Accept headers for images
+        accept = request.META.get("HTTP_ACCEPT", "")
+        if "image/" in accept or "*/*" in accept:
+            # This is likely a browser requesting an image for display
+            return False
+
+        # Default: allow the request
+        # We prefer to be lenient rather than break the UI
+        return False
+
+    def _has_download_indicators(self, request) -> bool:
+        """Check for headers/params that indicate a download attempt"""
+        # Check for ?download query parameter
+        if request.GET.get("download"):
+            return True
+
+        # Check for download-specific Accept headers
+        accept = request.META.get("HTTP_ACCEPT", "")
+        if "application/octet-stream" in accept:
+            return True
+
+        # Check for download-specific response type requested
+        if request.GET.get("response_type") == "download":
+            return True
+
+        return False

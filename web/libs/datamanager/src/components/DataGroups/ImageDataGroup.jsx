@@ -1,5 +1,6 @@
 import { getRoot } from "mobx-state-tree";
 import { AnnotationPreview } from "../Common/AnnotationPreview/AnnotationPreview";
+import { SecureImage } from "../Common/SecureImage";
 import { cn } from "../../utils/bem";
 
 export const IMAGE_SIZE_COEFFICIENT = 8;
@@ -12,11 +13,12 @@ export const ImageDataGroup = (column) => {
     columnCount,
   } = column;
   const root = getRoot(original);
-  const imageHeight = ImageDataGroup.height * Math.max(1, IMAGE_SIZE_COEFFICIENT - columnCount);
+  const imageHeight =
+    ImageDataGroup.height * Math.max(1, IMAGE_SIZE_COEFFICIENT - columnCount);
 
   return original.total_annotations === 0 || !root.showPreviews ? (
     <div className={cn("grid-image-wrapper").toClassName()}>
-      <img src={value} width="auto" style={{ height: imageHeight }} alt="" />
+      <SecureImage src={value} width="auto" height={imageHeight} alt="" />
     </div>
   ) : (
     <AnnotationPreview
@@ -33,4 +35,3 @@ export const ImageDataGroup = (column) => {
 };
 
 ImageDataGroup.height = 150;
-

@@ -5,9 +5,7 @@ import { Form, Input, TextArea } from "../../components/Form";
 import { RadioGroup } from "../../components/Form/Elements/RadioGroup/RadioGroup";
 import { ProjectContext } from "../../providers/ProjectProvider";
 import { cn } from "../../utils/bem";
-import { HeidiTips } from "../../components/HeidiTips/HeidiTips";
 import { FF_LSDV_E_297, isFF } from "../../utils/feature-flags";
-import { createURL } from "../../components/HeidiTips/utils";
 
 export const GeneralSettings = () => {
   const { project, fetchProject } = useContext(ProjectContext);
@@ -115,4 +113,3 @@ export const GeneralSettings = () => {
 GeneralSettings.menuItem = "General";
 GeneralSettings.path = "/";
 GeneralSettings.exact = true;
-

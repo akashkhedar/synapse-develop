@@ -1,8 +1,184 @@
 import { observer } from "mobx-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button, Space } from "@synapse/ui";
 import { IconChevronLeft } from "@synapse/icons";
 import "./ClientDataViewer.scss";
+
+/**
+ * Secure the canvas element to prevent data extraction
+ */
+const secureCanvas = (canvas) => {
+  canvas.toDataURL = () => {
+    console.warn("Image export is disabled for security reasons");
+    return "";
+  };
+  canvas.toBlob = () => {
+    console.warn("Image export is disabled for security reasons");
+  };
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.getImageData = () => {
+      console.warn("Image data extraction is disabled for security reasons");
+      return new ImageData(1, 1);
+    };
+  }
+};
+
+/**
+ * Secure thumbnail component that renders images to canvas
+ * Prevents right-click, drag, and data extraction
+ */
+const SecureThumbnail = ({ src, alt, className, width = 80, height = 60 }) => {
+  const canvasRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!src || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      canvas.width = width;
+      canvas.height = height;
+
+      // Calculate scaling to cover the canvas while maintaining aspect ratio
+      const scale = Math.max(
+        width / img.naturalWidth,
+        height / img.naturalHeight
+      );
+      const scaledWidth = img.naturalWidth * scale;
+      const scaledHeight = img.naturalHeight * scale;
+      const offsetX = (width - scaledWidth) / 2;
+      const offsetY = (height - scaledHeight) / 2;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+
+      secureCanvas(canvas);
+      setLoaded(true);
+    };
+
+    img.onerror = () => {
+      console.error("Failed to load thumbnail:", src);
+    };
+
+    img.src = src;
+  }, [src, width, height]);
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    return false;
+  };
+
+  const handleDragStart = (e) => {
+    e.preventDefault();
+    return false;
+  };
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={className}
+      width={width}
+      height={height}
+      onContextMenu={handleContextMenu}
+      onDragStart={handleDragStart}
+      style={{
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        display: "block",
+        objectFit: "cover",
+      }}
+    />
+  );
+};
+
+/**
+ * Secure image component that renders larger images to canvas
+ */
+const SecureImage = ({ src, alt, className }) => {
+  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!src || !canvasRef.current || !containerRef.current) return;
+
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      const containerWidth = container.clientWidth || 800;
+      const maxHeight = 600;
+
+      // Calculate scaling to fit within container
+      const scale = Math.min(
+        containerWidth / img.naturalWidth,
+        maxHeight / img.naturalHeight,
+        1
+      );
+      const scaledWidth = img.naturalWidth * scale;
+      const scaledHeight = img.naturalHeight * scale;
+
+      canvas.width = scaledWidth;
+      canvas.height = scaledHeight;
+
+      ctx.clearRect(0, 0, scaledWidth, scaledHeight);
+      ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+
+      secureCanvas(canvas);
+      setLoaded(true);
+    };
+
+    img.onerror = () => {
+      console.error("Failed to load image:", src);
+    };
+
+    img.src = src;
+  }, [src]);
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    return false;
+  };
+
+  const handleDragStart = (e) => {
+    e.preventDefault();
+    return false;
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      onContextMenu={handleContextMenu}
+      onDragStart={handleDragStart}
+      style={{
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{
+          display: "block",
+          maxWidth: "100%",
+          maxHeight: "600px",
+        }}
+      />
+      {!loaded && <div className="loading-placeholder">Loading...</div>}
+    </div>
+  );
+};
 
 /**
  * Completely custom data viewer for organization members
@@ -84,7 +260,7 @@ export const ClientDataViewer = observer(({ store }) => {
 
     if (data.image) {
       return (
-        <img
+        <SecureImage
           src={data.image}
           alt="Task"
           className="client-viewer__task-image"
@@ -204,10 +380,12 @@ export const ClientDataViewer = observer(({ store }) => {
                     <td>#{task.id}</td>
                     <td>
                       {task.data?.image && (
-                        <img
+                        <SecureThumbnail
                           src={task.data.image}
                           alt="Preview"
                           className="task-thumbnail"
+                          width={80}
+                          height={60}
                         />
                       )}
                       {task.data?.text && (
@@ -323,4 +501,3 @@ export const ClientDataViewer = observer(({ store }) => {
     </div>
   );
 });
-

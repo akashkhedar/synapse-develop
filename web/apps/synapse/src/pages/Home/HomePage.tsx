@@ -5,19 +5,13 @@ import {
   IconUserAdd,
   IconFolderOpen,
 } from "@synapse/icons";
-import {
-  Button,
-  SimpleCard,
-  Spinner,
-  Tooltip,
-  Typography,
-} from "@synapse/ui";
+import { Button, SimpleCard, Spinner, Tooltip, Typography } from "@synapse/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useUpdatePageTitle } from "@synapse/core";
 import { motion } from "framer-motion";
-import { HeidiTips } from "../../components/HeidiTips/HeidiTips";
+
 import { useAPI } from "../../providers/ApiProvider";
 import { CreateProject } from "../CreateProject/CreateProject";
 import { InviteLink } from "../Organization/PeoplePage/InviteLink";
@@ -148,7 +142,10 @@ export const HomePage: Page = () => {
         </motion.div>
 
         <div className={styles.mainGrid}>
-          <motion.section className={styles.mainSection} variants={itemVariants}>
+          <motion.section
+            className={styles.mainSection}
+            variants={itemVariants}
+          >
             <div className={styles.card}>
               {data && data?.count > 0 && (
                 <div className={styles.cardHeader}>
@@ -181,13 +178,17 @@ export const HomePage: Page = () => {
                     Create your first project
                   </h3>
                   <p className={styles.emptyStateDescription}>
-                    Import your data and configure the labeling interface to begin annotation
+                    Import your data and configure the labeling interface to
+                    begin annotation
                   </p>
                   <motion.button
                     className={styles.createButton}
                     onClick={() => setCreationDialogOpen(true)}
                     aria-label="Create new project"
-                    whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(139, 92, 246, 0.3)" }}
+                    whileHover={{
+                      y: -2,
+                      boxShadow: "0 8px 24px rgba(139, 92, 246, 0.3)",
+                    }}
                     whileTap={{ scale: 0.98 }}
                   >
                     Create Project
@@ -197,7 +198,11 @@ export const HomePage: Page = () => {
                 <div className={styles.projectsList}>
                   {data.results.map((project, index) => {
                     return (
-                      <ProjectCard key={project.id} project={project} index={index} />
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        index={index}
+                      />
                     );
                   })}
                 </div>
@@ -205,9 +210,10 @@ export const HomePage: Page = () => {
             </div>
           </motion.section>
 
-          <motion.aside className={styles.sidebarSection} variants={itemVariants}>
-            <HeidiTips collection="projectSettings" />
-            
+          <motion.aside
+            className={styles.sidebarSection}
+            variants={itemVariants}
+          >
             <div className={styles.card}>
               <div className={styles.cardHeader}>
                 <h2 className={styles.cardTitle}>Resources</h2>
@@ -232,8 +238,6 @@ export const HomePage: Page = () => {
                 })}
               </div>
             </div>
-
-            
           </motion.aside>
         </div>
       </motion.div>
@@ -253,7 +257,13 @@ HomePage.title = "Dashboard";
 HomePage.path = "/dashboard";
 HomePage.exact = true;
 
-function ProjectCard({ project, index }: { project: APIProject; index: number }) {
+function ProjectCard({
+  project,
+  index,
+}: {
+  project: APIProject;
+  index: number;
+}) {
   const finished = project.finished_task_number ?? 0;
   const total = project.task_number ?? 0;
   const progress = (total > 0 ? finished / total : 0) * 100;
@@ -298,4 +308,3 @@ function ProjectCard({ project, index }: { project: APIProject; index: number })
     </motion.div>
   );
 }
-

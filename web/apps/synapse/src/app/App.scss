@@ -1,4 +1,4 @@
-@import '../themes/default/variables';
+@import "../themes/default/variables";
 
 // Override design system colors for dark theme
 :root {
@@ -41,11 +41,6 @@ body {
 .global-error {
   padding: 32px;
 
-  &__heidi {
-    display: block;
-    margin: 32px auto;
-  }
-
   h1 {
     text-transform: uppercase;
     text-align: center;
@@ -70,7 +65,7 @@ body {
     display: flex;
     gap: 8px;
 
-    >* {
+    > * {
       line-height: 1em;
     }
   }
@@ -97,7 +92,7 @@ body {
     height: 24px;
     display: block;
     margin: 0 auto;
-    content: '';
+    content: "";
     border-radius: 100%;
     background-color: var(--background);
     color: var(--color-neutral-content);

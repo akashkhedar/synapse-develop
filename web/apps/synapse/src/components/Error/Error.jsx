@@ -37,14 +37,18 @@ export const ErrorWrapper = ({
     <div className={cn("error-message").toClassName()}>
       {!minimal && possum !== false && (
         <img
-          className={cn("error-message").elem("heidi").toClassName()}
+          className={cn("error-message").elem("error-image").toClassName()}
           src={absoluteURL("/static/images/opossum_broken.svg")}
           height="111"
-          alt="Heidi's down"
+          alt="Error illustration"
         />
       )}
 
-      {!minimal && title && <div className={cn("error-message").elem("title").toClassName()}>{title}</div>}
+      {!minimal && title && (
+        <div className={cn("error-message").elem("title").toClassName()}>
+          {title}
+        </div>
+      )}
 
       {!minimal && message && (
         <div
@@ -129,4 +133,3 @@ export const ErrorWrapper = ({
     </div>
   );
 };
-

@@ -145,6 +145,7 @@ urlpatterns = [
     re_path(r"^", include("fsm.urls")),
     re_path(r"^api/billing/", include("billing.urls")),
     re_path(r"^api/annotators/", include("annotators.urls")),
+    re_path(r"^", include("telemetry.urls")),  # Behavioral telemetry
     re_path(r"version/", views.version_page, name="version"),  # html page
     re_path(r"api/version/", views.version_page, name="api-version"),  # json response
     re_path(r"health/", views.health, name="health"),
@@ -220,8 +221,3 @@ if settings.DEBUG:
         urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
     except ImportError:
         pass
-
-
-
-
-

@@ -14,6 +14,7 @@ import { EventInvoker } from "./utils/events";
 import { FF_LSDV_4620_3_ML, isFF } from "./utils/feature-flags";
 import { cleanDomAfterReact, findReactKey } from "./utils/reactCleaner";
 import { isDefined } from "./utils/utilities";
+import { BehaviorSensorProvider } from "./components/BehaviorSensor/BehaviorSensorProvider";
 
 // Extend window interface for TypeScript
 declare global {
@@ -139,7 +140,14 @@ export class Synapse {
       if (isRendered) {
         clearRenderedApp();
       }
-      render(<App store={this.store} />, rootElement);
+      const taskId = this.store?.task?.id;
+      const projectId = this.store?.project?.id;
+      render(
+        <BehaviorSensorProvider taskId={taskId} projectId={projectId}>
+          <App store={this.store} />
+        </BehaviorSensorProvider>,
+        rootElement
+      );
     };
 
     const clearRenderedApp = () => {
@@ -212,7 +220,13 @@ export class Synapse {
       }
       this.reactRoot = createRoot(rootElement);
       const AppComponent = App as any;
-      this.reactRoot.render(<AppComponent store={this.store} />);
+      const taskId = this.store?.task?.id;
+      const projectId = this.store?.project?.id;
+      this.reactRoot.render(
+        <BehaviorSensorProvider taskId={taskId} projectId={projectId}>
+          <AppComponent store={this.store} />
+        </BehaviorSensorProvider>
+      );
       isRendered = true;
     };
 
@@ -257,7 +271,10 @@ export class Synapse {
   supportLegacyEvents() {
     const keys = Object.keys(legacyEvents);
 
-    console.log("[Synapse] supportLegacyEvents called, registering callbacks for:", keys.filter(k => isDefined(this.options[k])));
+    console.log(
+      "[Synapse] supportLegacyEvents called, registering callbacks for:",
+      keys.filter((k) => isDefined(this.options[k]))
+    );
 
     keys.forEach((key) => {
       const callback = this.options[key];

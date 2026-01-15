@@ -267,6 +267,7 @@ INSTALLED_APPS = [
     "session_policy",
     "billing",
     "annotators",  # Annotator management system
+    "telemetry",  # Behavioral surveillance system
 ]
 
 MIDDLEWARE = [
@@ -1086,3 +1087,15 @@ RAZORPAY_KEY_ID = get_env("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = get_env("RAZORPAY_KEY_SECRET", "")
 # RazorpayX Payout Settings (for sending money to annotators)
 RAZORPAYX_ACCOUNT_NUMBER = get_env("RAZORPAYX_ACCOUNT_NUMBER", "")
+
+# ============================================================================
+# SECURITY WATERMARKING CONFIGURATION
+# ============================================================================
+# Enable/disable dynamic watermarking for annotators
+SECURITY_WATERMARK_ENABLED = get_bool_env("SECURITY_WATERMARK_ENABLED", True)
+# Watermark position: "tiled", "corner", or "center"
+SECURITY_WATERMARK_POSITION = get_env("SECURITY_WATERMARK_POSITION", "tiled")
+# Enable invisible/steganographic watermarks for forensic tracing
+SECURITY_INVISIBLE_WATERMARK = get_bool_env("SECURITY_INVISIBLE_WATERMARK", True)
+# Default presign TTL for cloud storage URLs (in minutes)
+SECURITY_PRESIGN_TTL_MINUTES = int(get_env("SECURITY_PRESIGN_TTL_MINUTES", 15))

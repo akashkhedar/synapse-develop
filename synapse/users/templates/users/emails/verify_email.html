@@ -1,57 +1,289 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Email</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 28px;">Welcome to {{ site_name }}!</h1>
-    </div>
-    
-    <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-        <p style="font-size: 16px;">Hi <strong>{{ user.get_full_name|default:user.email }}</strong>,</p>
-        
-        <p style="font-size: 16px;">
-            Thank you for signing up! To complete your registration and start using {{ site_name }}, 
-            please verify your email address by clicking the button below:
-        </p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="{{ verification_url }}" 
-               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                      color: #ffffff; 
-                      padding: 15px 40px; 
-                      text-decoration: none; 
-                      border-radius: 5px; 
-                      font-size: 16px; 
-                      font-weight: bold;
-                      display: inline-block;">
-                Verify Email Address
-            </a>
-        </div>
-        
-        <p style="font-size: 14px; color: #666;">
-            Or copy and paste this link into your browser:<br>
-            <a href="{{ verification_url }}" style="color: #667eea; word-break: break-all;">{{ verification_url }}</a>
-        </p>
-        
-        <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #fbbf24; margin: 20px 0;">
-            <p style="margin: 0; font-size: 14px; color: #666;">
-                ⚠️ This verification link will expire in <strong>{{ expiry_hours }} hours</strong>.
-            </p>
-        </div>
-        
-        <p style="font-size: 14px; color: #666;">
-            If you didn't create an account with {{ site_name }}, please ignore this email.
-        </p>
-        
-        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-        
-        <p style="font-size: 12px; color: #999; text-align: center;">
-            © 2024 {{ site_name }}. All rights reserved.
-        </p>
-    </div>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Your Email - Synapse</title>
+    <!--[if mso]>
+      <noscript>
+        <xml>
+          <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+          </o:OfficeDocumentSettings>
+        </xml>
+      </noscript>
+    <![endif]-->
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, sans-serif;
+      background-color: #000000;
+      color: #ffffff;
+    "
+  >
+    <!-- Wrapper table -->
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      border="0"
+      style="background-color: #000000"
+    >
+      <tr>
+        <td align="center" style="padding: 40px 20px">
+          <!-- Main container -->
+          <table
+            role="presentation"
+            width="600"
+            cellspacing="0"
+            cellpadding="0"
+            border="0"
+            style="max-width: 600px; width: 100%"
+          >
+            <!-- Header with logo -->
+            <tr>
+              <td style="padding: 32px 40px; border-bottom: 1px solid #1f2937">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                >
+                  <tr>
+                    <td>
+                      <!-- Logo text -->
+                      <span
+                        style="
+                          font-size: 24px;
+                          font-weight: 700;
+                          color: #ffffff;
+                          letter-spacing: 0.05em;
+                        "
+                        >SYNAPSE</span
+                      >
+                    </td>
+                    <td align="right">
+                      <span
+                        style="
+                          font-family: 'Courier New', monospace;
+                          font-size: 11px;
+                          color: #6b7280;
+                          letter-spacing: 0.1em;
+                        "
+                        >// EMAIL VERIFICATION</span
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Main content -->
+            <tr>
+              <td
+                style="
+                  padding: 48px 40px;
+                  background-color: #0a0a0a;
+                  border-left: 1px solid #1f2937;
+                  border-right: 1px solid #1f2937;
+                "
+              >
+                <!-- Welcome message -->
+                <p
+                  style="
+                    margin: 0 0 8px 0;
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    color: #8b5cf6;
+                    letter-spacing: 0.15em;
+                    text-transform: uppercase;
+                  "
+                >
+                  Welcome to {{ site_name }}
+                </p>
+
+                <h1
+                  style="
+                    margin: 0 0 24px 0;
+                    font-size: 32px;
+                    font-weight: 600;
+                    color: #ffffff;
+                    line-height: 1.2;
+                  "
+                >
+                  Verify your email address
+                </h1>
+
+                <p
+                  style="
+                    margin: 0 0 32px 0;
+                    font-size: 16px;
+                    color: #9ca3af;
+                    line-height: 1.6;
+                  "
+                >
+                  Hi
+                  <strong style="color: #ffffff"
+                    >{{ user.get_full_name|default:user.email }}</strong
+                  >,<br /><br />
+                  Thank you for creating an account. To complete your
+                  registration and start annotating data, please verify your
+                  email address.
+                </p>
+
+                <!-- CTA Button -->
+                <table
+                  role="presentation"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  style="margin: 0 0 32px 0"
+                >
+                  <tr>
+                    <td style="border-radius: 0">
+                      <a
+                        href="{{ verification_url }}"
+                        target="_blank"
+                        style="
+                          display: inline-block;
+                          background-color: #e8e4d9;
+                          color: #000000;
+                          padding: 16px 40px;
+                          font-size: 13px;
+                          font-weight: 600;
+                          letter-spacing: 0.2em;
+                          text-transform: uppercase;
+                          text-decoration: none;
+                          border: none;
+                        "
+                      >
+                        Verify Email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Alternative link -->
+                <p
+                  style="
+                    margin: 0 0 24px 0;
+                    font-size: 14px;
+                    color: #6b7280;
+                    line-height: 1.6;
+                  "
+                >
+                  Or copy and paste this link into your browser:
+                </p>
+                <p
+                  style="
+                    margin: 0 0 32px 0;
+                    padding: 16px;
+                    background-color: #111111;
+                    border-left: 2px solid #8b5cf6;
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    color: #8b5cf6;
+                    word-break: break-all;
+                    line-height: 1.5;
+                  "
+                >
+                  {{ verification_url }}
+                </p>
+
+                <!-- Expiry warning -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  style="
+                    margin: 0 0 24px 0;
+                    background-color: #111111;
+                    border: 1px solid #374151;
+                  "
+                >
+                  <tr>
+                    <td style="padding: 16px 20px">
+                      <table
+                        role="presentation"
+                        cellspacing="0"
+                        cellpadding="0"
+                        border="0"
+                      >
+                        <tr>
+                          <td style="padding-right: 12px; vertical-align: top">
+                            <span style="font-size: 18px">⏱</span>
+                          </td>
+                          <td>
+                            <p
+                              style="margin: 0; font-size: 14px; color: #9ca3af"
+                            >
+                              This link expires in
+                              <strong style="color: #ffffff"
+                                >{{ expiry_hours }} hours</strong
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    color: #6b7280;
+                    line-height: 1.6;
+                  "
+                >
+                  If you didn't create an account with {{ site_name }}, you can
+                  safely ignore this email.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding: 32px 40px; border-top: 1px solid #1f2937">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                >
+                  <tr>
+                    <td>
+                      <p
+                        style="
+                          margin: 0 0 8px 0;
+                          font-family: 'Courier New', monospace;
+                          font-size: 11px;
+                          color: #4b5563;
+                          letter-spacing: 0.1em;
+                        "
+                      >
+                        // {{ site_name }} — Data Annotation Platform
+                      </p>
+                      <p style="margin: 0; font-size: 12px; color: #374151">
+                        © 2024 {{ site_name }}. All rights reserved.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>

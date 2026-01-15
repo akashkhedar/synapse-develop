@@ -1,19 +1,181 @@
 <!DOCTYPE html>
 <html lang="en" data-color-scheme="dark">
-<head>
-  <meta charset="utf-8" />
-  <title>Synapse</title>
-  <base href="/" />
+  <head>
+    <meta charset="utf-8" />
+    <title>Synapse</title>
+    <base href="/" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/x-icon" href="favicon.ico" />
-  
-  <!-- Google Fonts for Hero Section -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=VT323&family=Press+Start+2P&family=Share+Tech+Mono&family=Silkscreen&family=Major+Mono+Display&family=Orbitron:wght@700&display=swap" rel="stylesheet">
-</head>
-<body>
-<div id="root"></div>
-</body>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- Google Fonts for Hero Section -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=VT323&family=Press+Start+2P&family=Share+Tech+Mono&family=Silkscreen&family=Major+Mono+Display&family=Orbitron:wght@700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Global Security Styles - Prevent image extraction -->
+    <style>
+      /* Disable selection on images and canvases */
+      img,
+      canvas,
+      video {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        pointer-events: none;
+        -webkit-touch-callout: none;
+        /* Prevent dragging */
+        -webkit-user-drag: none;
+        -khtml-user-drag: none;
+        -moz-user-drag: none;
+        -o-user-drag: none;
+        user-drag: none;
+      }
+
+      /* Re-enable pointer events for interactive elements */
+      img[data-interactive="true"],
+      canvas[data-interactive="true"],
+      video[controls] {
+        pointer-events: auto;
+      }
+
+      /* Disable printing of sensitive content */
+      @media print {
+        .secure-content,
+        .dm-content,
+        .lsf-object,
+        [data-secure="true"] {
+          display: none !important;
+        }
+
+        body::before {
+          content: "Printing is disabled for security reasons.";
+          display: block;
+          padding: 20px;
+          font-size: 18px;
+          color: #333;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Global Security Scripts - Block extraction attempts -->
+    <script>
+      (function () {
+        "use strict";
+
+        // Block context menu on images
+        document.addEventListener(
+          "contextmenu",
+          function (e) {
+            const target = e.target;
+            if (
+              target.tagName === "IMG" ||
+              target.tagName === "CANVAS" ||
+              target.tagName === "VIDEO"
+            ) {
+              e.preventDefault();
+              return false;
+            }
+            // Also block on containers with secure class
+            if (
+              target.closest(
+                '.secure-content, .dm-content, [data-secure="true"]'
+              )
+            ) {
+              e.preventDefault();
+              return false;
+            }
+          },
+          true
+        );
+
+        // Block drag operations on images
+        document.addEventListener(
+          "dragstart",
+          function (e) {
+            const target = e.target;
+            if (
+              target.tagName === "IMG" ||
+              target.tagName === "CANVAS" ||
+              target.tagName === "VIDEO"
+            ) {
+              e.preventDefault();
+              return false;
+            }
+          },
+          true
+        );
+
+        // Block keyboard shortcuts for saving/copying
+        document.addEventListener(
+          "keydown",
+          function (e) {
+            // Ctrl+S (Save), Ctrl+Shift+S (Save As)
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+              e.preventDefault();
+              return false;
+            }
+            // Ctrl+P (Print)
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+              e.preventDefault();
+              return false;
+            }
+            // Ctrl+Shift+I (DevTools) - note: this won't work in all browsers
+            if (
+              (e.ctrlKey || e.metaKey) &&
+              e.shiftKey &&
+              e.key.toLowerCase() === "i"
+            ) {
+              e.preventDefault();
+              return false;
+            }
+            // F12 (DevTools)
+            if (e.key === "F12") {
+              e.preventDefault();
+              return false;
+            }
+          },
+          true
+        );
+
+        // Block copy events on sensitive content
+        document.addEventListener(
+          "copy",
+          function (e) {
+            const selection = window.getSelection();
+            if (selection && selection.anchorNode) {
+              const container = selection.anchorNode.parentElement;
+              if (
+                container &&
+                container.closest(
+                  '.secure-content, .dm-content, [data-secure="true"]'
+                )
+              ) {
+                e.preventDefault();
+                return false;
+              }
+            }
+          },
+          true
+        );
+
+        // Console warning
+        console.log(
+          "%c⚠️ Security Notice",
+          "color: red; font-size: 20px; font-weight: bold;"
+        );
+        console.log(
+          "%cAttempting to extract data from this application may violate terms of service and is logged for security auditing.",
+          "color: orange; font-size: 14px;"
+        );
+      })();
+    </script>
+  </body>
 </html>

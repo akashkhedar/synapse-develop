@@ -1,4 +1,10 @@
-import { useState, useRef, useEffect, type CSSProperties, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  type CSSProperties,
+  useCallback,
+} from "react";
 import { observer } from "mobx-react";
 import styles from "./GridPreview.module.scss";
 import { cn } from "@synapse/ui";
@@ -16,12 +22,40 @@ type ImagePreviewProps = {
   field: string;
 };
 
+/**
+ * Secure the canvas element to prevent data extraction
+ */
+const secureCanvas = (canvas: HTMLCanvasElement) => {
+  // Override toDataURL to prevent image extraction
+  canvas.toDataURL = () => {
+    console.warn("Image export is disabled for security reasons");
+    return "";
+  };
+
+  // Override toBlob to prevent image extraction
+  canvas.toBlob = () => {
+    console.warn("Image export is disabled for security reasons");
+  };
+
+  // Prevent getImageData on the canvas context
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const originalGetImageData = ctx.getImageData.bind(ctx);
+    ctx.getImageData = (...args: Parameters<typeof originalGetImageData>) => {
+      console.warn("Image data extraction is disabled for security reasons");
+      // Return empty image data
+      return new ImageData(1, 1);
+    };
+  }
+};
+
 // @todo constrain the position of the image to the container
 const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
   const src = task.data?.[field] ?? "";
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   const [imageLoaded, setImageLoaded] = useState(false);
   // visible container size
@@ -45,7 +79,103 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
   useEffect(() => {
     setScale(1);
     setIsDragging(false);
+    setImageLoaded(false);
   }, [task, src]);
+
+  // Load image and render to canvas
+  useEffect(() => {
+    if (!src || !containerRef.current) return;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    imageRef.current = img;
+
+    img.onload = () => {
+      if (!containerRef.current || !canvasRef.current) return;
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+
+      setContainerSize({
+        width: containerRect.width,
+        height: containerRect.height,
+      });
+
+      const coverScaleX = containerRect.width / img.naturalWidth;
+      const coverScaleY = containerRect.height / img.naturalHeight;
+      const imageScale = Math.min(coverScaleX, coverScaleY);
+
+      const scaledWidth = img.naturalWidth * imageScale;
+      const scaledHeight = img.naturalHeight * imageScale;
+
+      setImageSize({
+        width: scaledWidth,
+        height: scaledHeight,
+      });
+
+      // Center the image initially
+      const initialX = (containerRect.width - scaledWidth) / 2;
+      const initialY = (containerRect.height - scaledHeight) / 2;
+
+      setOffset({ x: initialX, y: initialY });
+
+      // Set canvas size and render image
+      const canvas = canvasRef.current;
+      canvas.width = containerRect.width;
+      canvas.height = containerRect.height;
+
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, initialX, initialY, scaledWidth, scaledHeight);
+      }
+
+      // Secure the canvas after initial render
+      secureCanvas(canvas);
+      setImageLoaded(true);
+    };
+
+    img.onerror = () => {
+      console.error("Failed to load image:", src);
+    };
+
+    img.src = src;
+
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [src]);
+
+  // Re-render canvas when zoom/offset changes
+  useEffect(() => {
+    if (
+      !imageLoaded ||
+      !canvasRef.current ||
+      !imageRef.current ||
+      !containerRef.current
+    )
+      return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const img = imageRef.current;
+
+    if (!ctx) return;
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    canvas.width = containerRect.width;
+    canvas.height = containerRect.height;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const scaledWidth = imageSize.width * scale;
+    const scaledHeight = imageSize.height * scale;
+
+    ctx.drawImage(img, offset.x, offset.y, scaledWidth, scaledHeight);
+
+    // Re-secure the canvas after each render
+    secureCanvas(canvas);
+  }, [imageLoaded, scale, offset, imageSize]);
 
   const constrainOffset = useCallback(
     (newOffset: { x: number; y: number }) => {
@@ -65,43 +195,8 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
         y: Math.min(Math.max(y, -maxY), minY),
       };
     },
-    [imageSize, containerSize, scale],
+    [imageSize, containerSize, scale]
   );
-
-  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    if (containerRef.current) {
-      const img = e.currentTarget;
-      const containerRect = containerRef.current.getBoundingClientRect();
-
-      setContainerSize({
-        width: containerRect.width,
-        height: containerRect.height,
-      });
-
-      const coverScaleX = containerRect.width / img.naturalWidth;
-      const coverScaleY = containerRect.height / img.naturalHeight;
-      // image is scaled by html, but we need to know this scale level
-      // how much is image zoomed out to fit into container
-      const imageScale = Math.min(coverScaleX, coverScaleY);
-
-      const scaledWidth = img.naturalWidth * imageScale;
-      const scaledHeight = img.naturalHeight * imageScale;
-      // how much should we zoom image in to cover container
-      // const coverScale = Math.max(containerRect.width / scaledWidth, containerRect.height / scaledHeight);
-
-      setImageSize({
-        width: scaledWidth,
-        height: scaledHeight,
-      });
-
-      // Center the image initially
-      const initialX = (containerRect.width - scaledWidth) / 2;
-      const initialY = (containerRect.height - scaledHeight) / 2;
-
-      setOffset({ x: initialX, y: initialY });
-      setImageLoaded(true);
-    }
-  }, []);
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
@@ -109,8 +204,6 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
 
       const container = containerRef.current;
       const rect = container.getBoundingClientRect();
-      const img = imageRef.current;
-      if (!img) return;
 
       // Calculate cursor position relative to center
       const cursorX = e.clientX - rect.left;
@@ -124,21 +217,18 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
 
       // Calculate zoom translation
       const scaleDelta = newScale / scale;
-      // cursor - offset = cursor position relative to image; and that's the value being scaled.
-      // cursor position on a screen should stay the same, so we need to calculate new offset
-      // by scaling the distance to image edges and subtracting it from cursor position
       const newX = cursorX - (cursorX - offset.x) * scaleDelta;
       const newY = cursorY - (cursorY - offset.y) * scaleDelta;
 
       setScale(newScale);
       setOffset(constrainOffset({ x: newX, y: newY }));
     },
-    [imageLoaded, offset, scale, constrainOffset],
+    [imageLoaded, offset, scale, constrainOffset]
   );
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!containerRef.current || !imageRef.current) return;
+      if (!containerRef.current) return;
 
       const { x: oldX, y: oldY } = dragParams.current.dragAnchor;
       const { x: offsetX, y: offsetY } = dragParams.current.startOffset;
@@ -147,7 +237,7 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
 
       setOffset(constrainOffset({ x: offsetX + newX, y: offsetY + newY }));
     },
-    [constrainOffset],
+    [constrainOffset]
   );
 
   const handleMouseUp = useCallback(
@@ -160,7 +250,7 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     },
-    [handleMouseMove],
+    [handleMouseMove]
   );
 
   const handleMouseDown = useCallback(
@@ -172,13 +262,25 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
       dragParams.current.startOffset = { ...offset };
 
       window.addEventListener("mousemove", handleMouseMove);
-      // this event would be fired even if we release the mouse outside the window
-      // we catch `click` and use `capture: true` to block the click outside of the modal
-      /** @see ModalPopup#onClickOutside() */
-      window.addEventListener("click", handleMouseUp, { capture: true, once: true });
+      window.addEventListener("click", handleMouseUp, {
+        capture: true,
+        once: true,
+      });
     },
-    [scale, offset, handleMouseMove, handleMouseUp],
+    [scale, offset, handleMouseMove, handleMouseUp]
   );
+
+  // Security: Prevent right-click context menu
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    return false;
+  }, []);
+
+  // Security: Prevent drag operations
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    return false;
+  }, []);
 
   // Container styles
   const containerStyle: CSSProperties = {
@@ -189,21 +291,16 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
     overflow: "hidden",
     cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "default",
     userSelect: "none",
+    WebkitUserSelect: "none",
   };
 
-  // Image styles
-  const imageStyle: CSSProperties = imageLoaded
-    ? {
-        maxWidth: "100%",
-        maxHeight: "100%",
-        transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-        transformOrigin: "0 0",
-      }
-    : {
-        width: "100%",
-        height: "100%",
-        objectFit: "contain",
-      };
+  // Canvas styles
+  const canvasStyle: CSSProperties = {
+    width: "100%",
+    height: "100%",
+    display: "block",
+    pointerEvents: "none", // Let container handle events
+  };
 
   return (
     <div
@@ -212,16 +309,24 @@ const ImagePreview = observer(({ task, field }: ImagePreviewProps) => {
       className={cn(styles.imageContainer, "px-tight")}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
+      onContextMenu={handleContextMenu}
+      onDragStart={handleDragStart}
     >
       {src && (
-        <img
-          ref={imageRef}
-          src={src}
-          alt="Task Preview"
-          style={imageStyle}
-          className={styles.image}
-          onLoad={handleImageLoad}
-        />
+        <canvas ref={canvasRef} style={canvasStyle} className={styles.image} />
+      )}
+      {!imageLoaded && src && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          Loading...
+        </div>
       )}
     </div>
   );
@@ -233,4 +338,3 @@ const ImagePreviewWrapper = observer(({ task, field }: ImagePreviewProps) => {
 });
 
 export { ImagePreviewWrapper as ImagePreview };
-

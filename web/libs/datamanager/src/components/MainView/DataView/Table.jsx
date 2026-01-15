@@ -518,4 +518,3 @@ export const DataView = injector(
     );
   }
 );
-

@@ -1,5 +1,5 @@
-"""This file and its contents are licensed under the Apache License 2.0. Please see the included NOTICE for copyright information and LICENSE for a copy of the license.
-"""
+"""This file and its contents are licensed under the Apache License 2.0. Please see the included NOTICE for copyright information and LICENSE for a copy of the license."""
+
 import json
 import logging
 import re
@@ -34,42 +34,65 @@ from tasks.models import Annotation
 from synapse.io_storages.azure_blob.utils import AZURE
 
 logger = logging.getLogger(__name__)
-logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
+logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(
+    logging.WARNING
+)
 
 
 class AzureBlobStorageMixin(models.Model):
-    container = models.TextField(_('container'), null=True, blank=True, help_text='Azure blob container')
-    prefix = models.TextField(_('prefix'), null=True, blank=True, help_text='Azure blob prefix name')
+    container = models.TextField(
+        _("container"), null=True, blank=True, help_text="Azure blob container"
+    )
+    prefix = models.TextField(
+        _("prefix"), null=True, blank=True, help_text="Azure blob prefix name"
+    )
     regex_filter = models.TextField(
-        _('regex_filter'), null=True, blank=True, help_text='Cloud storage regex for filtering objects'
+        _("regex_filter"),
+        null=True,
+        blank=True,
+        help_text="Cloud storage regex for filtering objects",
     )
     use_blob_urls = models.BooleanField(
-        _('use_blob_urls'), default=False, help_text='Interpret objects as BLOBs and generate URLs'
+        _("use_blob_urls"),
+        default=False,
+        help_text="Interpret objects as BLOBs and generate URLs",
     )
-    account_name = models.TextField(_('account_name'), null=True, blank=True, help_text='Azure Blob account name')
-    account_key = models.TextField(_('account_key'), null=True, blank=True, help_text='Azure Blob account key')
+    account_name = models.TextField(
+        _("account_name"), null=True, blank=True, help_text="Azure Blob account name"
+    )
+    account_key = models.TextField(
+        _("account_key"), null=True, blank=True, help_text="Azure Blob account key"
+    )
 
     def get_account_name(self):
-        return str(self.account_name) if self.account_name else get_env('AZURE_BLOB_ACCOUNT_NAME')
+        return (
+            str(self.account_name)
+            if self.account_name
+            else get_env("AZURE_BLOB_ACCOUNT_NAME")
+        )
 
     def get_account_key(self):
-        return str(self.account_key) if self.account_key else get_env('AZURE_BLOB_ACCOUNT_KEY')
+        return (
+            str(self.account_key)
+            if self.account_key
+            else get_env("AZURE_BLOB_ACCOUNT_KEY")
+        )
 
     def get_client_and_container(self):
         account_name = self.get_account_name()
         account_key = self.get_account_key()
         if not account_name or not account_key:
             raise ValueError(
-                'Azure account name and key must be set using '
-                'environment variables AZURE_BLOB_ACCOUNT_NAME and AZURE_BLOB_ACCOUNT_KEY '
-                'or account_name and account_key fields.'
+                "Azure account name and key must be set using "
+                "environment variables AZURE_BLOB_ACCOUNT_NAME and AZURE_BLOB_ACCOUNT_KEY "
+                "or account_name and account_key fields."
             )
         connection_string = (
-            'DefaultEndpointsProtocol=https;AccountName='
+            "DefaultEndpointsProtocol=https;AccountName="
             + account_name
-            + ';AccountKey='
+            + ";AccountKey="
             + account_key
-            + ';EndpointSuffix=core.windows.net'
+            + ";EndpointSuffix=core.windows.net"
         )
         client = BlobServiceClient.from_connection_string(conn_str=connection_string)
         container = client.get_container_client(str(self.container))
@@ -80,18 +103,20 @@ class AzureBlobStorageMixin(models.Model):
         return container
 
     def validate_connection(self, **kwargs):
-        logger.debug('Validating Azure Blob Storage connection')
+        logger.debug("Validating Azure Blob Storage connection")
         client, container = self.get_client_and_container()
 
         try:
             container_properties = container.get_container_properties()
-            logger.debug(f'Container exists: {container_properties.name}')
+            logger.debug(f"Container exists: {container_properties.name}")
         except ResourceNotFoundError:
-            raise KeyError(f'Container not found: {self.container}')
+            raise KeyError(f"Container not found: {self.container}")
 
         # Check path existence for Import storages only
-        if self.prefix and 'Export' not in self.__class__.__name__:
-            logger.debug(f'Test connection to container {self.container} with prefix {self.prefix}')
+        if self.prefix and "Export" not in self.__class__.__name__:
+            logger.debug(
+                f"Test connection to container {self.container} with prefix {self.prefix}"
+            )
             prefix = str(self.prefix)
             try:
                 blob = next(container.list_blob_names(name_starts_with=prefix))
@@ -99,7 +124,9 @@ class AzureBlobStorageMixin(models.Model):
                 blob = None
 
             if not blob:
-                raise KeyError(f'{self.url_scheme}://{self.container}/{self.prefix} not found.')
+                raise KeyError(
+                    f"{self.url_scheme}://{self.container}/{self.prefix} not found."
+                )
 
     def get_bytes_stream(self, uri, range_header=None):
         """Get file bytes from Azure Blob storage as a streaming object with metadata.
@@ -119,16 +146,20 @@ class AzureBlobStorageMixin(models.Model):
         # Parse URI to get container and blob name
         parsed_uri = urlparse(uri, allow_fragments=False)
         container_name = parsed_uri.netloc
-        blob_name = parsed_uri.path.lstrip('/')
+        blob_name = parsed_uri.path.lstrip("/")
 
         try:
             # Get the Azure client and blob client for file
             client, _ = self.get_client_and_container()
-            blob_client = client.get_blob_client(container=container_name, blob=blob_name)
+            blob_client = client.get_blob_client(
+                container=container_name, blob=blob_name
+            )
             # Get blob properties for metadata
             properties = blob_client.get_blob_properties()
             total_size = properties.size
-            content_type = properties.content_settings.content_type or 'application/octet-stream'
+            content_type = (
+                properties.content_settings.content_type or "application/octet-stream"
+            )
 
             downloader, content_type, metadata = AZURE.download_stream_response(
                 blob_client,
@@ -141,28 +172,33 @@ class AzureBlobStorageMixin(models.Model):
             return downloader, content_type, metadata
 
         except Exception as e:
-            logger.error(f'Error getting bytes stream from Azure for uri {uri}: {e}', exc_info=True)
+            logger.error(
+                f"Error getting bytes stream from Azure for uri {uri}: {e}",
+                exc_info=True,
+            )
             return None, None, {}
 
 
 class AzureBlobImportStorageBase(AzureBlobStorageMixin, ImportStorage):
-    url_scheme = 'azure-blob'
+    url_scheme = "azure-blob"
 
-    presign = models.BooleanField(_('presign'), default=True, help_text='Generate presigned URLs')
+    presign = models.BooleanField(
+        _("presign"), default=True, help_text="Generate presigned URLs"
+    )
     presign_ttl = models.PositiveSmallIntegerField(
-        _('presign_ttl'), default=1, help_text='Presigned URLs TTL (in minutes)'
+        _("presign_ttl"), default=15, help_text="Presigned URLs TTL (in minutes)"
     )
     recursive_scan = models.BooleanField(
-        _('recursive scan'),
+        _("recursive scan"),
         default=False,
         db_default=False,
         null=True,
-        help_text=_('Perform recursive scan over the container content'),
+        help_text=_("Perform recursive scan over the container content"),
     )
 
     def iter_objects(self):
         container = self.get_container()
-        prefix = (str(self.prefix).rstrip('/') + '/') if self.prefix else ''
+        prefix = (str(self.prefix).rstrip("/") + "/") if self.prefix else ""
         regex = re.compile(str(self.regex_filter)) if self.regex_filter else None
 
         if self.recursive_scan:
@@ -170,33 +206,37 @@ class AzureBlobImportStorageBase(AzureBlobStorageMixin, ImportStorage):
             files_iter = container.list_blobs(name_starts_with=prefix)
             for file in files_iter:
                 # skip folder placeholders
-                if file.name == (prefix.rstrip('/') + '/'):
+                if file.name == (prefix.rstrip("/") + "/"):
                     continue
                 # check regex pattern filter
                 if regex and not regex.match(file.name):
-                    logger.debug(file.name + ' is skipped by regex filter')
+                    logger.debug(file.name + " is skipped by regex filter")
                     continue
                 yield file
         else:
             # Non-recursive scan - use walk_blobs with delimiter to handle hierarchical structure
-            def _iter_hierarchical(current_prefix=''):
-                search_prefix = prefix + current_prefix if current_prefix else (prefix or None)
-                files_iter = container.walk_blobs(name_starts_with=search_prefix, delimiter='/')
+            def _iter_hierarchical(current_prefix=""):
+                search_prefix = (
+                    prefix + current_prefix if current_prefix else (prefix or None)
+                )
+                files_iter = container.walk_blobs(
+                    name_starts_with=search_prefix, delimiter="/"
+                )
 
                 for item in files_iter:
-                    if hasattr(item, 'name') and hasattr(item, 'size'):
+                    if hasattr(item, "name") and hasattr(item, "size"):
                         # This is a blob (file)
                         # skip folder placeholders
-                        if item.name == (prefix.rstrip('/') + '/'):
+                        if item.name == (prefix.rstrip("/") + "/"):
                             continue
                         # check regex pattern filter
                         if regex and not regex.match(item.name):
-                            logger.debug(item.name + ' is skipped by regex filter')
+                            logger.debug(item.name + " is skipped by regex filter")
                             continue
                         yield item
                     else:
                         # This is a BlobPrefix (directory) - skip it in non-recursive mode
-                        logger.debug(f'Skipping directory prefix: {item.name}')
+                        logger.debug(f"Skipping directory prefix: {item.name}")
                         continue
 
             yield from _iter_hierarchical()
@@ -208,15 +248,15 @@ class AzureBlobImportStorageBase(AzureBlobStorageMixin, ImportStorage):
     @staticmethod
     def get_unified_metadata(obj):
         return {
-            'key': obj.name,
-            'last_modified': obj.last_modified,
-            'size': obj.size,
+            "key": obj.name,
+            "last_modified": obj.last_modified,
+            "size": obj.size,
         }
 
     def get_data(self, key) -> list[StorageObject]:
         if self.use_blob_urls:
             data_key = settings.DATA_UNDEFINED_NAME
-            task = {data_key: f'{self.url_scheme}://{self.container}/{key}'}
+            task = {data_key: f"{self.url_scheme}://{self.container}/{key}"}
             return [StorageObject(key=key, task_data=task)]
 
         container = self.get_container()
@@ -230,7 +270,7 @@ class AzureBlobImportStorageBase(AzureBlobStorageMixin, ImportStorage):
     def generate_http_url(self, url):
         r = urlparse(url, allow_fragments=False)
         container = r.netloc
-        blob = r.path.lstrip('/')
+        blob = r.path.lstrip("/")
 
         expiry = timezone.now() + timedelta(minutes=self.presign_ttl)
 
@@ -243,7 +283,14 @@ class AzureBlobImportStorageBase(AzureBlobStorageMixin, ImportStorage):
             expiry=expiry,
         )
         return (
-            'https://' + self.get_account_name() + '.blob.core.windows.net/' + container + '/' + blob + '?' + sas_token
+            "https://"
+            + self.get_account_name()
+            + ".blob.core.windows.net/"
+            + container
+            + "/"
+            + blob
+            + "?"
+            + sas_token
         )
 
     def can_resolve_url(self, url: Union[str, None]) -> bool:
@@ -251,7 +298,10 @@ class AzureBlobImportStorageBase(AzureBlobStorageMixin, ImportStorage):
 
     def get_blob_metadata(self, key):
         return AZURE.get_blob_metadata(
-            key, self.container, account_name=self.account_name, account_key=self.account_key
+            key,
+            self.container,
+            account_name=self.account_name,
+            account_key=self.account_key,
         )
 
     class Meta:
@@ -263,14 +313,18 @@ class AzureBlobImportStorage(ProjectStorageMixin, AzureBlobImportStorageBase):
         abstract = False
 
 
-class AzureBlobExportStorage(AzureBlobStorageMixin, ExportStorage):  # note: order is important!
+class AzureBlobExportStorage(
+    AzureBlobStorageMixin, ExportStorage
+):  # note: order is important!
     def save_annotation(self, annotation):
         container = self.get_container()
-        logger.debug(f'Creating new object on {self.__class__.__name__} Storage {self} for annotation {annotation}')
+        logger.debug(
+            f"Creating new object on {self.__class__.__name__} Storage {self} for annotation {annotation}"
+        )
         ser_annotation = self._get_serialized_data(annotation)
         # get key that identifies this object in storage
         key = AzureBlobExportStorageLink.get_key(annotation)
-        key = str(self.prefix) + '/' + key if self.prefix else key
+        key = str(self.prefix) + "/" + key if self.prefix else key
 
         # put object into storage
         blob = container.get_blob_client(key)
@@ -282,27 +336,26 @@ class AzureBlobExportStorage(AzureBlobStorageMixin, ExportStorage):  # note: ord
 
 def async_export_annotation_to_azure_storages(annotation):
     project = annotation.project
-    if hasattr(project, 'io_storages_azureblobexportstorages'):
+    if hasattr(project, "io_storages_azureblobexportstorages"):
         for storage in project.io_storages_azureblobexportstorages.all():
-            logger.debug(f'Export {annotation} to Azure Blob storage {storage}')
+            logger.debug(f"Export {annotation} to Azure Blob storage {storage}")
             storage.save_annotation(annotation)
 
 
 @receiver(post_save, sender=Annotation)
 def export_annotation_to_azure_storages(sender, instance, **kwargs):
-    storages = getattr(instance.project, 'io_storages_azureblobexportstorages', None)
+    storages = getattr(instance.project, "io_storages_azureblobexportstorages", None)
     if storages and storages.exists():  # avoid excess jobs in rq
         start_job_async_or_sync(async_export_annotation_to_azure_storages, instance)
 
 
 class AzureBlobImportStorageLink(ImportStorageLink):
-    storage = models.ForeignKey(AzureBlobImportStorage, on_delete=models.CASCADE, related_name='links')
+    storage = models.ForeignKey(
+        AzureBlobImportStorage, on_delete=models.CASCADE, related_name="links"
+    )
 
 
 class AzureBlobExportStorageLink(ExportStorageLink):
-    storage = models.ForeignKey(AzureBlobExportStorage, on_delete=models.CASCADE, related_name='links')
-
-
-
-
-
+    storage = models.ForeignKey(
+        AzureBlobExportStorage, on_delete=models.CASCADE, related_name="links"
+    )

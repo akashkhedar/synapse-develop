@@ -1,7 +1,6 @@
 import { Button } from "@synapse/ui";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useUpdatePageTitle } from "@synapse/core";
-import { HeidiTips } from "../../../components/HeidiTips/HeidiTips";
 import { modal } from "../../../components/Modal/Modal";
 import { Space } from "../../../components/Space/Space";
 import { cn } from "../../../utils/bem";
@@ -125,4 +124,3 @@ export const PeoplePage = () => {
 
 PeoplePage.title = "People";
 PeoplePage.path = "/";
-

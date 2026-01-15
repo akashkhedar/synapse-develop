@@ -5,7 +5,7 @@ import { ToggleItems } from "../../components";
 import { Button } from "@synapse/ui";
 import { Modal } from "../../components/Modal/Modal";
 import { Space } from "../../components/Space/Space";
-import { HeidiTips } from "../../components/HeidiTips/HeidiTips";
+
 import { useAPI } from "../../providers/ApiProvider";
 import { cn } from "../../utils/bem";
 import { ConfigPage } from "./Config/Config";
@@ -15,7 +15,7 @@ import { useImportPage } from "./Import/useImportPage";
 import { useDraftProject } from "./utils/useDraftProject";
 import { Input, TextArea } from "../../components/Form";
 import { FF_LSDV_E_297, isFF } from "../../utils/feature-flags";
-import { createURL } from "../../components/HeidiTips/utils";
+
 import { SecurityDeposit } from "./SecurityDeposit/SecurityDeposit";
 
 const ProjectName = ({
@@ -291,4 +291,3 @@ export const CreateProject = ({ onClose }) => {
     </Modal>
   );
 };
-

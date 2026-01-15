@@ -92,7 +92,13 @@ function scoreClassification(
     return {
       score: 0,
       feedback: "No answer provided",
-      details: [{ annotation: "None", expected: JSON.stringify(groundTruth.value.choices), match: false }],
+      details: [
+        {
+          annotation: "None",
+          expected: JSON.stringify(groundTruth.value.choices),
+          match: false,
+        },
+      ],
     };
   }
 
@@ -109,25 +115,33 @@ function scoreClassification(
   details.push({
     annotation: userChoices.join(", "),
     expected: expectedChoices.join(", "),
-    match: intersection.length === expectedSet.size && userSet.size === expectedSet.size,
+    match:
+      intersection.length === expectedSet.size &&
+      userSet.size === expectedSet.size,
   });
 
   if (criteria.partialCredit && union.size > 0) {
     // Partial credit based on correct choices
     const score = intersection.length / expectedSet.size;
     // Penalty for extra wrong choices
-    const penalty = (userSet.size - intersection.length) / Math.max(expectedSet.size, 1);
+    const penalty =
+      (userSet.size - intersection.length) / Math.max(expectedSet.size, 1);
     const finalScore = Math.max(0, score - penalty * 0.5);
 
     return {
       score: finalScore,
-      feedback: finalScore === 1 ? "Correct!" : `Partially correct (${(finalScore * 100).toFixed(0)}%)`,
+      feedback:
+        finalScore === 1
+          ? "Correct!"
+          : `Partially correct (${(finalScore * 100).toFixed(0)}%)`,
       details,
     };
   }
 
   // Exact match only
-  const isCorrect = intersection.length === expectedSet.size && userSet.size === expectedSet.size;
+  const isCorrect =
+    intersection.length === expectedSet.size &&
+    userSet.size === expectedSet.size;
   return {
     score: isCorrect ? 1 : 0,
     feedback: isCorrect ? "Correct!" : "Incorrect",
@@ -149,7 +163,13 @@ function scoreRating(
     return {
       score: 0,
       feedback: "No rating provided",
-      details: [{ annotation: "None", expected: String(groundTruth.value.rating), match: false }],
+      details: [
+        {
+          annotation: "None",
+          expected: String(groundTruth.value.rating),
+          match: false,
+        },
+      ],
     };
   }
 
@@ -167,14 +187,19 @@ function scoreRating(
     annotation: String(userRating),
     expected: String(expectedRating),
     match: difference === 0,
-    partialScore: criteria.partialCredit ? Math.max(0, 1 - difference / maxDiff) : (difference === 0 ? 1 : 0),
+    partialScore: criteria.partialCredit
+      ? Math.max(0, 1 - difference / maxDiff)
+      : difference === 0
+      ? 1
+      : 0,
   });
 
   if (criteria.partialCredit) {
     const score = Math.max(0, 1 - difference / maxDiff);
     return {
       score,
-      feedback: difference === 0 ? "Exact match!" : `Close (off by ${difference})`,
+      feedback:
+        difference === 0 ? "Exact match!" : `Close (off by ${difference})`,
       details,
     };
   }
@@ -201,7 +226,13 @@ function scoreBoundingBox(
     return {
       score: 0,
       feedback: "No bounding boxes drawn",
-      details: [{ annotation: "None", expected: `${groundTruth.length} box(es)`, match: false }],
+      details: [
+        {
+          annotation: "None",
+          expected: `${groundTruth.length} box(es)`,
+          match: false,
+        },
+      ],
     };
   }
 
@@ -215,12 +246,12 @@ function scoreBoundingBox(
 
     for (const user of userAnnotations) {
       if (user.type !== gt.type) continue;
-      
+
       const userBox = user.value;
       // Check if labels match
       const gtLabels = gtBox.rectanglelabels || [];
       const userLabels = userBox.rectanglelabels || [];
-      
+
       if (!gtLabels.some((l: string) => userLabels.includes(l))) continue;
 
       const iou = calculateIoU(userBox, gtBox);
@@ -231,7 +262,9 @@ function scoreBoundingBox(
     }
 
     details.push({
-      annotation: bestMatch ? `IoU: ${(bestIoU * 100).toFixed(1)}%` : "No match",
+      annotation: bestMatch
+        ? `IoU: ${(bestIoU * 100).toFixed(1)}%`
+        : "No match",
       expected: gtBox.rectanglelabels?.join(", ") || "Box",
       match: bestIoU >= threshold,
       partialScore: bestIoU,
@@ -244,21 +277,26 @@ function scoreBoundingBox(
   }
 
   const avgIoU = groundTruth.length > 0 ? totalIoU / groundTruth.length : 0;
-  const matchRatio = groundTruth.length > 0 ? matchedCount / groundTruth.length : 0;
+  const matchRatio =
+    groundTruth.length > 0 ? matchedCount / groundTruth.length : 0;
 
   if (criteria.partialCredit) {
     return {
       score: avgIoU,
-      feedback: matchedCount === groundTruth.length 
-        ? `All boxes matched (avg IoU: ${(avgIoU * 100).toFixed(0)}%)`
-        : `${matchedCount}/${groundTruth.length} boxes matched`,
+      feedback:
+        matchedCount === groundTruth.length
+          ? `All boxes matched (avg IoU: ${(avgIoU * 100).toFixed(0)}%)`
+          : `${matchedCount}/${groundTruth.length} boxes matched`,
       details,
     };
   }
 
   return {
     score: matchRatio,
-    feedback: matchedCount === groundTruth.length ? "All boxes correct!" : `${matchedCount}/${groundTruth.length} correct`,
+    feedback:
+      matchedCount === groundTruth.length
+        ? "All boxes correct!"
+        : `${matchedCount}/${groundTruth.length} correct`,
     details,
   };
 }
@@ -278,7 +316,13 @@ function scoreTextSpans(
     return {
       score: 0,
       feedback: "No annotations provided",
-      details: [{ annotation: "None", expected: `${groundTruth.length} entity/entities`, match: false }],
+      details: [
+        {
+          annotation: "None",
+          expected: `${groundTruth.length} entity/entities`,
+          match: false,
+        },
+      ],
     };
   }
 
@@ -309,7 +353,11 @@ function scoreTextSpans(
     }
 
     details.push({
-      annotation: bestMatch ? `"${bestMatch.value.text}" (${(bestOverlap * 100).toFixed(0)}% overlap)` : "No match",
+      annotation: bestMatch
+        ? `"${bestMatch.value.text}" (${(bestOverlap * 100).toFixed(
+            0
+          )}% overlap)`
+        : "No match",
       expected: `"${gt.value.text}" [${gt.value.labels?.join(", ")}]`,
       match: bestOverlap >= threshold,
       partialScore: bestOverlap,
@@ -326,15 +374,16 @@ function scoreTextSpans(
   const penalty = extraCount * 0.1;
 
   const avgScore = groundTruth.length > 0 ? totalScore / groundTruth.length : 0;
-  const finalScore = criteria.partialCredit 
+  const finalScore = criteria.partialCredit
     ? Math.max(0, avgScore - penalty)
-    : (matchedCount / Math.max(groundTruth.length, 1));
+    : matchedCount / Math.max(groundTruth.length, 1);
 
   return {
     score: finalScore,
-    feedback: matchedCount === groundTruth.length 
-      ? "All entities correctly identified!"
-      : `${matchedCount}/${groundTruth.length} entities matched`,
+    feedback:
+      matchedCount === groundTruth.length
+        ? "All entities correctly identified!"
+        : `${matchedCount}/${groundTruth.length} entities matched`,
     details,
   };
 }
@@ -347,7 +396,7 @@ export function scoreTestCase(
   userAnnotations: AnnotationResult[]
 ): TaskScore {
   const { scoringCriteria, groundTruth, points: maxPoints } = testCase;
-  
+
   let totalScore = 0;
   let feedbackParts: string[] = [];
   let allDetails: ScoreDetail[] = [];
@@ -373,9 +422,21 @@ export function scoreTestCase(
 
   // Score each from_name group
   for (const [fromName, gtAnns] of gtByFromName) {
-    const userAnns = userByFromName.get(fromName) || [];
-    const firstGt = gtAnns[0];
+    let userAnns = userByFromName.get(fromName) || [];
 
+    // Fallback: If no exact match, try to match by type
+    if (userAnns.length === 0 && userAnnotations.length > 0) {
+      // Find any user annotation that has the same type as the ground truth
+      const firstGt = gtAnns[0];
+      const matchByType = userAnnotations.find(
+        (ua) => ua.type === firstGt.type
+      );
+      if (matchByType) {
+        userAnns = [matchByType];
+      }
+    }
+
+    const firstGt = gtAnns[0];
     let result: { score: number; feedback: string; details: ScoreDetail[] };
 
     switch (scoringCriteria.type) {
@@ -398,6 +459,12 @@ export function scoreTestCase(
         break;
       default:
         result = scoreClassification(userAnns[0], firstGt, scoringCriteria);
+    }
+
+    if (userAnns.length === 0 && userAnnotations.length > 0) {
+      // Debug info if we still found nothing but user DID provide answers
+      const foundNames = Array.from(userByFromName.keys()).join(", ");
+      result.feedback += ` (Internal: Expected '${fromName}', found [${foundNames}])`;
     }
 
     totalScore += result.score;
@@ -430,7 +497,10 @@ export function calculateTestResults(
   timeTaken: number
 ): TestResult {
   const taskScores: TaskScore[] = [];
-  const specialtyTotals: Record<string, { total: number; earned: number; count: number }> = {};
+  const specialtyTotals: Record<
+    string,
+    { total: number; earned: number; count: number }
+  > = {};
 
   let totalPoints = 0;
   let earnedPoints = 0;
@@ -466,7 +536,8 @@ export function calculateTestResults(
     };
   }
 
-  const overallPercentage = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
+  const overallPercentage =
+    totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
 
   return {
     totalPoints,

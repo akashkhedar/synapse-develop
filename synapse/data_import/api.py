@@ -4,6 +4,8 @@ import json
 import logging
 import mimetypes
 import time
+import io
+from datetime import datetime
 from urllib.parse import unquote, urlparse
 
 from core.decorators import override_report_only_csp
@@ -1245,16 +1247,75 @@ class FileUploadAPI(generics.RetrieveUpdateDestroyAPIView):
     ),
 )
 class UploadedFileResponse(generics.RetrieveAPIView):
-    """Serve uploaded files from local drive"""
+    """Serve uploaded files from local drive with automatic watermarking for images"""
 
     permission_classes = (IsAuthenticated,)
+
+    # Image types that should be watermarked
+    WATERMARK_CONTENT_TYPES = [
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/webp",
+        "image/bmp",
+    ]
+
+    def _should_watermark(self, content_type: str) -> bool:
+        """Check if this content type should be watermarked"""
+        if not content_type:
+            return False
+        return any(ct in content_type.lower() for ct in self.WATERMARK_CONTENT_TYPES)
+
+    def _apply_watermarks(self, image_data: bytes, request) -> bytes:
+        """
+        Apply both visible and invisible watermarks to image.
+
+        Visible: Shows user email + timestamp (tiled pattern)
+        Invisible: Embeds forensic data for leak tracing
+        """
+        try:
+            from core.watermark_service import WatermarkService
+
+            user = request.user
+            user_id = getattr(user, "email", str(user.id))
+            session_id = request.session.session_key or "no-session"
+            timestamp = datetime.now()
+
+            # Apply visible watermark
+            watermarked = WatermarkService.apply_visible_watermark(
+                image_data,
+                user_id=user_id,
+                session_id=session_id,
+                timestamp=timestamp,
+                position="tiled",  # tiled, corner, or center
+            )
+
+            # Apply invisible (forensic) watermark for tracing
+            forensic_payload = {
+                "u": user_id,  # User ID/email
+                "s": session_id[:16] if session_id else "",  # Session (truncated)
+                "ts": timestamp.isoformat(),  # Timestamp
+                "ip": request.META.get("REMOTE_ADDR", ""),  # IP address
+            }
+
+            watermarked = WatermarkService.apply_invisible_watermark(
+                watermarked, payload=forensic_payload
+            )
+
+            logger.debug(f"Applied watermarks for user {user_id} on image request")
+            return watermarked
+
+        except Exception as e:
+            logger.error(f"Failed to apply watermarks: {e}")
+            # Return original if watermarking fails
+            return image_data
 
     @override_report_only_csp
     @csp(SANDBOX=[])
     def get(self, *args, **kwargs):
         request = self.request
         filename = kwargs["filename"]
-        # XXX needed, on windows os.path.join generates '\' which breaks FileUpload
+        # XXX needed, on windows os.path.join generates '\\' which breaks FileUpload
         file = (
             settings.UPLOAD_DIR
             + ("/" if not settings.UPLOAD_DIR.endswith("/") else "")
@@ -1273,9 +1334,32 @@ class UploadedFileResponse(generics.RetrieveAPIView):
         if file.storage.exists(file.name):
             content_type, encoding = mimetypes.guess_type(str(file.name))
             content_type = content_type or "application/octet-stream"
-            return RangedFileResponse(
-                request, file.open(mode="rb"), content_type=content_type
-            )
+
+            # Check if this is an image that should be watermarked
+            if self._should_watermark(content_type):
+                # Read the entire file for watermarking
+                with file.open(mode="rb") as f:
+                    image_data = f.read()
+
+                # Apply watermarks
+                watermarked_data = self._apply_watermarks(image_data, request)
+
+                # Return watermarked image
+                response = HttpResponse(
+                    watermarked_data,
+                    content_type="image/png",  # Watermarked images are always PNG
+                )
+                response["Content-Length"] = len(watermarked_data)
+                response["Cache-Control"] = (
+                    "no-store, no-cache, must-revalidate, private"
+                )
+                response["Content-Disposition"] = "inline"
+                return response
+            else:
+                # Non-image files: serve normally
+                return RangedFileResponse(
+                    request, file.open(mode="rb"), content_type=content_type
+                )
 
         return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -1361,8 +1445,3 @@ class DownloadStorageData(APIView):
             response["Content-Disposition"] = f'inline; filename="{filepath}"'
             response["filename"] = filepath
             return response
-
-
-
-
-

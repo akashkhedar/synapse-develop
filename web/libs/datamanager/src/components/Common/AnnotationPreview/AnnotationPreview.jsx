@@ -3,6 +3,7 @@ import React from "react";
 import { taskToSFFormat } from "../../../sdk/sf-utils";
 import { cn } from "../../../utils/bem";
 import { Spinner } from "../Spinner";
+import { SecureImage } from "../SecureImage";
 import "./AnnotationPreview.scss";
 
 const imgDefaultProps = { crossOrigin: "anonymous" };
@@ -124,7 +125,7 @@ export const AnnotationPreview = injector(
     }, [task, annotation, generator, preview]);
 
     return preview ? (
-      <img
+      <SecureImage
         {...imgDefaultProps}
         src={preview[`$${name}`][variant]}
         alt=""
@@ -148,7 +149,7 @@ export const AnnotationPreview = injector(
             zIndex: 100,
           }}
         />
-        <img
+        <SecureImage
           src={props.fallbackImage}
           style={{ ...(style ?? {}), opacity: 0.5 }}
           alt=""

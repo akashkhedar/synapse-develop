@@ -94,7 +94,7 @@ export const API_CONFIG = {
     webhooksInfo: "/webhooks/info",
 
     // Billing
-    billingDashboard: "GET:/billing/billing/dashboard",
+    billingDashboard: "GET:/billing/dashboard",
     calculateSecurityDeposit: "POST:/billing/project-billing/calculate_deposit",
     collectSecurityDeposit: "POST:/billing/project-billing/collect_deposit",
     projectBillingStatus: "POST:/billing/project-billing/project_status",

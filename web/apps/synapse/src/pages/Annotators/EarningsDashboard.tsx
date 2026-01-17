@@ -634,6 +634,18 @@ export const EarningsDashboard: React.FC = () => {
                         animate={{ opacity: 1 }}
                         transition={{ delay: i * 0.03 }}
                       >
+                        {/* Hover tooltip */}
+                        <div className="bar-tooltip">
+                          <span className="tooltip-date">
+                            {bar.date.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
+                          <span className="tooltip-amount">
+                            {formatCurrency(bar.amount)}
+                          </span>
+                        </div>
                         <motion.div
                           className={`bar ${
                             bar.isAboveAvg ? "above" : "below"

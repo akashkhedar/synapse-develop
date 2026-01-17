@@ -12,7 +12,7 @@ from .api import (
 router = DefaultRouter()
 router.register(r"plans", SubscriptionPlanViewSet, basename="subscription-plans")
 router.register(r"packages", CreditPackageViewSet, basename="credit-packages")
-router.register(r"billing", BillingViewSet, basename="billing")
+router.register(r"", BillingViewSet, basename="billing")  # /api/billing/ endpoints (dashboard, etc.)
 router.register(r"pricing", AnnotationPricingViewSet, basename="annotation-pricing")
 router.register(r"project-billing", ProjectBillingViewSet, basename="project-billing")
 router.register(r"api-usage", APIUsageViewSet, basename="api-usage")

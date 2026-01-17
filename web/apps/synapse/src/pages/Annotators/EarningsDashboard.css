@@ -535,6 +535,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  position: relative;
 }
 
 .bar {
@@ -569,6 +570,55 @@
 
 .bar-wrapper:hover .bar-day {
   color: #fff;
+}
+
+/* Bar Tooltip */
+.bar-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  border: 1px solid #333;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.bar-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
+}
+
+.bar-wrapper:hover .bar-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip-date {
+  font-family: monospace;
+  font-size: 0.65rem;
+  color: #666;
+  letter-spacing: 0.05em;
+}
+
+.tooltip-amount {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #22c55e;
 }
 
 .chart-summary {

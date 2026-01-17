@@ -396,53 +396,60 @@ class TaskAssignment(models.Model):
         )
 
     def release_immediate_payment(self):
-        """Release 40% immediate payment upon submission"""
+        """Release 40% immediate payment upon submission (Stage 1)"""
         if not self.immediate_released and self.status == "completed":
             self.immediate_released = True
             final_amount = (
                 self.immediate_payment * self.quality_multiplier * self.trust_multiplier
             )
             self.amount_paid += final_amount
+            # Stage 1: Add to pending_approval AND total_earned
             self.annotator.pending_approval += final_amount
-            self.annotator.save(update_fields=["pending_approval"])
+            self.annotator.total_earned += final_amount
+            self.annotator.save(update_fields=["pending_approval", "total_earned"])
             self.save(update_fields=["immediate_released", "amount_paid"])
             return final_amount
         return Decimal("0")
 
     def release_consensus_payment(self):
-        """Release 40% after consensus validation"""
+        """Release 40% after consensus validation (Stage 2)"""
         if not self.consensus_released and self.immediate_released:
             self.consensus_released = True
-            final_amount = (
+            # Calculate consensus portion only
+            consensus_final = (
                 self.consensus_payment * self.quality_multiplier * self.trust_multiplier
             )
-            self.amount_paid += final_amount
-            # Move from pending to available
-            self.annotator.pending_approval -= (
+            # Calculate immediate portion that was in pending
+            immediate_final = (
                 self.immediate_payment * self.quality_multiplier * self.trust_multiplier
             )
-            self.annotator.available_balance += self.amount_paid
-            self.annotator.total_earned += self.amount_paid
+            self.amount_paid += consensus_final
+            
+            # Stage 2: Move immediate from pending to available, add consensus to both
+            self.annotator.pending_approval -= immediate_final
+            self.annotator.available_balance += immediate_final + consensus_final
+            self.annotator.total_earned += consensus_final  # Only add consensus portion
             self.annotator.save(
                 update_fields=["pending_approval", "available_balance", "total_earned"]
             )
             self.save(update_fields=["consensus_released", "amount_paid"])
-            return final_amount
+            return consensus_final
         return Decimal("0")
 
     def release_review_payment(self):
-        """Release final 20% after expert review"""
+        """Release final 20% after client payment (Stage 3)"""
         if not self.review_released and self.consensus_released:
             self.review_released = True
-            final_amount = (
+            review_final = (
                 self.review_payment * self.quality_multiplier * self.trust_multiplier
             )
-            self.amount_paid += final_amount
-            self.annotator.available_balance += final_amount
-            self.annotator.total_earned += final_amount
+            self.amount_paid += review_final
+            # Stage 3: Add review portion to available and total_earned
+            self.annotator.available_balance += review_final
+            self.annotator.total_earned += review_final
             self.annotator.save(update_fields=["available_balance", "total_earned"])
             self.save(update_fields=["review_released", "amount_paid"])
-            return final_amount
+            return review_final
         return Decimal("0")
 
 
@@ -1314,25 +1321,25 @@ class AnnotatorAgreement(models.Model):
 
     # Detailed metrics by annotation type
     iou_score = models.DecimalField(
-        max_digits=5,
+        max_digits=7,
         decimal_places=4,
         null=True,
         blank=True,
-        help_text="IoU for bounding boxes/polygons",
+        help_text="IoU for bounding boxes/polygons (0-100)",
     )
     label_agreement = models.DecimalField(
-        max_digits=5,
+        max_digits=7,
         decimal_places=4,
         null=True,
         blank=True,
-        help_text="Label matching score",
+        help_text="Label matching score (0-100)",
     )
     position_agreement = models.DecimalField(
-        max_digits=5,
+        max_digits=7,
         decimal_places=4,
         null=True,
         blank=True,
-        help_text="Position/coordinate agreement",
+        help_text="Position/coordinate agreement (0-100)",
     )
 
     # Metadata

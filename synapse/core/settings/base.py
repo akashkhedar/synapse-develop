@@ -267,7 +267,7 @@ INSTALLED_APPS = [
     "session_policy",
     "billing",
     "annotators",  # Annotator management system
-    "telemetry",  # Behavioral surveillance system
+    # "telemetry",  # DISABLED - Behavioral surveillance system
 ]
 
 MIDDLEWARE = [
@@ -856,7 +856,7 @@ STORAGE_EXISTED_COUNT_BATCH_SIZE = int(
 )
 
 USE_NGINX_FOR_EXPORT_DOWNLOADS = get_bool_env("USE_NGINX_FOR_EXPORT_DOWNLOADS", False)
-USE_NGINX_FOR_UPLOADS = get_bool_env("USE_NGINX_FOR_UPLOADS", True)
+USE_NGINX_FOR_UPLOADS = get_bool_env("USE_NGINX_FOR_UPLOADS", False)  # Set to True in production with NGINX
 
 if get_env("MINIO_STORAGE_ENDPOINT") and not get_bool_env("MINIO_SKIP", False):
     CLOUD_FILE_STORAGE_ENABLED = True

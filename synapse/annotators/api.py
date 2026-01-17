@@ -359,8 +359,8 @@ class AnnotatorTestSubmitAPI(APIView):
             passed = results.get("passed", False)
 
             if passed:
-                status_value = "test_submitted"
-                feedback = "Great work! Your test has been submitted for expert review. You will be notified once approved."
+                status_value = "approved"  # Immediately approve passing users
+                feedback = "Congratulations! You've passed the test and your account is now active."
             else:
                 status_value = "pending_test"
                 feedback = "You did not meet the minimum passing criteria. Please review the study materials and try again in 7 days."
@@ -368,6 +368,34 @@ class AnnotatorTestSubmitAPI(APIView):
             can_retake_at = (
                 (timezone.now() + timedelta(days=7)).isoformat() if not passed else None
             )
+
+            # UPDATE USER STATUS IN DATABASE
+            # Try multiple ways to get the user
+            user = None
+            
+            # Method 1: Check if user is authenticated
+            if request.user.is_authenticated:
+                user = request.user
+                logger.info(f"Test submit: User authenticated as {user.email}")
+            else:
+                logger.warning(f"Test submit: User NOT authenticated. Session key: {request.session.session_key}")
+                # Method 2: Try to get user from session
+                try:
+                    from django.contrib.auth import get_user
+                    session_user = get_user(request)
+                    if session_user.is_authenticated:
+                        user = session_user
+                        logger.info(f"Test submit: Got user from session: {user.email}")
+                except Exception as e:
+                    logger.warning(f"Test submit: Could not get user from session: {e}")
+            
+            # Update status if we found the user
+            if user and user.is_annotator:
+                user.annotator_status = status_value
+                user.save(update_fields=["annotator_status"])
+                logger.info(f"SUCCESS: Updated annotator_status to '{status_value}' for user {user.email}")
+            else:
+                logger.warning(f"Test submit: Could not update status - no valid annotator user found")
 
             # Return the enriched results
             response_data = {
@@ -412,8 +440,8 @@ class AnnotatorTestSubmitAPI(APIView):
 
         # Determine status
         if results["passed"]:
-            status_value = "test_submitted"
-            feedback = "Great work! Your test has been submitted for expert review. You will be notified once approved."
+            status_value = "approved"  # Immediately approve passing users
+            feedback = "Congratulations! You've passed the test and your account is now active."
         else:
             status_value = "pending_test"
             feedback = "You did not meet the minimum passing criteria. Please review the study materials and try again in 7 days."
@@ -424,6 +452,13 @@ class AnnotatorTestSubmitAPI(APIView):
             if not results["passed"]
             else None
         )
+
+        # UPDATE USER STATUS IN DATABASE
+        if request.user.is_authenticated:
+            user = request.user
+            user.annotator_status = status_value
+            user.save(update_fields=["annotator_status"])
+            logger.info(f"Updated annotator_status to '{status_value}' for user {user.email}")
 
         results.update(
             {
@@ -498,9 +533,30 @@ class AnnotatorProjectsAPI(APIView):
         except AnnotatorProfile.DoesNotExist:
             raise PermissionDenied("Not an annotator")
 
+        # Only get projects where annotator has ACTIVE task assignments
+        # (assigned or in_progress status)
+        from django.db.models import Count, Q
+        
+        # Get project IDs where annotator has active tasks
+        project_ids_with_tasks = TaskAssignment.objects.filter(
+            annotator=profile,
+            status__in=["assigned", "in_progress"]
+        ).values_list("task__project_id", flat=True).distinct()
+        
+        # Get project assignments only for those projects
         assignments = ProjectAssignment.objects.filter(
-            annotator=profile, active=True
-        ).select_related("project")
+            annotator=profile,
+            active=True,
+            project_id__in=project_ids_with_tasks
+        ).select_related("project").annotate(
+            active_tasks=Count(
+                "project__tasks__annotator_assignments",
+                filter=Q(
+                    project__tasks__annotator_assignments__annotator=profile,
+                    project__tasks__annotator_assignments__status__in=["assigned", "in_progress"]
+                )
+            )
+        )
 
         return Response(
             [
@@ -509,6 +565,7 @@ class AnnotatorProjectsAPI(APIView):
                     "title": a.project.title,
                     "assigned_at": a.assigned_at,
                     "role": a.role,
+                    "active_tasks": a.active_tasks,
                 }
                 for a in assignments
             ]
@@ -2697,6 +2754,14 @@ class ExpertProjectsAPI(APIView):
                 ),
             ),
         )
+        
+        # Only show projects with pending or in-review tasks
+        # unless explicitly filtering for completed (via status_filter)
+        if not status_filter or status_filter not in ["approved", "rejected", "corrected"]:
+            # Filter to only show projects with active work (pending or in_review)
+            projects = projects.filter(
+                Q(pending_reviews__gt=0) | Q(in_review_count__gt=0)
+            )
 
         total = projects.count()
         projects_page = projects.order_by("-pending_reviews", "-id")[

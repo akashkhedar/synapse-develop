@@ -248,7 +248,7 @@ export const TestResult = () => {
 
         <div className="result-actions">
           <Button
-            onClick={() => history.push("/projects/")}
+            onClick={() => history.push("/user/login")}
             style={{ backgroundColor: "#3b82f6" }}
           >
             Go to Dashboard

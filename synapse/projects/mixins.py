@@ -103,9 +103,20 @@ class ProjectMixin:
             except Exception:
                 return False
 
-        # Annotators must be project members
+        # Annotators must have task assignments in this project
         if hasattr(user, "is_annotator") and user.is_annotator:
-            return self.has_collaborator_enabled(user)
+            try:
+                from annotators.models import TaskAssignment
+                
+                # Check if user has any active task assignments in this project
+                has_tasks = TaskAssignment.objects.filter(
+                    annotator__user=user,
+                    task__project=self,
+                    status__in=["assigned", "in_progress"]
+                ).exists()
+                return has_tasks
+            except Exception:
+                return False
 
         # For clients and regular users, check organization membership
         # This preserves existing Synapse access control

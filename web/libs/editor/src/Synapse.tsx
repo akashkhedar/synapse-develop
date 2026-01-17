@@ -14,7 +14,7 @@ import { EventInvoker } from "./utils/events";
 import { FF_LSDV_4620_3_ML, isFF } from "./utils/feature-flags";
 import { cleanDomAfterReact, findReactKey } from "./utils/reactCleaner";
 import { isDefined } from "./utils/utilities";
-import { BehaviorSensorProvider } from "./components/BehaviorSensor/BehaviorSensorProvider";
+
 
 // Extend window interface for TypeScript
 declare global {
@@ -140,12 +140,8 @@ export class Synapse {
       if (isRendered) {
         clearRenderedApp();
       }
-      const taskId = this.store?.task?.id;
-      const projectId = this.store?.project?.id;
       render(
-        <BehaviorSensorProvider taskId={taskId} projectId={projectId}>
-          <App store={this.store} />
-        </BehaviorSensorProvider>,
+        <App store={this.store} />,
         rootElement
       );
     };
@@ -220,12 +216,8 @@ export class Synapse {
       }
       this.reactRoot = createRoot(rootElement);
       const AppComponent = App as any;
-      const taskId = this.store?.task?.id;
-      const projectId = this.store?.project?.id;
       this.reactRoot.render(
-        <BehaviorSensorProvider taskId={taskId} projectId={projectId}>
-          <AppComponent store={this.store} />
-        </BehaviorSensorProvider>
+        <AppComponent store={this.store} />
       );
       isRendered = true;
     };

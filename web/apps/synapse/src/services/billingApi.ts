@@ -162,7 +162,7 @@ export const billingApi = {
    */
   getRazorpayKey: async (): Promise<{ key_id: string; test_mode: boolean }> => {
     return fetchApi<{ key_id: string; test_mode: boolean }>(
-      "/api/billing/billing/razorpay_key/"
+      "/api/billing/razorpay_key/"
     );
   },
 
@@ -186,7 +186,7 @@ export const billingApi = {
   getDashboard: async (organizationId?: number): Promise<BillingDashboard> => {
     const params = organizationId ? `?organization=${organizationId}` : "";
     return fetchApi<BillingDashboard>(
-      `/api/billing/billing/dashboard/${params}`
+      `/api/billing/dashboard/${params}`
     );
   },
 
@@ -196,7 +196,7 @@ export const billingApi = {
   createOrder: async (
     data: CreateOrderRequest
   ): Promise<CreateOrderResponse> => {
-    return fetchApi<CreateOrderResponse>("/api/billing/billing/create_order/", {
+    return fetchApi<CreateOrderResponse>("/api/billing/create_order/", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -209,7 +209,7 @@ export const billingApi = {
     data: VerifyPaymentRequest
   ): Promise<VerifyPaymentResponse> => {
     return fetchApi<VerifyPaymentResponse>(
-      "/api/billing/billing/verify_payment/",
+      "/api/billing/verify_payment/",
       {
         method: "POST",
         body: JSON.stringify(data),
@@ -232,7 +232,7 @@ export const billingApi = {
     if (category) params.append("category", category);
 
     const queryString = params.toString();
-    const url = `/api/billing/billing/transactions/${
+    const url = `/api/billing/transactions/${
       queryString ? `?${queryString}` : ""
     }`;
     return fetchApi<CreditTransaction[]>(url);
@@ -243,7 +243,7 @@ export const billingApi = {
    */
   getPayments: async (organizationId?: number): Promise<Payment[]> => {
     const params = organizationId ? `?organization=${organizationId}` : "";
-    return fetchApi<Payment[]>(`/api/billing/billing/payments/${params}`);
+    return fetchApi<Payment[]>(`/api/billing/payments/${params}`);
   },
 
   /**

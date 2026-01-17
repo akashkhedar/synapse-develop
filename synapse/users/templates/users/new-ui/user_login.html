@@ -1,5 +1,6 @@
-{% extends 'users/new-ui/user_base.html' %} {% block content %} {{ block.super
-}}
+{% extends 'users/new-ui/user_base.html' %} 
+{% block content %} 
+{{ block.super}}
 <script nonce="{{request.csp_nonce}}">
   gaClientIdTrackingIframe("users.login.view");
   setTimeout(() => {
@@ -7,7 +8,8 @@
     if (window.__lsa) __lsa("users.login.view", { synapse_gaclient_id });
   }, 2000);
 </script>
-{% endblock %} {% block user_content %}
+{% endblock %} 
+{% block user_content %}
 <div class="auth-form-container">
   <!-- Section Label - matching FeaturesSection number style -->
   <div class="auth-section-label">
@@ -46,9 +48,11 @@
         autocomplete="current-password"
       />
     </div>
-    {% if form.non_field_errors %} {% for error in form.non_field_errors %}
+    {% if form.non_field_errors %} 
+    {% for error in form.non_field_errors %}
     <p class="error-message">{{ error }}</p>
-    {% endfor %} {% if annotator_action == 'resend_verification' %}
+    {% endfor %} 
+    {% if annotator_action == 'resend_verification' %}
     <div class="annotator-action-container">
       <p class="annotator-action-hint">
         Didn't receive the email? Check your spam folder or request a new link.
@@ -73,7 +77,8 @@
         Resend Verification Email
       </a>
     </div>
-    {% endif %} {% endif %}
+    {% endif %} 
+    {% endif %}
     <button type="submit" class="auth-submit-btn">
       LOG IN
       <svg
@@ -99,8 +104,9 @@
   </p>
 </div>
 
-{% if messages %} {% for message in messages %} {% if message.tags == 'success'
-%}
+{% if messages %} 
+{% for message in messages %} 
+{% if message.tags == 'success'%}
 <style nonce="{{request.csp_nonce}}">
   .success-modal {
     position: fixed;
@@ -190,4 +196,7 @@
     </button>
   </div>
 </div>
-{% endif %} {% endfor %} {% endif %} {% endblock %}
+{% endif %} 
+{% endfor %} 
+{% endif %} 
+{% endblock %}

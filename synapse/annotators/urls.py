@@ -40,7 +40,7 @@ urlpatterns = [
     # PAYMENT URLS
     # ============================================================================
     # Earnings & Balance
-    path("earnings", api.AnnotatorEarningsAPI.as_view(), name="earnings"),
+    path("earnings/", api.AnnotatorEarningsAPI.as_view(), name="earnings"),
     path("transactions", api.AnnotatorTransactionsAPI.as_view(), name="transactions"),
     path("trust-level", api.AnnotatorTrustLevelAPI.as_view(), name="trust-level"),
     # Payout Requests

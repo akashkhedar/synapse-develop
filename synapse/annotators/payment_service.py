@@ -960,7 +960,8 @@ class PayoutService:
     @staticmethod
     def get_earnings_summary(annotator):
         """Get earnings summary for an annotator"""
-        from .models import TaskAssignment, EarningsTransaction
+        from .models import TaskAssignment, EarningsTransaction, AnnotatorStreak
+        from django.db.models.functions import TruncDate
 
         # Get completed assignments
         completed = TaskAssignment.objects.filter(
@@ -1011,6 +1012,73 @@ class PayoutService:
                 "honeypot_pass_rate": 0,
             }
 
+        # ================================================================
+        # NEW: Calculate daily_earnings for earnings trend chart (last 30 days)
+        # ================================================================
+        thirty_days_ago = now - timedelta(days=30)
+        daily_earnings_qs = (
+            EarningsTransaction.objects.filter(
+                annotator=annotator,
+                transaction_type="earning",
+                created_at__gte=thirty_days_ago,
+            )
+            .annotate(date=TruncDate("created_at"))
+            .values("date")
+            .annotate(amount=Sum("amount"))
+            .order_by("date")
+        )
+        
+        # Create a dict for quick lookup
+        earnings_by_date = {
+            str(entry["date"]): float(entry["amount"])
+            for entry in daily_earnings_qs
+        }
+        
+        # Generate all 30 days with 0 for missing days
+        daily_earnings = []
+        for i in range(30):
+            date = (now - timedelta(days=29 - i)).date()
+            date_str = str(date)
+            daily_earnings.append({
+                "date": date_str,
+                "amount": earnings_by_date.get(date_str, 0)
+            })
+
+        # ================================================================
+        # NEW: Calculate activity_days for streak calendar (last 60 days)
+        # ================================================================
+        sixty_days_ago = now - timedelta(days=60)
+        activity_dates = (
+            TaskAssignment.objects.filter(
+                annotator=annotator,
+                status="completed",
+                completed_at__gte=sixty_days_ago,
+            )
+            .annotate(date=TruncDate("completed_at"))
+            .values_list("date", flat=True)
+            .distinct()
+        )
+        activity_days = [str(d) for d in activity_dates if d]
+
+        # ================================================================
+        # NEW: Get current streak from AnnotatorStreak model
+        # ================================================================
+        activity_streak = 0
+        try:
+            streak = AnnotatorStreak.objects.get(annotator=annotator)
+            activity_streak = streak.current_streak
+        except AnnotatorStreak.DoesNotExist:
+            # Calculate streak from activity_days
+            today = now.date()
+            streak_count = 0
+            for i in range(60):
+                check_date = str(today - timedelta(days=i))
+                if check_date in activity_days:
+                    streak_count += 1
+                else:
+                    break
+            activity_streak = streak_count
+
         return {
             "total_tasks": total_tasks,
             "total_earned": float(total_earned),
@@ -1032,6 +1100,10 @@ class PayoutService:
                 }
                 for t in recent_transactions
             ],
+            # NEW fields for frontend calendar and earnings trend
+            "daily_earnings": daily_earnings,
+            "activity_days": activity_days,
+            "activity_streak": activity_streak,
         }
 
     @staticmethod

@@ -247,10 +247,12 @@ export const AnnotatorSkillTest = () => {
     setTimeRemaining(0);
   }, []);
 
-  // Handle continue to dashboard
+  // Handle continue to dashboard - redirect through login to establish session
   const handleContinue = useCallback(() => {
-    history.push("/annotators/earnings");
-  }, [history]);
+    // Redirect to login which will then redirect to earnings dashboard
+    // This ensures proper Django session authentication
+    window.location.href = "/login/?next=/projects/";
+  }, []);
 
   // Render based on phase
   const renderPhase = () => {

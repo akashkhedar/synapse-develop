@@ -84,6 +84,9 @@ def save_user(request, next_page, user_form):
 
     logger.info(f"Creating user {user.email} with role: {user_role}")
 
+    # Ensure user is active (they can login after email verification)
+    user.is_active = True
+
     # Save user first to get the ID
     user.save()
 
@@ -175,8 +178,3 @@ def proceed_registration(request, user_form, organization_form, next_page):
 def login(request, *args, **kwargs):
     request.session["last_login"] = time()
     return auth.login(request, *args, **kwargs)
-
-
-
-
-

@@ -61,6 +61,10 @@ const initializeDataManager = async (root, props, params) => {
     },
     ...props,
     ...settings,
+    // Pass role flags to DataManager instance (store.SDK)
+    isAnnotator: params.isAnnotator,
+    isExpert: params.isExpert,
+    canAnnotate: params.canAnnotate,
   };
 
   return new window.DataManager(dmConfig);
@@ -113,6 +117,8 @@ export const DataManagerPage = ({ ...props }) => {
         // Annotators and experts can annotate, clients cannot
         canAnnotate:
           currentUser?.is_annotator === true || currentUser?.is_expert === true,
+        isAnnotator: currentUser?.is_annotator === true,
+        isExpert: currentUser?.is_expert === true,
       })));
 
     Object.assign(window, { dataManager });
@@ -277,6 +283,7 @@ DataManagerPage.context = ({ dmRef }) => {
   const { user } = useAuth();
   const [mode, setMode] = useState(dmRef?.mode ?? "explorer");
   const isAnnotator = !!user?.is_annotator;
+  const isExpert = !!user?.is_expert;
 
   const links = {
     "/settings": "Settings",
@@ -347,7 +354,7 @@ DataManagerPage.context = ({ dmRef }) => {
         </Button>
       )}
 
-      {!isAnnotator &&
+      {!isAnnotator && !isExpert &&
         Object.entries(links).map(([path, label]) => (
           <Link
             key={path}

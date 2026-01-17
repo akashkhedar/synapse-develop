@@ -5,6 +5,8 @@ import { Dropdown } from "@synapse/ui";
 import { Toggle } from "../../Common/Form";
 import { IconSettings, IconMinus, IconPlus } from "@synapse/icons";
 import debounce from "lodash/debounce";
+import { cn } from "../../../utils/bem";
+import "./TabPanel.scss";
 
 const injector = inject(({ store }) => {
   const view = store?.currentView;
@@ -45,6 +47,8 @@ export const GridWidthButton = injector(({ view, isGrid, gridWidth, fitImagesToW
     [view],
   );
 
+
+
   return isGrid ? (
     <Dropdown.Trigger
       content={
@@ -81,7 +85,27 @@ export const GridWidthButton = injector(({ view, isGrid, gridWidth, fitImagesToW
         </div>
       }
     >
-      <Button size={size} variant="neutral" look="outlined" aria-label="Grid settings">
+
+      <Button 
+          size={size} 
+          variant="neutral" 
+          look="outlined" 
+          aria-label="Grid settings" 
+          style={{
+            background: 'black',
+            border: '1px solid rgba(55, 65, 81, 0.5)',
+            borderRadius: '10px',
+            color: '#c4b5fd',
+            fontWeight: 600,
+            fontSize: '13px',
+            height: '32px',
+            padding: '0 14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+      >
         <IconSettings />
       </Button>
     </Dropdown.Trigger>

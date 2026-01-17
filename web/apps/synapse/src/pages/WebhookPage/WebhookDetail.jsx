@@ -54,129 +54,127 @@ const WebhookForm = ({
           onSelectActive(null);
         }
       }}
+      className="flex flex-col gap-6"
     >
-      <Form.Row columnCount={1}>
-        <Label text="Payload URL" large />
-        <div className="grid grid-cols-[1fr_135px] gap-tight">
-          <Input name="url" className="self-stretch w-auto" placeholder="URL" />
-          <div className="grid grid-flow-col auto-cols-max items-center justify-end gap-tight self-center">
-            <span className="text-neutral-content">Is Active</span>
+      {/* General Section */}
+      <div className="webhook-card">
+        <h3 className="section-title">General Information</h3>
+        <div className="grid grid-cols-[1fr_auto] gap-6 items-start">
+          <Input 
+            name="url" 
+            label="Payload URL"
+            placeholder="https://api.example.com/webhook" 
+            className="w-full"
+          />
+          <div className="pt-8">
             <Toggle
               skip
               checked={isActive}
-              onChange={(e) => {
-                setIsActive(e.target.checked);
-              }}
+              onChange={(e) => setIsActive(e.target.checked)}
+              label="Active"
             />
-          </div>
-        </div>
-      </Form.Row>
-      <Form.Row columnCount={1}>
-        <div className="border border-neutral-border p-4 rounded-lg mb-4">
-          <div className="flex flex-col gap-tight">
-            <div className="flex items-center justify-between">
-              <Label text="Headers" large />
-              <Button
-                type="button"
-                variant="primary"
-                look="string"
-                onClick={onAddHeaderClick}
-                className="!p-0 [&_span]:!text-[var(--grape_500)]"
-                leading={<IconPlus />}
-                tooltip="Add Header"
-              />
-            </div>
-            {headers.map((header, index) => {
-              return (
-                <div key={header.id} className="grid grid-cols-[1fr_1fr_40px] gap-tight">
-                  <Input
-                    skip
-                    placeholder="header"
-                    value={header.key}
-                    onChange={(e) => onHeaderChange("key", e, index)}
-                  />
-                  <Input
-                    skip
-                    placeholder="value"
-                    value={header.value}
-                    onChange={(e) => onHeaderChange("value", e, index)}
-                  />
-                  <div>
-                    <Button
-                      variant="negative"
-                      look="string"
-                      className="h-8 w-8 !p-0"
-                      type="button"
-                      icon={<IconCross />}
-                      onClick={() => onHeaderRemove(index)}
-                      tooltip="Remove Header"
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Form.Row>
-      <div className="border border-neutral-border p-4 rounded-lg mb-4">
-        <div>
-          <Label text="Payload" large />
-        </div>
-        <div>
-          <div className="my-2">
-            <Toggle
-              skip
-              checked={sendPayload}
-              onChange={(e) => {
-                setSendPayload(e.target.checked);
-              }}
-              label="Send payload"
-            />
-          </div>
-          <div className="my-2">
-            <Toggle
-              skip
-              checked={sendForAllActions}
-              label="Send for all actions"
-              onChange={(e) => {
-                setSendForAllActions(e.target.checked);
-              }}
-            />
-          </div>
-          <div>
-            {!sendForAllActions ? (
-              <div>
-                <h4 className="text-neutral-content">Send Payload for</h4>
-                <div>
-                  {Object.entries(webhooksInfo).map(([key, value]) => {
-                    return (
-                      <Form.Row key={key} columnCount={1}>
-                        <div>
-                          <Toggle
-                            skip
-                            name={key}
-                            type="checkbox"
-                            label={value.name}
-                            onChange={onActionChange}
-                            checked={actions.has(key)}
-                          />
-                        </div>
-                      </Form.Row>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2 mt-base">
-        {webhook !== null && (
+
+      {/* Headers Section */}
+      <div className="webhook-card">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="section-title !mb-0">Headers</h3>
+          <Button
+            type="button"
+            variant="neutral"
+            look="outlined"
+            size="small"
+            onClick={onAddHeaderClick}
+            icon={<IconPlus />}
+          >
+            Add Header
+          </Button>
+        </div>
+        
+        {headers.length === 0 ? (
+           <div className="text-neutral-content-subtler text-sm italic">No custom headers configured</div>
+        ) : (
+          <div className="space-y-3">
+            {headers.map((header, index) => (
+              <div key={header.id} className="grid grid-cols-[1fr_1fr_40px] gap-3 items-center">
+                <Input
+                  skip
+                  placeholder="Key (e.g. Authorization)"
+                  value={header.key}
+                  onChange={(e) => onHeaderChange("key", e, index)}
+                />
+                <Input
+                  skip
+                  placeholder="Value"
+                  value={header.value}
+                  onChange={(e) => onHeaderChange("value", e, index)}
+                />
+                <Button
+                  variant="negative"
+                  look="string"
+                  className="h-8 w-8 !p-0 flex items-center justify-center opacity-50 hover:opacity-100"
+                  type="button"
+                  icon={<IconCross />}
+                  onClick={() => onHeaderRemove(index)}
+                  tooltip="Remove"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Payload Section */}
+      <div className="webhook-card">
+        <h3 className="section-title">Events & Payload</h3>
+        <div className="space-y-4">
+          <Toggle
+            skip
+            checked={sendPayload}
+            onChange={(e) => setSendPayload(e.target.checked)}
+            label="Send Payload Data"
+            description="Include full event data in the webhook request body"
+          />
+          
+          <div className="border-t border-neutral-border pt-4 mt-4">
+             <Toggle
+              skip
+              checked={sendForAllActions}
+              label="Trigger on All Events"
+              onChange={(e) => setSendForAllActions(e.target.checked)}
+            />
+            
+            {!sendForAllActions && (
+              <div className="mt-4 pl-4 border-l-2 border-primary-border bg-neutral-surface p-4 rounded-r-lg">
+                <h4 className="text-sm font-medium text-neutral-content mb-3">Select Events</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(webhooksInfo).map(([key, value]) => (
+                    <Toggle
+                      key={key}
+                      skip
+                      name={key}
+                      type="checkbox"
+                      label={value.name}
+                      onChange={onActionChange}
+                      checked={actions.has(key)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Actions Footer */}
+      <div className="flex items-center justify-between mt-4">
+        {webhook !== null ? (
           <Button
             type="button"
             variant="negative"
             look="outlined"
-            aria-label="Delete webhook"
             onClick={() =>
               WebhookDeleteModal({
                 onDelete: async () => {
@@ -191,26 +189,27 @@ const WebhookForm = ({
           >
             Delete Webhook
           </Button>
-        )}
-        <div className={rootClass.elem("status")}>
-          <Form.Indicator />
+        ) : <div />} 
+
+        <div className="flex items-center gap-3">
+           <div className={rootClass.elem("status")}>
+             <Form.Indicator />
+           </div>
+           <Button
+            variant="neutral"
+            look="outlined"
+            type="button"
+            onClick={onBack}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="gradient-button"
+            aria-label={webhook === null ? "Add Webhook" : "Save Changes"}
+          >
+            {webhook === null ? "Add Webhook" : "Save Changes"}
+          </Button>
         </div>
-        <Button
-          variant="neutral"
-          look="outlined"
-          type="button"
-          className="ml-auto"
-          onClick={onBack}
-          aria-label="Cancel webhook edit"
-        >
-          Cancel
-        </Button>
-        <Button
-          className={rootClass.elem("save-button")}
-          aria-label={webhook === null ? "Add Webhook" : "Save Changes"}
-        >
-          {webhook === null ? "Add Webhook" : "Save Changes"}
-        </Button>
       </div>
     </Form>
   );

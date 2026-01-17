@@ -1,6 +1,6 @@
 import { PersonalInfo } from "./PersonalInfo";
 import { PersonalAccessToken, PersonalAccessTokenDescription } from "./PersonalAccessToken";
-import { MembershipInfo } from "./MembershipInfo";
+
 import { HotkeysManager } from "./Hotkeys";
 import type React from "react";
 import { PersonalJWTToken } from "./PersonalJWTToken";
@@ -52,26 +52,10 @@ const commonSections = (): SectionType[] => [
 ];
 
 // Sections only for non-annotator roles (Owner, Admin, Manager)
-const adminSections = (): SectionType[] => [
-  {
-    title: "Membership Info",
-    id: "membership-info",
-    component: MembershipInfo,
-    description: () => "View your organization membership details and statistics.",
-    roles: [ROLES.OWNER, ROLES.ADMIN, ROLES.MANAGER, ROLES.REVIEWER],
-  },
-];
+const adminSections = (): SectionType[] => [];
 
 // Annotator-specific sections
-const annotatorSections = (): SectionType[] => [
-  {
-    title: "My Activity",
-    id: "membership-info",
-    component: MembershipInfo,
-    description: () => "View your annotation statistics and contributions.",
-    roles: [ROLES.ANNOTATOR],
-  },
-];
+const annotatorSections = (): SectionType[] => [];
 
 export const accountSettingsSections = (
   settings: AuthTokenSettings | null,

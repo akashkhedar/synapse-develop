@@ -4,6 +4,7 @@ import { cn } from "../../utils/bem";
 import { Button } from "@synapse/ui";
 import { FilterLine } from "./FilterLine/FilterLine";
 import { IconChevronRight, IconPlus } from "@synapse/icons";
+import "../DataManager/Toolbar/TabPanel.scss"; // Import shared toolbar styles
 import "./Filters.scss";
 
 const injector = inject(({ store }) => ({
@@ -47,6 +48,23 @@ export const Filters = injector(({ views, currentView, filters }) => {
     [currentView.availableFilters]
   );
 
+// Modern toolbar button style (Inline to match DensityToggle pattern)
+const toolbarButtonStyle = {
+  background: "rgba(139, 92, 246, 0.2)",
+  border: "1px solid rgba(139, 92, 246, 0.3)",
+  borderRadius: "8px",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: 500,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  height: "32px",
+  padding: "0 16px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+};
+
   return (
     <div
       className={cn("filters").mod({ sidebar: sidebarEnabled }).toClassName()}
@@ -79,33 +97,25 @@ export const Filters = injector(({ views, currentView, filters }) => {
       <div className={cn("filters").elem("actions").toClassName()}>
         <Button
           size="small"
-          look="string"
+          look="outlined"
           onClick={() => currentView.createFilter()}
           leading={<IconPlus className="!h-3 !w-3" />}
-          style={{
-            fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
-            fontWeight: 500,
-            color: "#a78bfa",
-            transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
+          className="dm-toolbar-button"
+          style={toolbarButtonStyle}
         >
           Add {filters.length ? "Another Filter" : "Filter"}
         </Button>
 
         {!sidebarEnabled ? (
           <Button
-            look="string"
+            look="outlined"
             type="link"
             size="small"
             tooltip="Pin to sidebar"
             onClick={() => views.expandFilters()}
             aria-label="Pin filters to sidebar"
-            style={{
-              fontFamily:
-                "'Space Grotesk', system-ui, -apple-system, sans-serif",
-              color: "#a78bfa",
-              transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
+            className="dm-toolbar-button"
+            style={toolbarButtonStyle}
           >
             <IconChevronRight className="!w-4 !h-4" />
           </Button>

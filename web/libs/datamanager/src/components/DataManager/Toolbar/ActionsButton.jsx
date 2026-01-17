@@ -9,6 +9,7 @@ import { Dropdown } from "@synapse/ui";
 import Form from "../../Common/Form/Form";
 import { Menu } from "../../Common/Menu/Menu";
 import { Modal } from "../../Common/Modal/ModalPopup";
+import "./TabPanel.scss"; // Ensure styles are loaded
 
 const isFFLOPSE3 = isFF(FF_LOPS_E_3);
 const injector = inject(({ store }) => ({
@@ -17,28 +18,7 @@ const injector = inject(({ store }) => ({
 }));
 
 // Modern actions button styles matching OrderButton design
-const actionsButtonStyle = {
-  "--background-color": "rgba(139, 92, 246, 0.08)",
-  "--border-color": "rgba(139, 92, 246, 0.3)",
-  "--border-outline": "rgba(139, 92, 246, 0.3)",
-  "--text-color": "#a78bfa",
-  "--text-outline": "#a78bfa",
-  "--background-color-hover": "rgba(139, 92, 246, 0.15)",
-  borderRadius: "8px",
-  fontWeight: 500,
-  fontSize: "13px",
-};
-
-const actionsButtonDisabledStyle = {
-  "--background-color": "rgba(55, 65, 81, 0.3)",
-  "--border-color": "rgba(75, 85, 99, 0.4)",
-  "--border-outline": "rgba(75, 85, 99, 0.4)",
-  "--text-color": "#6b7280",
-  "--text-outline": "#6b7280",
-  borderRadius: "8px",
-  fontWeight: 500,
-  fontSize: "13px",
-};
+// Styles moved to TabPanel.scss (.dm-toolbar-button)
 
 // Menu item styles
 const menuItemStyle = {
@@ -142,7 +122,7 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
   const titleContainer = (
     <Menu.Item
       key={action.id}
-      className={cn("actionButton")
+      className={cn("actionButton dm-toolbar-button")
         .mod({
           hasSeperator: isDeleteAction,
           hasSubMenu: action.children?.length > 0,
@@ -159,8 +139,8 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
         action.isTitle
           ? menuTitleStyle
           : action.isSeparator
-          ? separatorStyle
-          : menuItemStyle
+            ? separatorStyle
+            : menuItemStyle
       }
     >
       <div
@@ -365,7 +345,22 @@ export const ActionsButton = injector(
           disabled={!hasSelected}
           trailing={<IconChevronDown />}
           aria-label="Tasks Actions"
-          style={hasSelected ? actionsButtonStyle : actionsButtonDisabledStyle}
+          style={{
+            background: 'black',
+            border: '1px solid rgba(55, 65, 81, 0.5)',
+            borderRadius: '10px',
+            color: '#c4b5fd',
+            fontWeight: 600,
+            fontSize: '13px',
+            height: '32px',
+            padding: '0 14px',
+            cursor: hasSelected ? 'pointer' : 'not-allowed',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            opacity: hasSelected ? 1 : 0.5,
+          }}
           {...rest}
         >
           {selectedCount > 0

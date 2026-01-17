@@ -68,17 +68,7 @@ const FieldsMenu = observer(
 );
 
 // Modern toolbar dropdown button style
-const toolbarDropdownStyle = {
-  "--background-color": "rgba(139, 92, 246, 0.08)",
-  "--border-color": "rgba(139, 92, 246, 0.3)",
-  "--border-outline": "rgba(139, 92, 246, 0.3)",
-  "--text-color": "#a78bfa",
-  "--text-outline": "#a78bfa",
-  "--background-color-hover": "rgba(139, 92, 246, 0.15)",
-  borderRadius: "8px",
-  fontWeight: 500,
-  fontSize: "13px",
-};
+// Modern toolbar dropdown button styles moved to TabPanel.scss (.dm-toolbar-button)
 
 export const FieldsButton = injector(
   ({
@@ -115,7 +105,7 @@ export const FieldsButton = injector(
           leading={icon}
           trailing={trailingIcon}
           data-testid={dataTestId}
-          style={toolbarDropdownStyle}
+          className={className}
         >
           {content.length ? content : null}
         </Button>
@@ -152,7 +142,7 @@ export const FieldsButton = injector(
               leading={icon}
               trailing={trailingIcon}
               data-testid={dataTestId}
-              style={toolbarDropdownStyle}
+              className={className}
             >
               {content.length ? content : null}
             </Button>

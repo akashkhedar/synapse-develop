@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { IconChevronDown } from "@synapse/icons";
 import { Dropdown } from "@synapse/ui";
 import { Menu } from "../../Common/Menu/Menu";
+import { cn } from "../../../utils/bem";
 
 const injector = inject(({ store }) => {
   const { dataStore, currentView } = store;
@@ -12,17 +13,20 @@ const injector = inject(({ store }) => {
   const foundTasks = dataStore?.total ?? 0;
   const canAnnotate = store.SDK?.canAnnotate !== false;
 
+  const isExpert = store?.SDK?.isExpert || false;
+
   return {
     store,
     canLabel: (totalTasks > 0 || foundTasks > 0) && canAnnotate, // Only allow labeling if user can annotate
     canAnnotate,
+    isExpert,
     target: currentView?.target ?? "tasks",
     selectedCount: currentView?.selectedCount,
     allSelected: currentView?.allSelected,
   };
 });
 
-export const LabelButton = injector(({ store, canLabel, canAnnotate, size, target, selectedCount }) => {
+export const LabelButton = injector(({ store, canLabel, canAnnotate, isExpert, size, target, selectedCount }) => {
   const disabled = target === "annotations";
   const triggerRef = useRef();
   const [isOpen, setIsOpen] = useState(false);
@@ -108,27 +112,62 @@ export const LabelButton = injector(({ store, canLabel, canAnnotate, size, targe
   return canLabel ? (
     <Interface name="labelButton">
       <div>
-        <ButtonGroup>
+        <ButtonGroup className="button-group">
           <Button
             size={size ?? "small"}
-            variant="primary"
+            // variant="primary"
             look="outlined"
             disabled={disabled}
-            style={primaryStyle}
+            style={{
+              width: '160px',
+              background: 'black',
+              border: '1px solid rgba(55, 65, 81, 0.5)',
+              borderRight: 'none',
+              borderRadius: '10px 0 0 10px',
+              color: '#c4b5fd',
+              fontWeight: 600,
+              fontSize: '13px',
+              height: '32px',
+              padding: '0 14px',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: disabled ? 0.5 : 1,
+            }}
             onClick={onLabelAll}
           >
-            Label {selectedCount ? selectedCount : "All"} Task
+            {isExpert ? "Review" : "Label"} {selectedCount ? selectedCount : "All"} Task
             {!selectedCount || selectedCount > 1 ? "s" : ""}
           </Button>
           <Dropdown.Trigger
             align="bottom-right"
             content={
               <Menu size="compact">
-                <Menu.Item onClick={onLabelVisible}>Label Tasks As Displayed</Menu.Item>
+                <Menu.Item onClick={onLabelVisible}>{isExpert ? "Review" : "Label"} Tasks As Displayed</Menu.Item>
               </Menu>
             }
           >
-            <Button size={size} look="outlined" variant="primary" aria-label={"Toggle open"}>
+            <Button 
+                size={size} 
+                look="outlined" 
+                variant="primary" 
+                aria-label={"Toggle open"}
+                style={{
+                  width: '24px',
+                  padding: 0,
+                  background: 'black',
+                  border: '1px solid rgba(55, 65, 81, 0.5)',
+                  borderLeft: 'none',
+                  borderRadius: '0 10px 10px 0',
+                  color: '#c4b5fd',
+                  height: '32px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+            >
               <IconChevronDown />
             </Button>
           </Dropdown.Trigger>

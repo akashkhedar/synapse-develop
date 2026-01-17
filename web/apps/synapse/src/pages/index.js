@@ -3,11 +3,6 @@ import { HomePage } from "./Home/HomePage";
 import { LandingPage } from "./Landing/LandingPage";
 import { ApiDocsPage } from "./ApiDocs/ApiDocsPage";
 import {
-  AnnotatorSignup,
-  AnnotatorLogin,
-  VerificationSent,
-  VerifyEmail,
-  AnnotatorTest,
   AnnotatorSkillTest,
   TestResult,
   EarningsDashboard,
@@ -15,10 +10,7 @@ import {
 } from "./Annotators";
 import {
   ExpertEarnings,
-  ExpertDashboard,
-  ExpertProjects,
-  ExpertReviewPage,
-  ExpertProjectReview,
+  ExpertPayoutPage,
 } from "./Expert";
 import { ServicesPage } from "./Services";
 import { AboutPage } from "./About";
@@ -36,27 +28,6 @@ import { pages } from "@synapse/app-common";
 AcceptInvite.title = "Accept Invitation";
 AcceptInvite.path = "/invite";
 AcceptInvite.exact = true;
-
-// Configure Annotator pages
-AnnotatorSignup.title = "Annotator Signup";
-AnnotatorSignup.path = "/annotators/signup";
-AnnotatorSignup.exact = true;
-
-AnnotatorLogin.title = "Annotator Login";
-AnnotatorLogin.path = "/annotators/login";
-AnnotatorLogin.exact = true;
-
-VerificationSent.title = "Email Verification Sent";
-VerificationSent.path = "/annotators/verification-sent";
-VerificationSent.exact = true;
-
-VerifyEmail.title = "Verify Email";
-VerifyEmail.path = "/annotators/verify-email";
-VerifyEmail.exact = true;
-
-AnnotatorTest.title = "Qualification Test";
-AnnotatorTest.path = "/annotators/test";
-AnnotatorTest.exact = true;
 
 AnnotatorSkillTest.title = "Skill Assessment";
 AnnotatorSkillTest.path = "/annotators/skill-test";
@@ -76,25 +47,13 @@ PayoutRequest.path = "/annotators/payouts";
 PayoutRequest.exact = true;
 
 // Expert Pages
-ExpertDashboard.title = "Expert Dashboard";
-ExpertDashboard.path = "/expert/dashboard";
-ExpertDashboard.exact = true;
-
 ExpertEarnings.title = "Expert Earnings";
 ExpertEarnings.path = "/expert/earnings";
 ExpertEarnings.exact = true;
 
-ExpertProjects.title = "Expert Projects";
-ExpertProjects.path = "/expert/projects";
-ExpertProjects.exact = true;
-
-ExpertReviewPage.title = "Expert Review";
-ExpertReviewPage.path = "/expert/task/:taskId";
-ExpertReviewPage.exact = true;
-
-ExpertProjectReview.title = "Project Review";
-ExpertProjectReview.path = "/expert/review/:projectId";
-ExpertProjectReview.exact = true;
+ExpertPayoutPage.title = "Expert Payout";
+ExpertPayoutPage.path = "/expert/payouts";
+ExpertPayoutPage.exact = true;
 
 export const Pages = [
   LandingPage,
@@ -105,21 +64,12 @@ export const Pages = [
   BlogListPage,
   BlogPostPage,
   ApiDocsPage,
-  AnnotatorSignup,
-  AnnotatorLogin,
-  VerificationSent,
-  VerifyEmail,
-
-  AnnotatorTest,
   AnnotatorSkillTest,
   TestResult,
   EarningsDashboard,
   PayoutRequest,
-  ExpertDashboard,
   ExpertEarnings,
-  ExpertProjects,
-  ExpertReviewPage,
-  ExpertProjectReview,
+  ExpertPayoutPage,
   AcceptInvite,
   BillingPage,
   isFF(FF_HOMEPAGE) && HomePage,
@@ -133,4 +83,3 @@ export const Pages = [
 BillingPage.title = "Billing & Credits";
 BillingPage.path = "/billing";
 BillingPage.exact = true;
-

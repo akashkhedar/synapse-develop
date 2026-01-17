@@ -6,6 +6,7 @@ import { Badge } from "./Badge/Badge";
 import { Button } from "@synapse/ui";
 import { Dropdown } from "@synapse/ui";
 import { Icon } from "./Icon/Icon";
+import { cn } from "../../utils/bem";
 
 const buttonInjector = inject(({ store }) => {
   const { viewsStore, currentView } = store;
@@ -35,15 +36,18 @@ export const FiltersButton = buttonInjector(
             trailing={<Icon icon={IconChevronDown} />}
             aria-label="Filters"
             style={{
-              "--background-color": "rgba(139, 92, 246, 0.08)",
-              "--border-color": "rgba(139, 92, 246, 0.3)",
-              "--border-outline": "rgba(139, 92, 246, 0.3)",
-              "--text-color": "#a78bfa",
-              "--text-outline": "#a78bfa",
-              "--background-color-hover": "rgba(139, 92, 246, 0.15)",
-              borderRadius: "8px",
-              fontWeight: 500,
-              fontSize: "13px",
+              background: 'black',
+              border: '1px solid rgba(55, 65, 81, 0.5)',
+              borderRadius: '10px',
+              color: '#c4b5fd',
+              fontWeight: 600,
+              fontSize: '13px',
+              height: '32px',
+              padding: '0 14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
             {...rest}
           >

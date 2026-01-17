@@ -139,7 +139,9 @@ export const ProjectsList = ({
 }) => {
   const { user } = useAuth();
   const isAnnotator = !!user?.is_annotator;
-  const role = isAnnotator ? "annotator" : "client";
+  const isExpert = !!user?.is_expert;
+  // Both annotators and experts see simplified view
+  const role = (isAnnotator || isExpert) ? "worker" : "client";
   console.log(projects)
   return (
     <>
@@ -256,7 +258,7 @@ const ProjectCard = ({ project, role }) => {
               </Tooltip>
             </div>
 
-            {role !== "annotator" && (
+            {role !== "worker" && (
               <div
                 className={cn("project-card").elem("menu").toClassName()}
                 onClick={(e) => {
@@ -289,7 +291,7 @@ const ProjectCard = ({ project, role }) => {
               </div>
             )}
 
-            {role !== "client" && project.state && (
+            {role === "worker" && project.state && (
               <ProjectStateChip
                 state={project.state}
                 projectId={project.id}
@@ -310,7 +312,16 @@ const ProjectCard = ({ project, role }) => {
               {/* Circular Progress for Task Completion */}
               <div style={{ flexShrink: 0 }}>
                 <CircularProgress
-                  percentage={project.task_number > 0 ? (project.finished_task_number / project.task_number) * 100 : 0}
+                  percentage={(() => {
+                    // For annotators/experts: use their assigned/completed counts
+                    if (role === "worker") {
+                      const assigned = project._annotator_assigned_tasks ?? 0;
+                      const completed = project._annotator_completed_tasks ?? 0;
+                      return assigned > 0 ? (completed / assigned) * 100 : 0;
+                    }
+                    // For clients: use overall project stats
+                    return project.task_number > 0 ? (project.finished_task_number / project.task_number) * 100 : 0;
+                  })()}
                   size={80}
                   strokeWidth={6}
                 />
@@ -322,25 +333,28 @@ const ProjectCard = ({ project, role }) => {
                   fontWeight: 500,
                   color: 'var(--color-neutral-content-subtle)',
                 }}>
-                  {project.finished_task_number ?? 0} / {project.task_number ?? 0}
+                  {role === "worker" 
+                    ? `${project._annotator_completed_tasks ?? 0} / ${project._annotator_assigned_tasks ?? 0}`
+                    : `${project.finished_task_number ?? 0} / ${project.task_number ?? 0}`
+                  }
                   <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>
                     Tasks Done
                   </div>
                 </div>
               </div>
 
-              {/* Stats Grid */}
+              {/* Stats Grid - Simplified for workers (annotators/experts) */}
               <div style={{
                 flex: 1,
                 display: 'grid',
-                gridTemplateColumns: role === "annotator" ? '1fr' : 'repeat(auto-fit, minmax(140px, 1fr))',
+                gridTemplateColumns: role === "worker" ? '1fr' : 'repeat(auto-fit, minmax(140px, 1fr))',
                 gap: '8px',
               }}>
-                {role === "annotator" ? (
+                {role === "worker" ? (
                   <StatBadge
                     icon={IconCheck}
-                    value={project.total_annotations_number ?? 0}
-                    label="Annotations"
+                    value={project._annotator_completed_tasks ?? 0}
+                    label="Completed"
                     color="#10b981"
                   />
                 ) : (
@@ -378,7 +392,7 @@ const ProjectCard = ({ project, role }) => {
           >
             {format(new Date(project.created_at), "dd MMM yy, HH:mm")}
           </div>
-          {role !== "annotator" && project.created_by && (
+          {role !== "worker" && project.created_by && (
             <div
               className={cn("project-card").elem("created-by").toClassName()}
             >

@@ -3,15 +3,12 @@ import { Button } from "@synapse/ui";
 
 // Modern toolbar button styles
 const toolbarButtonStyle = {
-  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(168, 85, 247, 0.08))',
-  border: '1px solid rgba(139, 92, 246, 0.35)',
+  background: 'black',
+  border: '1px solid rgba(55, 65, 81, 0.5)',
   color: '#c4b5fd',
-  borderRadius: '8px',
+  borderRadius: '10px',
   fontWeight: 600,
-  fontSize: '12px',
-  letterSpacing: '0.04em',
-  textTransform: 'uppercase',
-  transition: 'all 0.2s ease',
+  fontSize: '13px',
   padding: '0 14px',
 };
 

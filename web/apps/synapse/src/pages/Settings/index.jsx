@@ -4,9 +4,7 @@ import { DangerZone } from "./DangerZone";
 import { GeneralSettings } from "./GeneralSettings";
 import { AnnotationSettings } from "./AnnotationSettings";
 import { LabelingSettings } from "./LabelingSettings";
-import { MachineLearningSettings } from "./MachineLearningSettings/MachineLearningSettings";
-import { PredictionsSettings } from "./PredictionsSettings/PredictionsSettings";
-import { StorageSettings } from "./StorageSettings/StorageSettings";
+
 import "./settings.scss";
 
 export const MenuLayout = ({ children, ...routeProps }) => {
@@ -16,9 +14,7 @@ export const MenuLayout = ({ children, ...routeProps }) => {
         GeneralSettings,
         LabelingSettings,
         AnnotationSettings,
-        MachineLearningSettings,
-        PredictionsSettings,
-        StorageSettings,
+
         WebhookPage,
         DangerZone,
       ].filter(Boolean)}
@@ -31,9 +27,7 @@ export const MenuLayout = ({ children, ...routeProps }) => {
 const pages = {
   AnnotationSettings,
   LabelingSettings,
-  MachineLearningSettings,
-  PredictionsSettings,
-  StorageSettings,
+
   WebhookPage,
   DangerZone,
 };

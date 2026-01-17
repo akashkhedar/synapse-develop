@@ -51,10 +51,31 @@ export const DensityToggle = densityInjector(
     const toggleContainerStyle = {
       display: 'flex',
       gap: '2px',
-      background: 'rgba(31, 41, 55, 0.5)',
+      background: 'black',
       border: '1px solid rgba(55, 65, 81, 0.5)',
       borderRadius: '10px',
       padding: '3px',
+      height: '32px',
+      alignItems: 'center',
+    };
+
+    const buttonStyle = {
+      background: 'transparent',
+      border: 'none',
+      borderRadius: '7px',
+      color: '#c4b5fd',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '26px',
+      width: '26px',
+      padding: '0',
+    };
+
+    const buttonActiveStyle = {
+      ...buttonStyle,
+      background: 'rgba(139, 92, 246, 0.2)',
     };
 
     return (
@@ -63,10 +84,7 @@ export const DensityToggle = densityInjector(
         value={density}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDensity(e.target.value as Density)}
         {...rest}
-        style={{ 
-          ...toggleContainerStyle,
-          "--button-padding": "0 var(--spacing-tighter)",
-        } as React.CSSProperties}
+        style={toggleContainerStyle as React.CSSProperties}
         data-testid="density-toggle"
       >
         <Tooltip title="Comfortable density">
@@ -75,16 +93,9 @@ export const DensityToggle = densityInjector(
               value={DENSITY_COMFORTABLE}
               aria-label="Comfortable density"
               data-testid="density-comfortable"
-              style={{
-                background: density === DENSITY_COMFORTABLE ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-                border: 'none',
-                borderRadius: '7px',
-                padding: '6px 10px',
-                color: density === DENSITY_COMFORTABLE ? '#a78bfa' : '#6b7280',
-                transition: 'all 0.2s ease',
-              }}
+              style={density === DENSITY_COMFORTABLE ? buttonActiveStyle : buttonStyle}
             >
-              <IconRows3 style={{ width: 18, height: 18 }} />
+              <IconRows3 style={{ width: 16, height: 16 }} />
             </RadioGroup.Button>
           </div>
         </Tooltip>
@@ -94,16 +105,9 @@ export const DensityToggle = densityInjector(
               value={DENSITY_COMPACT} 
               aria-label="Compact density" 
               data-testid="density-compact"
-              style={{
-                background: density === DENSITY_COMPACT ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-                border: 'none',
-                borderRadius: '7px',
-                padding: '6px 10px',
-                color: density === DENSITY_COMPACT ? '#a78bfa' : '#6b7280',
-                transition: 'all 0.2s ease',
-              }}
+              style={density === DENSITY_COMPACT ? buttonActiveStyle : buttonStyle}
             >
-              <IconRows4 style={{ width: 18, height: 18 }} />
+              <IconRows4 style={{ width: 16, height: 16 }} />
             </RadioGroup.Button>
           </div>
         </Tooltip>

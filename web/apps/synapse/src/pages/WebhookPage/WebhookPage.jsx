@@ -109,7 +109,7 @@ const Webhook = () => {
       />
     );
   }
-  return <section className="w-[42rem]">{content}</section>;
+  return <section className="w-[42rem] webhook-settings">{content}</section>;
 };
 
 export const WebhookPage = {

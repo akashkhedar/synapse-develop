@@ -99,6 +99,9 @@ class ProjectSerializer(FlexFieldsModelSerializer):
     queue_total = serializers.SerializerMethodField()
     queue_done = serializers.SerializerMethodField()
     state = FSMStateField(read_only=True)  # FSM state - automatically uses annotation if present
+    
+    _annotator_assigned_tasks = SerializerMethodField(help_text='Number of tasks assigned to current annotator')
+    _annotator_completed_tasks = SerializerMethodField(help_text='Number of tasks completed by current annotator')
 
     @property
     def user_id(self):
@@ -252,6 +255,8 @@ class ProjectSerializer(FlexFieldsModelSerializer):
             'queue_done',
             'config_suitable_for_bulk_annotation',
             'state',
+            '_annotator_assigned_tasks',
+            '_annotator_completed_tasks',
         ]
 
     def validate_label_config(self, value):
@@ -309,6 +314,46 @@ class ProjectSerializer(FlexFieldsModelSerializer):
 
         return result
 
+    def get__annotator_assigned_tasks(self, project) -> int:
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return 0
+            
+        try:
+            # Import here to avoid circular dependencies
+            from annotators.models import TaskAssignment
+            
+            if hasattr(request.user, 'annotator_profile'):
+                return TaskAssignment.objects.filter(
+                    annotator=request.user.annotator_profile,
+                    task__project=project,
+                    status__in=['assigned', 'in_progress']
+                ).count()
+        except Exception:
+            pass
+            
+        return 0
+
+    def get__annotator_completed_tasks(self, project) -> int:
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return 0
+            
+        try:
+            # Import here to avoid circular dependencies
+            from annotators.models import TaskAssignment
+            
+            if hasattr(request.user, 'annotator_profile'):
+                return TaskAssignment.objects.filter(
+                    annotator=request.user.annotator_profile,
+                    task__project=project,
+                    status='completed'
+                ).count()
+        except Exception:
+            pass
+            
+        return 0
+
 
 class ProjectCountsSerializer(ProjectSerializer):
     class Meta:
@@ -322,7 +367,10 @@ class ProjectCountsSerializer(ProjectSerializer):
             'num_tasks_with_annotations',
             'useful_annotation_number',
             'ground_truth_number',
+            'ground_truth_number',
             'skipped_annotations_number',
+            '_annotator_assigned_tasks',
+            '_annotator_completed_tasks',
         ]
 
 

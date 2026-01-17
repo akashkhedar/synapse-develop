@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useHistory } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useToast, ToastType } from "@synapse/ui";
 import "./ExpertEarnings.css";
+
+interface DailyEarning {
+  date: string;
+  amount: number;
+}
 
 interface ExpertEarningsSummary {
   total_reviews: number;
@@ -14,6 +19,7 @@ interface ExpertEarningsSummary {
   monthly_earnings: number;
   average_review_time: number;
   approval_rate: number;
+  daily_earnings: DailyEarning[];
   recent_transactions: Transaction[];
 }
 
@@ -55,6 +61,7 @@ export const ExpertEarnings: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<ExpertEarningsSummary | null>(null);
+  console.log(summary);
   const [activeTab, setActiveTab] = useState<"overview" | "transactions">("overview");
 
   const fetchEarnings = useCallback(async () => {
@@ -116,6 +123,24 @@ export const ExpertEarnings: React.FC = () => {
     });
   };
 
+  // Chart data for earnings trend
+  const chartData = useMemo(() => {
+    if (!summary?.daily_earnings) return { bars: [], max: 0, avg: 0 };
+
+    const earnings = summary.daily_earnings.slice(-14);
+    const max = Math.max(...earnings.map((e) => e.amount), 1);
+    const avg = earnings.reduce((sum, e) => sum + e.amount, 0) / (earnings.length || 1);
+
+    const bars = earnings.map((e) => ({
+      amount: e.amount,
+      date: new Date(e.date),
+      height: (e.amount / max) * 100,
+      isAboveAvg: e.amount >= avg,
+    }));
+
+    return { bars, max, avg };
+  }, [summary?.daily_earnings]);
+
   if (loading) {
     return (
       <div className="expert-earnings-page">
@@ -139,7 +164,7 @@ export const ExpertEarnings: React.FC = () => {
 
       <div className="earnings-container">
         {/* Header */}
-        <motion.header 
+        <motion.header
           className="earnings-header"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -151,15 +176,10 @@ export const ExpertEarnings: React.FC = () => {
           </div>
           <div className="header-actions">
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="action-btn secondary"
-              onClick={() => history.push("/expert/dashboard")}
-            >
-              Dashboard
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(34, 197, 94, 0.3)" }}
+              whileHover={{
+                scale: 1.02,
+                boxShadow: "0 0 30px rgba(34, 197, 94, 0.3)",
+              }}
               whileTap={{ scale: 0.98 }}
               className="action-btn primary green"
               onClick={() => history.push("/expert/payouts")}
@@ -170,7 +190,7 @@ export const ExpertEarnings: React.FC = () => {
         </motion.header>
 
         {/* Balance Cards */}
-        <motion.div 
+        <motion.div
           className="balance-cards"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -178,28 +198,36 @@ export const ExpertEarnings: React.FC = () => {
         >
           <div className="balance-card available">
             <div className="balance-label">AVAILABLE BALANCE</div>
-            <div className="balance-value">{formatCurrency(summary?.available_balance || 0)}</div>
+            <div className="balance-value">
+              {formatCurrency(summary?.available_balance || 0)}
+            </div>
             <div className="balance-hint">Ready to withdraw</div>
           </div>
           <div className="balance-card pending">
             <div className="balance-label">PENDING PAYOUT</div>
-            <div className="balance-value">{formatCurrency(summary?.pending_payout || 0)}</div>
+            <div className="balance-value">
+              {formatCurrency(summary?.pending_payout || 0)}
+            </div>
             <div className="balance-hint">Processing</div>
           </div>
           <div className="balance-card total">
             <div className="balance-label">TOTAL EARNED</div>
-            <div className="balance-value">{formatCurrency(summary?.total_earned || 0)}</div>
+            <div className="balance-value">
+              {formatCurrency(summary?.total_earned || 0)}
+            </div>
             <div className="balance-hint">Lifetime</div>
           </div>
           <div className="balance-card withdrawn">
             <div className="balance-label">WITHDRAWN</div>
-            <div className="balance-value">{formatCurrency(summary?.total_withdrawn || 0)}</div>
+            <div className="balance-value">
+              {formatCurrency(summary?.total_withdrawn || 0)}
+            </div>
             <div className="balance-hint">Paid out</div>
           </div>
         </motion.div>
 
-        {/* Stats Section */}
-        <motion.section 
+        {/* Earnings Summary */}
+        <motion.section
           className="section-card stats-section"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -209,27 +237,117 @@ export const ExpertEarnings: React.FC = () => {
             <span className="section-number">01/</span>
             <h2 className="section-title">Performance Stats</h2>
           </div>
-          
+
           <div className="stats-grid">
             <div className="stat-item">
               <span className="stat-value">{summary?.total_reviews || 0}</span>
               <span className="stat-label">Total Reviews</span>
             </div>
             <div className="stat-item">
-              <span className="stat-value">{(summary?.approval_rate || 0).toFixed(0)}%</span>
-              <span className="stat-label">Approval Rate</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-value">{Math.round((summary?.average_review_time || 0) / 60)}m</span>
-              <span className="stat-label">Avg Review Time</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-value accent">{formatCurrency(summary?.weekly_earnings || 0)}</span>
+              <span className="stat-value accent">
+                {formatCurrency(summary?.weekly_earnings || 0)}
+              </span>
               <span className="stat-label">This Week</span>
             </div>
             <div className="stat-item">
-              <span className="stat-value accent">{formatCurrency(summary?.monthly_earnings || 0)}</span>
+              <span className="stat-value accent">
+                {formatCurrency(summary?.monthly_earnings || 0)}
+              </span>
               <span className="stat-label">This Month</span>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Earnings Trend Chart */}
+        <motion.section
+          className="section-card chart-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+        >
+          <div className="section-header">
+            <span className="section-number">02/</span>
+            <h2 className="section-title">Earnings Trend</h2>
+            <span className="section-period">Last 14 days</span>
+          </div>
+
+          <div className="chart-wrapper">
+            {/* Bar Chart */}
+            <div className="bar-chart">
+              {/* Average line */}
+              {chartData.avg > 0 && (
+                <div
+                  className="avg-line"
+                  style={{
+                    bottom: `${(chartData.avg / chartData.max) * 100}%`,
+                  }}
+                >
+                  <span className="avg-label">avg</span>
+                </div>
+              )}
+
+              {/* Bars */}
+              <div className="bars-container">
+                {chartData.bars.map((bar, i) => (
+                  <motion.div
+                    key={i}
+                    className="bar-wrapper"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.03 }}
+                  >
+                    {/* Hover tooltip */}
+                    <div className="bar-tooltip">
+                      <span className="tooltip-date">
+                        {bar.date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                      <span className="tooltip-amount">
+                        {formatCurrency(bar.amount)}
+                      </span>
+                    </div>
+                    <motion.div
+                      className={`bar ${bar.isAboveAvg ? "above" : "below"}`}
+                      initial={{ height: 0 }}
+                      animate={{ height: `${bar.height}%` }}
+                      transition={{
+                        duration: 0.5,
+                        delay: i * 0.03,
+                        ease: "easeOut",
+                      }}
+                    />
+                    <span className="bar-day">
+                      {bar.date.toLocaleDateString("en-US", {
+                        weekday: "narrow",
+                      })}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* Chart Stats */}
+            <div className="chart-summary">
+              <div className="summary-item">
+                <span className="summary-label">THIS WEEK</span>
+                <span className="summary-value">
+                  {formatCurrency(summary?.weekly_earnings || 0)}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">THIS MONTH</span>
+                <span className="summary-value">
+                  {formatCurrency(summary?.monthly_earnings || 0)}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">DAILY AVG</span>
+                <span className="summary-value accent">
+                  {formatCurrency(chartData.avg)}
+                </span>
+              </div>
             </div>
           </div>
         </motion.section>
@@ -252,17 +370,17 @@ export const ExpertEarnings: React.FC = () => {
 
         {/* Tab Content */}
         {activeTab === "overview" && (
-          <motion.section 
+          <motion.section
             className="section-card info-section"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <div className="section-header">
-              <span className="section-number">02/</span>
+              <span className="section-number">03/</span>
               <h2 className="section-title">How Earnings Work</h2>
             </div>
-            
+
             <div className="info-grid">
               <div className="info-item">
                 <span className="info-icon">◈</span>
@@ -297,33 +415,43 @@ export const ExpertEarnings: React.FC = () => {
         )}
 
         {activeTab === "transactions" && (
-          <motion.section 
+          <motion.section
             className="section-card transactions-section"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <div className="section-header">
-              <span className="section-number">02/</span>
+              <span className="section-number">03/</span>
               <h2 className="section-title">Recent Transactions</h2>
             </div>
-            
+
             <div className="transactions-list">
-              {summary?.recent_transactions && summary.recent_transactions.length > 0 ? (
+              {summary?.recent_transactions &&
+              summary.recent_transactions.length > 0 ? (
                 summary.recent_transactions.map((tx) => (
                   <div key={tx.id} className="transaction-item">
                     <div className="tx-left">
-                      <span className={`tx-indicator ${tx.amount >= 0 ? 'positive' : 'negative'}`} />
+                      <span
+                        className={`tx-indicator ${tx.amount >= 0 ? "positive" : "negative"}`}
+                      />
                       <div className="tx-info">
-                        <span className="tx-type">{tx.type.replace(/_/g, " ")}</span>
+                        <span className="tx-type">
+                          {tx.type.replace(/_/g, " ")}
+                        </span>
                         <span className="tx-desc">{tx.description}</span>
                       </div>
                     </div>
                     <div className="tx-right">
-                      <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
-                        {tx.amount >= 0 ? "+" : ""}{formatCurrency(tx.amount)}
+                      <span
+                        className={`tx-amount ${tx.amount >= 0 ? "positive" : "negative"}`}
+                      >
+                        {tx.amount >= 0 ? "+" : ""}
+                        {formatCurrency(tx.amount)}
                       </span>
-                      <span className="tx-date">{formatDate(tx.created_at)}</span>
+                      <span className="tx-date">
+                        {formatDate(tx.created_at)}
+                      </span>
                     </div>
                   </div>
                 ))

@@ -1,0 +1,12 @@
+.floating-pixels {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.floating-pixel {
+  position: absolute;
+  border-radius: 1px;
+}

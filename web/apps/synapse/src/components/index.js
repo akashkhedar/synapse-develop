@@ -10,3 +10,8 @@ export { ToggleItems } from "./ToggleItems/ToggleItems";
 export { VersionNotifier } from "./VersionNotifier/VersionNotifier";
 export { Pagination } from "./Pagination/Pagination";
 
+// Shared UI Components
+export { FloatingPixels } from "./FloatingPixels";
+export { BackgroundGrid, BackgroundGlow } from "./BackgroundEffects";
+export { LoadingState } from "./LoadingState";
+export { EarningsChart } from "./EarningsChart";

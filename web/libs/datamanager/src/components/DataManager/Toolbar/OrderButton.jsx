@@ -2,6 +2,8 @@ import { IconSortDown, IconSortUp } from "@synapse/icons";
 import { Button, ButtonGroup } from "@synapse/ui";
 import { inject } from "mobx-react";
 import { FieldsButton } from "../../Common/FieldsButton";
+import { cn } from "../../../utils/bem";
+import "./TabPanel.scss";
 import { Space } from "../../Common/Space/Space";
 
 const injector = inject(({ store }) => {
@@ -13,46 +15,31 @@ const injector = inject(({ store }) => {
   };
 });
 
-// Modern order button styles
-const orderButtonStyle = {
-  "--background-color": "rgba(139, 92, 246, 0.08)",
-  "--border-color": "rgba(139, 92, 246, 0.3)",
-  "--border-outline": "rgba(139, 92, 246, 0.3)",
-  "--text-color": "#a78bfa",
-  "--text-outline": "#a78bfa",
-  "--background-color-hover": "rgba(139, 92, 246, 0.15)",
-  borderRadius: "8px 0 0 8px",
-  fontWeight: 500,
-  fontSize: "13px",
-};
+// Modern order button styles moved to TabPanel.scss (.dm-toolbar-button)
 
-const sortToggleStyle = {
-  background: "rgba(55, 65, 81, 0.4)",
-  border: "1px solid rgba(75, 85, 99, 0.5)",
-  borderLeft: "none",
-  color: "#9ca3af",
-  borderRadius: "0 8px 8px 0",
-  padding: "8px 10px",
-  minWidth: "36px",
-};
+// Modern toolbar button style (Inline to match DensityToggle pattern)
 
-const sortToggleActiveStyle = {
-  background: "rgba(139, 92, 246, 0.15)",
-  border: "1px solid rgba(139, 92, 246, 0.4)",
-  borderLeft: "none",
-  color: "#a78bfa",
-  borderRadius: "0 8px 8px 0",
-  padding: "8px 10px",
-  minWidth: "36px",
-};
 
 export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
   return (
     <Space style={{ fontSize: 12 }}>
-      <ButtonGroup collapsed {...rest}>
         <FieldsButton
           size={size}
-          style={{ ...orderButtonStyle, minWidth: 80, textAlign: "left" }}
+          style={{
+            background: 'black',
+            border: '1px solid rgba(55, 65, 81, 0.5)',
+            borderRadius: '10px',
+            color: '#c4b5fd',
+            fontWeight: 600,
+            fontSize: '13px',
+            height: '32px',
+            padding: '0 14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            minWidth: '80px',
+          }}
           title={ordering ? ordering.column?.title : "Order by"}
           onClick={(col) => view.setOrdering(col.id)}
           onReset={() => view.setOrdering(null)}
@@ -72,7 +59,7 @@ export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "#8b5cf6",
+                  color: "#c4b5fd", 
                 }}
               >
                 {column?.icon}
@@ -81,7 +68,6 @@ export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
           )}
           openUpwardForShortViewport={false}
         />
-      </ButtonGroup>
     </Space>
   );
 });

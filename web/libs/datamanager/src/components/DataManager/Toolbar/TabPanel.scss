@@ -1,8 +1,50 @@
 .tab-panel {
+  
   display: flex;
   padding: 12px 16px;
   background-color: #0a0a0a;
   justify-content: space-between;
   border-bottom: 1px solid rgba(139, 92, 246, 0.15);
   font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+
+  // Legacy .dm-toolbar-button styles removed in favor of Tailwind classes on components
+
+  // Button Group overrides
+  .button-group {
+    .dm-toolbar-button {
+       border-radius: 0;
+       &:first-child { border-radius: 8px 0 0 8px; }
+       &:last-child { border-radius: 0 8px 8px 0; }
+    }
+  }
+
+  .dm-view-toggle {
+     background: rgba(139, 92, 246, 0.05);
+     border: 1px solid rgba(139, 92, 246, 0.3);
+     border-radius: 8px;
+     padding: 2px;
+     height: 32px;
+     display: flex;
+     align-items: center;
+
+     button {
+         border-radius: 6px;
+         height: 26px;
+         width: 26px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         color: #a78bfa;
+         transition: all 0.2s;
+         
+         &:hover {
+             background: rgba(139, 92, 246, 0.1);
+         }
+         
+         &[aria-checked="true"] {
+             background: rgba(139, 92, 246, 0.2);
+             color: #fff;
+         }
+     }
+  }
 }

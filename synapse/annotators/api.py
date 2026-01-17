@@ -7,6 +7,7 @@ Annotator APIs
 
 import logging
 from datetime import timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login
@@ -2981,14 +2982,37 @@ class ExpertEarningsAPI(APIView):
             expert=expert
         ).order_by("-created_at")[:20]
 
+        # Calculate daily earnings for the last 30 days (for chart)
+        daily_earnings = []
+        for i in range(30):
+            day = now - timedelta(days=29 - i)
+            day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+            day_end = day.replace(hour=23, minute=59, second=59, microsecond=999999)
+            
+            day_total = ExpertEarningsTransaction.objects.filter(
+                expert=expert,
+                transaction_type="review_payment",
+                created_at__gte=day_start,
+                created_at__lte=day_end,
+            ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+            
+            daily_earnings.append({
+                "date": day_start.date().isoformat(),
+                "amount": float(day_total),
+            })
+
         return Response(
             {
+                "total_reviews": expert.total_reviews_completed,
                 "total_earned": float(expert.total_earned),
                 "pending_payout": float(expert.pending_payout),
                 "available_balance": float(expert.available_balance),
                 "total_withdrawn": float(expert.total_withdrawn),
                 "weekly_earnings": float(weekly_earnings),
                 "monthly_earnings": float(monthly_earnings),
+                "approval_rate": float(expert.approval_rate),
+                "average_review_time": expert.average_review_time,
+                "daily_earnings": daily_earnings,
                 "recent_transactions": [
                     {
                         "id": t.id,

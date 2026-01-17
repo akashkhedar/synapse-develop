@@ -1754,3 +1754,59 @@ Q_task_finished_annotations = Q(annotations__was_cancelled=False) & Q(
 
 
 
+
+
+# =========== EARNINGS TRIGGER ===========
+
+@receiver(post_save, sender=Annotation)
+def process_earnings_on_annotation_save(sender, instance, created, **kwargs):
+    """
+    Trigger payment processing when an annotation is created or updated.
+    Syncs with TaskAssignment and triggers PaymentService.
+    """
+    try:
+        if not instance.completed_by:
+            return
+            
+        # Check if user has annotator profile
+        if hasattr(instance.completed_by, "annotator_profile"):
+            # Import inside function to avoid circular dependencies
+            from annotators.models import TaskAssignment
+            from annotators.payment_service import PaymentService
+            
+            profile = instance.completed_by.annotator_profile
+            
+            # Find the assignment
+            assignment = TaskAssignment.objects.filter(
+                annotator=profile, 
+                task=instance.task
+            ).first()
+
+            if assignment:
+                # Update assignment status and link annotation
+                update_fields = []
+                
+                # Link annotation if not linked
+                if not assignment.annotation:
+                    assignment.annotation = instance
+                    update_fields.append("annotation")
+
+                # Mark as completed if not already (or if annotation was just created/updated)
+                # We assume if annotation exists, task is completed by this user
+                if assignment.status != "completed":
+                    assignment.status = "completed"
+                    assignment.completed_at = timezone.now()
+                    update_fields.extend(["status", "completed_at"])
+                
+                if update_fields:
+                    assignment.save(update_fields=update_fields)
+
+                # Process payments (idempotency handled by service/model flags)
+                # ensuring immediate payment release
+                PaymentService.process_annotation_completion(
+                    assignment, 
+                    annotation_result=instance.result
+                )
+    except Exception as e:
+        # Log error but don't fail the annotation save
+        logger.error(f"Error processing earnings for annotation {instance.id}: {e}")

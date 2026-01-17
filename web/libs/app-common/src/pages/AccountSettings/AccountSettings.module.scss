@@ -29,6 +29,7 @@
 
     h1 {
       font-size: var(--font-size-header, 28px);
+      font-family: 'Space Grotesk', sans-serif;
       margin: 0;
     }
   }
@@ -58,6 +59,7 @@
   color: var(--color-text-primary, #fff);
   letter-spacing: -0.02em;
   margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .roleBadge {

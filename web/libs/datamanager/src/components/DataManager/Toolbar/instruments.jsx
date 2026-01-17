@@ -73,16 +73,17 @@ const ImportButtonWithChecks = ({ size }) => {
   );
 };
 
-// Injector for checking if user is annotator
+// Injector for checking if user is annotator or expert
 const roleInjector = inject(({ store }) => ({
   isAnnotator: store?.SDK?.isAnnotator || false,
+  isExpert: store?.SDK?.isExpert || false,
 }));
 
-// Import button wrapper with annotator check
+// Import button wrapper with annotator/expert check
 const ImportButtonWithRole = roleInjector(
-  observer(({ size, isAnnotator }) => {
-    // Hide import button from annotators
-    if (isAnnotator) return null;
+  observer(({ size, isAnnotator, isExpert }) => {
+    // Hide import button from annotators and experts
+    if (isAnnotator || isExpert) return null;
 
     return (
       <Interface name="import">
@@ -92,11 +93,11 @@ const ImportButtonWithRole = roleInjector(
   })
 );
 
-// Export button wrapper with annotator check
+// Export button wrapper with annotator/expert check
 const ExportButtonWithRole = roleInjector(
-  observer(({ size, isAnnotator }) => {
-    // Hide export button from annotators
-    if (isAnnotator) return null;
+  observer(({ size, isAnnotator, isExpert }) => {
+    // Hide export button from annotators and experts
+    if (isAnnotator || isExpert) return null;
 
     return (
       <Interface name="export">
@@ -126,7 +127,20 @@ export const instruments = {
         trailingIcon={<Icon {...iconProps} />}
         title={"Columns"}
         size={size}
-        className="toolbar-button--columns"
+        style={{
+          background: 'black',
+          border: '1px solid rgba(55, 65, 81, 0.5)',
+          borderRadius: '10px',
+          color: '#c4b5fd',
+          fontWeight: 600,
+          fontSize: '13px',
+          height: '32px',
+          padding: '0 14px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
         openUpwardForShortViewport={false}
       />
     );

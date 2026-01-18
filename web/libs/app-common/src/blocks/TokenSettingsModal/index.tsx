@@ -80,9 +80,27 @@ function TokenSettingsModalView({
         </Form.Row>
       )}
       <Form.Actions>
-        <Button variant="primary" look="filled" type="submit">
+        <button
+          type="submit"
+          style={{
+            background: 'black',
+            border: '1px solid rgba(55, 65, 81, 0.5)',
+            borderRadius: '10px',
+            color: '#c4b5fd',
+            fontWeight: 600,
+            fontSize: '13px',
+            height: '32px',
+            padding: '0 14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            marginLeft: 'auto',
+          }}
+        >
           Save Changes
-        </Button>
+        </button>
       </Form.Actions>
     </Form>
   );

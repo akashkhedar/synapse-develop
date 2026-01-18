@@ -1,0 +1,15 @@
+// OrganizationApiKeyModal styles
+// Hide scrollbar for a cleaner look while keeping scroll functionality
+
+.api-key-modal-scrollbar {
+  // Hide scrollbar for Firefox
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  
+  // Hide scrollbar for Chrome, Safari and Edge
+  &::-webkit-scrollbar {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+  }
+}

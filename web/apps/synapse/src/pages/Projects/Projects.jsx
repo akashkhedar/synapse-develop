@@ -144,10 +144,9 @@ export const ProjectsPage = () => {
   }, []);
 
   React.useEffect(() => {
-    // Only show create button for clients (not annotators or experts)
-    // Also hide if projects list is empty (we show a nice empty state with button)
-    const showButton =
-      isClient && !isAnnotator && !isExpert && projectsList.length > 0;
+    // We handle the create project UI within the ProjectsList now
+    // Passing openModal to context props just in case other components need it, but disabling showButton
+    const showButton = false;
     setContextProps({ openModal, showButton, isAnnotator, isExpert });
   }, [projectsList.length, isClient, isAnnotator, isExpert]);
 
@@ -171,6 +170,7 @@ export const ProjectsPage = () => {
               totalItems={totalItems}
               loadNextPage={loadNextPage}
               pageSize={defaultPageSize}
+              openModal={isClient ? openModal : null}
             />
           ) : (
             <EmptyProjectsList
@@ -204,13 +204,5 @@ ProjectsPage.routes = ({ store }) => [
     },
   },
 ];
-ProjectsPage.context = ({ openModal, showButton, isAnnotator }) => {
-  // Don't show create button for annotators
-  if (!showButton || isAnnotator) return null;
-  return (
-    <Button onClick={openModal} size="small" aria-label="Create new project">
-      Create
-    </Button>
-  );
-};
+ProjectsPage.context = () => null;
 

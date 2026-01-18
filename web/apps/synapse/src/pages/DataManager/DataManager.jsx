@@ -51,6 +51,7 @@ const initializeDataManager = async (root, props, params) => {
     interfaces: {
       import: true,
       export: true,
+      settings: true,
       backButton: false,
       labelingHeader: false,
       autoAnnotation: params.autoAnnotation,
@@ -285,9 +286,7 @@ DataManagerPage.context = ({ dmRef }) => {
   const isAnnotator = !!user?.is_annotator;
   const isExpert = !!user?.is_expert;
 
-  const links = {
-    "/settings": "Settings",
-  };
+  const links = {};
 
   const updateCrumbs = (currentMode) => {
     const isExplorer = currentMode === "explorer";

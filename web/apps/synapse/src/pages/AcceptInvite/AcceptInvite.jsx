@@ -3,7 +3,6 @@ import { useHistory, useLocation } from "react-router-dom";
 import { Button, Spinner } from "@synapse/ui";
 import { useAPI } from "../../providers/ApiProvider";
 import { cn } from "../../utils/bem";
-import "./AcceptInvite.scss";
 
 export const AcceptInvite = () => {
   const api = useAPI();
@@ -14,7 +13,6 @@ export const AcceptInvite = () => {
   const [organization, setOrganization] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const rootClass = cn("accept-invite");
   // Parse token from query string
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get("token");
@@ -86,17 +84,109 @@ export const AcceptInvite = () => {
     }
   };
 
+  // Blog-inspired styles
+  const pageStyle = {
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+    position: 'relative',
+    overflow: 'hidden',
+    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  };
+
+  const gridOverlayStyle = {
+    position: 'absolute',
+    inset: 0,
+    opacity: 0.03,
+    backgroundImage: `
+      linear-gradient(to right, #ffffff 1px, transparent 1px),
+      linear-gradient(to bottom, #ffffff 1px, transparent 1px)
+    `,
+    backgroundSize: '60px 60px',
+    pointerEvents: 'none',
+  };
+
+  const containerStyle = {
+    position: 'relative',
+    zIndex: 10,
+    maxWidth: '800px',
+    width: '100%',
+    padding: '0 24px',
+    textAlign: 'center',
+  };
+
+  // "// INVITATION" style label
+  const labelStyle = {
+    color: '#6b7280', // gray-500
+    fontFamily: 'ui-monospace, SF Mono, monospace',
+    fontSize: '14px',
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+    marginBottom: '24px',
+    display: 'block',
+  };
+
+  const titleStyle = {
+    fontSize: '48px', // md:text-6xl equivalent-ish
+    fontWeight: 800,
+    color: '#ffffff',
+    lineHeight: 1.1,
+    marginBottom: '32px',
+    letterSpacing: '-0.02em',
+  };
+
+  const gradientTextStyle = {
+    background: 'linear-gradient(to right, #c084fc, #db2777, #60a5fa)', // purple-400 via pink-400 to blue-400
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    color: 'transparent',
+  };
+
+  const messageStyle = {
+    fontSize: '18px',
+    color: '#9ca3af', // gray-400
+    fontFamily: 'ui-monospace, SF Mono, monospace',
+    maxWidth: '600px',
+    margin: '0 auto 40px auto',
+    lineHeight: 1.6,
+  };
+
+  const buttonStyle = {
+    background: '#ffffff',
+    color: '#000000',
+    border: 'none',
+    padding: '0 32px',
+    height: '48px',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    fontFamily: 'ui-monospace, SF Mono, monospace',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+  };
+
   if (isProcessing) {
     return (
-      <div className={rootClass.toString()}>
-        <div className={rootClass.elem("container")}>
-          <Spinner size={48} className={rootClass.elem("spinner")} />
-          <h2 className={rootClass.elem("title")}>Processing Invitation...</h2>
-          <p className={rootClass.elem("message")}>
-            {isAuthenticated 
-              ? "Adding you to the organization..." 
-              : "Checking your account..."}
-          </p>
+      <div style={pageStyle}>
+        <div style={gridOverlayStyle} />
+        <div style={containerStyle}>
+          <span style={labelStyle}>// Processing</span>
+          <h1 style={titleStyle}>
+            Joining the <br />
+            <span style={gradientTextStyle}>Organization</span>
+          </h1>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+            <Spinner size={32} style={{ color: '#ffffff' }} />
+          </div>
         </div>
       </div>
     );
@@ -104,16 +194,25 @@ export const AcceptInvite = () => {
 
   if (error) {
     return (
-      <div className={rootClass.toString()}>
-        <div className={rootClass.elem("container")}>
-          <div className={rootClass.elem("error-icon")}>⚠️</div>
-          <h2 className={rootClass.elem("title")}>Invitation Error</h2>
-          <p className={rootClass.elem("error")}>{error}</p>
-          <div className={rootClass.elem("actions")}>
-            <Button onClick={() => history.push('/projects')}>
-              Go to Projects
-            </Button>
-          </div>
+      <div style={pageStyle}>
+        <div style={gridOverlayStyle} />
+        <div style={containerStyle}>
+          <span style={{ ...labelStyle, color: '#ef4444' }}>// Error</span>
+          <h1 style={titleStyle}>
+            Invitation <br />
+            <span style={{ color: '#ef4444' }}>Expired or Invalid</span>
+          </h1>
+          <p style={messageStyle}>
+            {error}
+          </p>
+          <button 
+            onClick={() => history.push('/projects')}
+            style={buttonStyle}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            Return to Projects →
+          </button>
         </div>
       </div>
     );
@@ -121,16 +220,28 @@ export const AcceptInvite = () => {
 
   if (organization) {
     return (
-      <div className={rootClass.toString()}>
-        <div className={rootClass.elem("container")}>
-          <div className={rootClass.elem("success-icon")}>✓</div>
-          <h2 className={rootClass.elem("title")}>Welcome!</h2>
-          <p className={rootClass.elem("message")}>
-            You've successfully joined <strong>{organization.title}</strong>
+      <div style={pageStyle}>
+        <div style={gridOverlayStyle} />
+        <div style={containerStyle}>
+          <span style={labelStyle}>// Welcome Aboard</span>
+          <h1 style={titleStyle}>
+            You have joined <br />
+            <span style={gradientTextStyle}>{organization.title}</span>
+          </h1>
+          <p style={messageStyle}>
+            Access to shared projects, datasets, and team resources has been granted.
+            Redirecting you to the workspace...
           </p>
-          <p className={rootClass.elem("submessage")}>
-            Redirecting to projects...
-          </p>
+          <div style={{ 
+            marginTop: '24px',
+            fontFamily: 'ui-monospace, SF Mono, monospace',
+            fontSize: '12px',
+            color: '#4b5563',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em'
+          }}>
+            Redirecting in 1.5s...
+          </div>
         </div>
       </div>
     );

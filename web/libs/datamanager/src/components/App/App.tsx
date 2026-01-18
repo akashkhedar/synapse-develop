@@ -64,6 +64,18 @@ const AppComponent: React.FC<AppComponentProps> = ({ app }) => {
     app.loading
   );
 
+  // Inject font if not present
+  React.useEffect(() => {
+    if (!document.getElementById("dm-font-space-grotesk")) {
+      const link = document.createElement("link");
+      link.id = "dm-font-space-grotesk";
+      link.rel = "stylesheet";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap";
+      document.head.appendChild(link);
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

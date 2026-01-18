@@ -841,6 +841,114 @@ class OrganizationSwitchAPI(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@method_decorator(
+    name='get',
+    decorator=extend_schema(
+        tags=['Organizations'],
+        summary='Get organization API key',
+        description='Get the API key for SDK access. Only admins and owners can access this endpoint.',
+        responses={
+            200: OpenApiResponse(description='API key retrieved successfully'),
+            403: OpenApiResponse(description='Only admins and owners can access the API key'),
+            404: OpenApiResponse(description='Organization not found'),
+        },
+        extensions={
+            'x-fern-sdk-group-name': 'organizations',
+            'x-fern-sdk-method-name': 'get_api_key',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+class OrganizationApiKeyAPI(APIView):
+    """Get the organization's API key for SDK access. Admin/Owner only."""
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
+
+    def get(self, request, pk=None):
+        org = get_object_or_404(Organization, pk=pk)
+        
+        # Check if user is a member and has admin/owner role
+        try:
+            member = OrganizationMember.objects.get(
+                organization=org, 
+                user=request.user, 
+                deleted_at__isnull=True
+            )
+        except OrganizationMember.DoesNotExist:
+            return Response(
+                {'error': 'You are not a member of this organization'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Only admins and owners can view the API key
+        if not member.can_manage_members():
+            return Response(
+                {'error': 'Only admins and owners can access the organization API key'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        return Response({
+            'api_key': org.api_key,
+            'created_at': org.api_key_created_at.isoformat() if org.api_key_created_at else None,
+            'organization_id': org.id,
+            'organization_title': org.title,
+        }, status=status.HTTP_200_OK)
 
 
+@method_decorator(
+    name='post',
+    decorator=extend_schema(
+        tags=['Organizations'],
+        summary='Reset organization API key',
+        description='Generate a new API key for the organization. Only admins and owners can reset the key.',
+        responses={
+            200: OpenApiResponse(description='API key reset successfully'),
+            403: OpenApiResponse(description='Only admins and owners can reset the API key'),
+            404: OpenApiResponse(description='Organization not found'),
+        },
+        extensions={
+            'x-fern-sdk-group-name': 'organizations',
+            'x-fern-sdk-method-name': 'reset_api_key',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+class OrganizationApiKeyResetAPI(APIView):
+    """Reset the organization's API key. Admin/Owner only."""
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
+
+    def post(self, request, pk=None):
+        org = get_object_or_404(Organization, pk=pk)
+        
+        # Check if user is a member and has admin/owner role
+        try:
+            member = OrganizationMember.objects.get(
+                organization=org,
+                user=request.user,
+                deleted_at__isnull=True
+            )
+        except OrganizationMember.DoesNotExist:
+            return Response(
+                {'error': 'You are not a member of this organization'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Only admins and owners can reset the API key
+        if not member.can_manage_members():
+            return Response(
+                {'error': 'Only admins and owners can reset the organization API key'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Reset the API key
+        new_key = org.reset_api_key()
+        logger.info(f'API key reset for organization {org.pk} by user {request.user.email}')
+        
+        return Response({
+            'api_key': new_key,
+            'created_at': org.api_key_created_at.isoformat() if org.api_key_created_at else None,
+            'organization_id': org.id,
+            'message': 'API key reset successfully'
+        }, status=status.HTTP_200_OK)
 

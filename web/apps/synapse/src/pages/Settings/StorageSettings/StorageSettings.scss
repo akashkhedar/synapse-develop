@@ -9,13 +9,16 @@
   &__empty {
     height: 100px;
     display: flex;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
-    border-radius: 5px;
+    border-radius: 0;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    color: var(--color-neutral-content-subtler);
+    color: #6b7280;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px dashed #22262dff;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 
   &__submit {
@@ -32,12 +35,13 @@
   &__info {
     display: flex;
     align-items: center;
-    color: #d00;
+    color: #f87171;
     font-size: 14px;
     line-height: 22px;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
 
     &_valid {
-      color: rgb(0 0 0 / 40%);
+      color: #9ca3af;
     }
   }
 
@@ -52,7 +56,8 @@
     margin-top: 14px;
     line-height: 18px;
     font-size: 14px;
-    opacity: 0.7;
+    color: #6b7280;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 
   &__summary {

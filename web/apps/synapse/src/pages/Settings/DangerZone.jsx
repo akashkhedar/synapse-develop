@@ -13,13 +13,13 @@ import { useProject } from "../../providers/ProjectProvider";
 import { cn } from "../../utils/bem";
 import "./DangerZone.scss";
 
-// Severity icons for warnings
+// Severity indicators for warnings - no emojis, dark theme
 const severityConfig = {
-  critical: { icon: "⛔", color: "#dc2626", bgColor: "#fef2f2" },
-  high: { icon: "⚠️", color: "#ea580c", bgColor: "#fff7ed" },
-  medium: { icon: "⚡", color: "#ca8a04", bgColor: "#fefce8" },
-  low: { icon: "ℹ️", color: "#2563eb", bgColor: "#eff6ff" },
-  info: { icon: "📋", color: "#6b7280", bgColor: "#f9fafb" },
+  critical: { label: "CRITICAL", color: "#f87171", bgColor: "rgba(239, 68, 68, 0.1)" },
+  high: { label: "HIGH", color: "#fb923c", bgColor: "rgba(251, 146, 60, 0.1)" },
+  medium: { label: "MEDIUM", color: "#fbbf24", bgColor: "rgba(251, 191, 36, 0.1)" },
+  low: { label: "LOW", color: "#60a5fa", bgColor: "rgba(96, 165, 250, 0.1)" },
+  info: { label: "INFO", color: "#9ca3af", bgColor: "rgba(156, 163, 175, 0.1)" },
 };
 
 export const DangerZone = () => {
@@ -69,32 +69,37 @@ export const DangerZone = () => {
         className="deletion-warning-item"
         style={{
           backgroundColor: config.bgColor,
-          borderLeft: `4px solid ${config.color}`,
+          borderLeft: `3px solid ${config.color}`,
+          borderRadius: "0",
+          padding: "12px 16px",
+          marginBottom: "8px",
         }}
       >
-        <div className="warning-header">
-          <span className="warning-icon">{config.icon}</span>
-          <span className="warning-title" style={{ color: config.color }}>
-            {warning.title}
-          </span>
+        <div className="warning-header" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
           <span
             className="warning-severity"
             style={{
               backgroundColor: config.color,
-              color: "white",
-              padding: "2px 8px",
-              borderRadius: "12px",
-              fontSize: "11px",
+              color: "#000000",
+              padding: "4px 10px",
+              borderRadius: "0",
+              fontSize: "10px",
+              fontWeight: "700",
+              letterSpacing: "0.08em",
               textTransform: "uppercase",
+              fontFamily: "'Space Grotesk', system-ui, sans-serif",
             }}
           >
-            {warning.severity}
+            {config.label}
+          </span>
+          <span className="warning-title" style={{ color: config.color, fontWeight: "600", fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
+            {warning.title}
           </span>
         </div>
-        <p className="warning-message">{warning.message}</p>
+        <p className="warning-message" style={{ margin: "0", color: "#d1d5db", fontSize: "14px" }}>{warning.message}</p>
         {warning.action_suggested && (
-          <p className="warning-action">
-            💡 <strong>Suggested:</strong> {warning.action_suggested}
+          <p className="warning-action" style={{ margin: "8px 0 0", color: "#a78bfa", fontSize: "13px" }}>
+            <strong>Suggested:</strong> {warning.action_suggested}
           </p>
         )}
       </div>
@@ -128,8 +133,8 @@ export const DangerZone = () => {
             {/* Warnings Section */}
             {warnings.length > 0 && (
               <div className="deletion-warnings-container">
-                <Typography variant="title" size="medium" className="mb-tight">
-                  ⚠️ Please Review Before Deleting
+                <Typography variant="title" size="medium" className="mb-tight" style={{ color: "#fbbf24" }}>
+                  Please Review Before Deleting
                 </Typography>
 
                 {/* Summary stats */}
@@ -163,8 +168,9 @@ export const DangerZone = () => {
                       variant="title"
                       size="small"
                       className="mb-tight"
+                      style={{ color: "#4ade80" }}
                     >
-                      💰 Credit Refund Breakdown
+                      Credit Refund Breakdown
                     </Typography>
                     <div className="breakdown-table">
                       <div className="breakdown-row">
@@ -224,7 +230,7 @@ export const DangerZone = () => {
                         );
                       }}
                     >
-                      📥 Export Data First
+                      Export Data First
                     </Button>
                   </div>
                 )}
@@ -241,8 +247,15 @@ export const DangerZone = () => {
             </Typography>
 
             {hasCriticalWarnings && (
-              <div className="critical-warning-banner">
-                ⛔ <strong>Critical warnings detected!</strong> Please ensure
+              <div className="critical-warning-banner" style={{
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                padding: "12px 16px",
+                borderRadius: "0",
+                marginBottom: "16px",
+                color: "#f87171",
+              }}>
+                <strong>Critical warnings detected!</strong> Please ensure
                 you understand the consequences before proceeding.
               </div>
             )}

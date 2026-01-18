@@ -1,4 +1,4 @@
-import { IconSortDown, IconSortUp } from "@synapse/icons";
+import { IconChevronDown, IconSortDown, IconSortUp } from "@synapse/icons";
 import { Button, ButtonGroup } from "@synapse/ui";
 import { inject } from "mobx-react";
 import { FieldsButton } from "../../Common/FieldsButton";
@@ -15,32 +15,14 @@ const injector = inject(({ store }) => {
   };
 });
 
-// Modern order button styles moved to TabPanel.scss (.dm-toolbar-button)
-
-// Modern toolbar button style (Inline to match DensityToggle pattern)
-
-
 export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
   return (
     <Space style={{ fontSize: 12 }}>
         <FieldsButton
           size={size}
-          style={{
-            background: 'black',
-            border: '1px solid rgba(55, 65, 81, 0.5)',
-            borderRadius: '10px',
-            color: '#c4b5fd',
-            fontWeight: 600,
-            fontSize: '13px',
-            height: '32px',
-            padding: '0 14px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            minWidth: '80px',
-          }}
+          style={{ minWidth: '80px' }}
           title={ordering ? ordering.column?.title : "Order by"}
+          trailingIcon={<IconChevronDown style={{ width: 16, height: 16 }} />}
           onClick={(col) => view.setOrdering(col.id)}
           onReset={() => view.setOrdering(null)}
           resetTitle="Default"

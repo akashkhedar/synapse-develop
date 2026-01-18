@@ -70,3 +70,57 @@
     }
   }
 }
+
+// Custom Scrollbar for the new dropdown
+.organization-scroll-list {
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 2px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+  }
+}
+
+// Item styling handled here to support hover states
+.org-item {
+  border: 1px solid transparent !important; // Reserve space for border
+  
+  &:hover {
+    background: rgba(139, 92, 246, 0.08) !important;
+    color: #ffffff !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+  }
+
+  &.danger:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #ffffff !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+  }
+}
+
+// Critical: Override default Dropdown styles for this popover
+.organization-switcher-popover {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+  height: auto !important;
+  display: flex !important; // Must be flex to hold content
+  flex-direction: column !important;
+  
+  // Reset any default constrained heights
+  max-width: none !important;
+  max-height: none !important;
+}

@@ -1,3 +1,6 @@
+// Settings Pages - Tech/Cyber Aesthetic
+// Consistent styling for all project settings pages
+
 .simple-settings {
   width: 42rem;
 }
@@ -8,45 +11,84 @@
 .webhook {
   & h1 {
     margin-bottom: 0.5rem;
-    font-weight: 500;
+    font-weight: 600;
     margin-top: 0;
     font-size: 1.75rem;
-    color: var(--color-neutral-content);
+    color: #ffffff;
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  & h2, & h3 {
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    color: #ffffff;
+    letter-spacing: -0.01em;
   }
 }
 
 .settings-description {
-  color: var(--color-neutral-content-subtler);
+  color: #9ca3af;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
 }
 
 .settings-wrapper {
   --column-count: 1;
 
-  border: 1px solid var(--color-neutral-border);
-  border-radius: 0.5rem;
+  border: 1px solid #22262dff;
+  border-radius: 0;
   padding: 1.5rem;
   width: 40rem;
-  color: var(--color-neutral-content-subtle);
+  color: #9ca3af;
+  background: #000000;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  position: relative;
 
+  // L-shaped corner accents
+  &::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    top: 0;
+    left: 0;
+    border-top: 2px solid #8b5cf6;
+    border-left: 2px solid #8b5cf6;
+    pointer-events: none;
+    z-index: 10;
+  }
 
-  & +.settings-wrapper,
-  & +.form-wrapper {
+  &::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    bottom: 0;
+    right: 0;
+    border-bottom: 2px solid #8b5cf6;
+    border-right: 2px solid #8b5cf6;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  & + .settings-wrapper,
+  & + .form-wrapper {
     margin-top: 1.5rem;
   }
 
   & h3 {
     margin: 0 0 0.5rem;
-    font-weight: 500;
-    color: var(--color-neutral-content);
+    font-weight: 600;
+    color: #ffffff;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 
   &__header {
-    font-weight: 500;
+    font-weight: 600;
     font-size: 1.5rem;
     margin-bottom: 0;
-    color: var(--color-neutral-content);
+    color: #ffffff;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
-
 }
 
 .general-settings {
@@ -83,21 +125,23 @@
 
   &__title {
     font-size: 0.875rem;
-    color: var(--color-neutral-content);
+    color: #ffffff;
     font-weight: 500;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 }
 
 .settings-caption {
-  color: var(--color-neutral-content-subtler);
+  color: #6b7280;
   font-size: 12px;
   font-style: normal;
   font-weight: 400;
   line-height: 16px;
   letter-spacing: 0.4px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
 
   a {
-    color: var(--color-primary-surface-content);
+    color: #a78bfa;
     font-size: 12px;
     font-style: normal;
     font-weight: 500;
@@ -106,6 +150,7 @@
 
     &:hover {
       text-decoration: underline;
+      color: #c4b5fd;
     }
   }
 }
@@ -119,7 +164,7 @@
     margin: 0;
 
     a {
-      color: var(--color-primary-surface-content);
+      color: #a78bfa;
       font-size: 14px;
       font-style: normal;
       font-weight: 500;
@@ -128,6 +173,7 @@
 
       &:hover {
         text-decoration: underline;
+        color: #c4b5fd;
       }
     }
   }
@@ -149,13 +195,15 @@
     display: flex;
     margin-bottom: 4px;
     align-items: center;
+    color: #ffffff;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 
   &__description {
     margin-top: 5px;
     font-size: 14px;
     line-height: 22px;
-    color: var(--color-neutral-content-subtle);
+    color: #9ca3af;
     font-weight: 500;
     padding: 0 16px;
     height: 22px;
@@ -170,60 +218,79 @@
   }
 }
 
-.general-settings {
-  .settings-wrapper {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    &:hover {
-      border-color: rgba(139, 92, 246, 0.4);
-      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.1);
-    }
-  }
-}
-
+// Primary Save Button - Tech/Cyber Style
 .save-button {
-  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
-  border: none;
-  color: white;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  height: 40px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-  }
-  &:active {
-    transform: translateY(0);
-  }
-}
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12)) !important;
+  border: 1px solid rgba(139, 92, 246, 0.4) !important;
+  border-radius: 0 !important;
+  color: #c4b5fd !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  height: 44px !important;
+  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 
-.webhook h1, 
-.webhook-settings h1,
-.webhook-settings header h1, 
-.webhook-settings header h2, 
-.webhook-settings header h3,
-.webhook-settings .empty-state__title,
-.webhook-settings [class*="headline"] {
-  font-family: 'Space Grotesk', sans-serif !important;
+  &:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.18)) !important;
+    border-color: rgba(139, 92, 246, 0.6) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25) !important;
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
 }
 
 .gradient-button {
   @extend .save-button;
 }
 
+// Webhook Settings
+.webhook h1,
+.webhook-settings h1,
+.webhook-settings header h1,
+.webhook-settings header h2,
+.webhook-settings header h3,
+.webhook-settings .empty-state__title,
+.webhook-settings [class*="headline"] {
+  font-family: 'Space Grotesk', sans-serif !important;
+}
+
 .webhook-settings {
   .webhook-card {
-    background: linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(30, 30, 35, 0.6) 100%);
+    background: #000000;
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    border-radius: 16px;
+    border: 1px solid #22262dff;
+    border-radius: 0;
     padding: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: none;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      top: 0;
+      left: 0;
+      border-top: 2px solid #8b5cf6;
+      border-left: 2px solid #8b5cf6;
+      pointer-events: none;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      bottom: 0;
+      right: 0;
+      border-bottom: 2px solid #8b5cf6;
+      border-right: 2px solid #8b5cf6;
+      pointer-events: none;
+    }
   }
 
   .webhook-list-item {
@@ -232,36 +299,38 @@
     gap: 16px;
     align-items: center;
     padding: 16px 20px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid #1f2937;
+    border-radius: 0;
     transition: all 0.2s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       border-color: rgba(139, 92, 246, 0.4);
-      transform: translateY(-1px);
     }
   }
 
   .status-badge {
     display: inline-flex;
     align-items: center;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    letter-spacing: 0.02em;
+    padding: 6px 14px;
+    border-radius: 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
 
     &.active {
-      background: rgba(34, 197, 94, 0.15);
+      background: rgba(34, 197, 94, 0.12);
       color: #4ade80;
-      border: 1px solid rgba(34, 197, 94, 0.2);
+      border: 1px solid rgba(34, 197, 94, 0.3);
     }
+
     &.inactive {
-      background: rgba(148, 163, 184, 0.1);
-      color: #94a3b8;
-      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(75, 85, 99, 0.2);
+      color: #9ca3af;
+      border: 1px solid rgba(75, 85, 99, 0.4);
     }
 
     &::before {
@@ -277,9 +346,196 @@
   }
 
   .section-title {
-    font-size: 1.1rem;
-    color: var(--sand_300);
+    font-size: 12px;
+    color: #9ca3af;
     margin-bottom: 16px;
-    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+}
+
+// Form inputs styling
+.settings-wrapper,
+.general-settings,
+.annotation-settings {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  textarea,
+  select {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(55, 65, 81, 0.5) !important;
+    border-radius: 0 !important;
+    color: #ffffff !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+
+    &:focus {
+      border-color: #8b5cf6 !important;
+      outline: none !important;
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2) !important;
+    }
+
+    &::placeholder {
+      color: #6b7280 !important;
+    }
+  }
+}
+
+// ============================================
+// COMPREHENSIVE BUTTON OVERRIDES
+// Targets @synapse/ui Button component classes
+// ============================================
+
+// Primary/Save buttons - purple gradient style
+.simple-settings,
+.general-settings,
+.annotation-settings,
+.webhook-settings,
+.settings-wrapper {
+  // Target the actual button element with save-button or gradient-button class
+  .save-button,
+  .gradient-button,
+  button.save-button,
+  button.gradient-button {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12)) !important;
+    border: 1px solid rgba(139, 92, 246, 0.4) !important;
+    border-radius: 0 !important;
+    color: #c4b5fd !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.18)) !important;
+      border-color: rgba(139, 92, 246, 0.6) !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25) !important;
+    }
+  }
+
+  // Danger/Negative buttons - red transparent style
+  button[class*="negative"],
+  button[class*="destructive"],
+  .button-ls[data-variant="negative"],
+  [class*="button"][class*="negative"] {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    border-radius: 0 !important;
+    color: #fca5a5 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    transition: all 0.2s ease !important;
+    
+    &:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.18) !important;
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      color: #f87171 !important;
+      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2) !important;
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  // Neutral/Secondary buttons
+  button[class*="neutral"],
+  [class*="button"][class*="neutral"] {
+    background: transparent !important;
+    border: 1px solid rgba(75, 85, 99, 0.5) !important;
+    border-radius: 0 !important;
+    color: #9ca3af !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    transition: all 0.2s ease !important;
+    
+    &:hover:not(:disabled) {
+      border-color: rgba(139, 92, 246, 0.5) !important;
+      color: #c4b5fd !important;
+    }
+  }
+}
+
+// Loading/Waiting state for buttons
+.simple-settings,
+.settings-wrapper {
+  button[class*="waiting"],
+  button:disabled {
+    opacity: 0.7 !important;
+    cursor: wait !important;
+    
+    // Override spinner/loader appearance
+    .spinner,
+    [class*="spinner"],
+    [class*="loader"] {
+      border-color: transparent !important;
+      border-top-color: #8b5cf6 !important;
+    }
+  }
+}
+
+// DangerZone specific button targeting
+.simple-settings {
+  .button-ls {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    border-radius: 0 !important;
+    color: #fca5a5 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    transition: all 0.2s ease !important;
+    
+    &:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.18) !important;
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      color: #f87171 !important;
+      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2) !important;
+    }
+  }
+}
+
+// Webhook-specific button overrides
+.webhook-settings {
+  .gradient-button,
+  button.gradient-button {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12)) !important;
+    border: 1px solid rgba(139, 92, 246, 0.4) !important;
+    border-radius: 0 !important;
+    color: #c4b5fd !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.18)) !important;
+      border-color: rgba(139, 92, 246, 0.6) !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25) !important;
+    }
+  }
+  
+  // Edit/Delete buttons in webhook list
+  .webhook-list-item {
+    .button-ls {
+      border-radius: 0 !important;
+      font-family: 'Space Grotesk', system-ui, sans-serif !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.04em !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+    }
   }
 }

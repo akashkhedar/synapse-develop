@@ -7,7 +7,8 @@ import { FieldsButton } from "../../Common/FieldsButton";
 import { FiltersPane } from "../../Common/FiltersPane";
 import { Icon } from "../../Common/Icon/Icon";
 import { Interface } from "../../Common/Interface";
-import { ExportButton, ImportButton } from "../../Common/SDKButtons";
+import { ExportButton, ImportButton, SettingsButton } from "../../Common/SDKButtons";
+
 import { Tooltip } from "@synapse/ui";
 import { ActionsButton } from "./ActionsButton";
 import { DensityToggle } from "./DensityToggle";
@@ -108,6 +109,13 @@ const ExportButtonWithRole = roleInjector(
 );
 
 export const instruments = {
+  settings: ({ size }) => {
+    return (
+      <Interface name="settings">
+        <SettingsButton size={size}>Settings</SettingsButton>
+      </Interface>
+    );
+  },
   "view-toggle": ({ size }) => {
     return <ViewToggle size={size} style={style} />;
   },
@@ -127,20 +135,6 @@ export const instruments = {
         trailingIcon={<Icon {...iconProps} />}
         title={"Columns"}
         size={size}
-        style={{
-          background: 'black',
-          border: '1px solid rgba(55, 65, 81, 0.5)',
-          borderRadius: '10px',
-          color: '#c4b5fd',
-          fontWeight: 600,
-          fontSize: '13px',
-          height: '32px',
-          padding: '0 14px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
         openUpwardForShortViewport={false}
       />
     );

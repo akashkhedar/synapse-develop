@@ -109,70 +109,48 @@ export const LabelButton = injector(({ store, canLabel, canAnnotate, isExpert, s
     );
   }
 
+  const [isHovered, setIsHovered] = useState(false);
+
   return canLabel ? (
     <Interface name="labelButton">
-      <div>
-        <ButtonGroup className="button-group">
-          <Button
-            size={size ?? "small"}
-            // variant="primary"
-            look="outlined"
-            disabled={disabled}
-            style={{
-              width: '160px',
-              background: 'black',
-              border: '1px solid rgba(55, 65, 81, 0.5)',
-              borderRight: 'none',
-              borderRadius: '10px 0 0 10px',
-              color: '#c4b5fd',
-              fontWeight: 600,
-              fontSize: '13px',
-              height: '32px',
-              padding: '0 14px',
-              cursor: disabled ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: disabled ? 0.5 : 1,
-            }}
-            onClick={onLabelAll}
-          >
-            {isExpert ? "Review" : "Label"} {selectedCount ? selectedCount : "All"} Task
-            {!selectedCount || selectedCount > 1 ? "s" : ""}
-          </Button>
-          <Dropdown.Trigger
-            align="bottom-right"
-            content={
-              <Menu size="compact">
-                <Menu.Item onClick={onLabelVisible}>{isExpert ? "Review" : "Label"} Tasks As Displayed</Menu.Item>
-              </Menu>
-            }
-          >
-            <Button 
-                size={size} 
-                look="outlined" 
-                variant="primary" 
-                aria-label={"Toggle open"}
-                style={{
-                  width: '24px',
-                  padding: 0,
-                  background: 'black',
-                  border: '1px solid rgba(55, 65, 81, 0.5)',
-                  borderLeft: 'none',
-                  borderRadius: '0 10px 10px 0',
-                  color: '#c4b5fd',
-                  height: '32px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-            >
-              <IconChevronDown />
-            </Button>
-          </Dropdown.Trigger>
-        </ButtonGroup>
-      </div>
+      <Dropdown.Trigger
+        align="bottom-right"
+        content={
+          <Menu size="compact">
+            <Menu.Item onClick={onLabelAll}>{isExpert ? "Review" : "Label"} All Tasks</Menu.Item>
+            <Menu.Item onClick={onLabelVisible}>{isExpert ? "Review" : "Label"} Tasks As Displayed</Menu.Item>
+          </Menu>
+        }
+      >
+        <button
+          disabled={disabled}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          style={{
+            background: 'black',
+            border: `1px solid ${isHovered && !disabled ? 'rgba(139, 92, 246, 0.5)' : 'rgba(55, 65, 81, 0.5)'}`,
+            borderRadius: '10px',
+            color: '#c4b5fd',
+            fontWeight: 600,
+            fontSize: '13px',
+            height: '32px',
+            padding: '0 14px',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            opacity: disabled ? 0.5 : 1,
+            fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+            transition: 'all 0.15s ease',
+            boxShadow: isHovered && !disabled ? '0 0 12px rgba(139, 92, 246, 0.15)' : 'none',
+          }}
+        >
+          {isExpert ? "Review" : "Label"} {selectedCount ? selectedCount : "All"} Task
+          {!selectedCount || selectedCount > 1 ? "s" : ""}
+          <IconChevronDown style={{ width: 16, height: 16 }} />
+        </button>
+      </Dropdown.Trigger>
     </Interface>
   ) : null;
 });

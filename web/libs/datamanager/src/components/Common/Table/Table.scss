@@ -10,7 +10,7 @@
   transform: translateY(-41px);
   position: absolute;
   border-bottom: 1px solid #1f2937;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
 
   &_visible {
     position: relative;
@@ -46,6 +46,7 @@
   flex-direction: column;
   overflow: hidden;
   background-color: #000000;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
 
   &__auto-size {
     &_quick-view {

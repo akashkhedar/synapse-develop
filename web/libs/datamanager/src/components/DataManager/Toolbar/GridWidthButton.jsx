@@ -25,6 +25,7 @@ const injector = inject(({ store }) => {
 
 export const GridWidthButton = injector(({ view, isGrid, gridWidth, fitImagesToWidth, hasImage, size }) => {
   const [width, setWidth] = useState(gridWidth);
+  const [isHovered, setIsHovered] = useState(false);
 
   const setGridWidthStore = debounce((value) => {
     view.setGridWidth(value);
@@ -86,14 +87,13 @@ export const GridWidthButton = injector(({ view, isGrid, gridWidth, fitImagesToW
       }
     >
 
-      <Button 
-          size={size} 
-          variant="neutral" 
-          look="outlined" 
+      <button 
           aria-label="Grid settings" 
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           style={{
             background: 'black',
-            border: '1px solid rgba(55, 65, 81, 0.5)',
+            border: `1px solid ${isHovered ? 'rgba(139, 92, 246, 0.5)' : 'rgba(55, 65, 81, 0.5)'}`,
             borderRadius: '10px',
             color: '#c4b5fd',
             fontWeight: 600,
@@ -104,10 +104,14 @@ export const GridWidthButton = injector(({ view, isGrid, gridWidth, fitImagesToW
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+            outline: 'none',
+            transition: 'all 0.15s ease',
+            boxShadow: isHovered ? '0 0 12px rgba(139, 92, 246, 0.15)' : 'none',
           }}
       >
-        <IconSettings />
-      </Button>
+        <IconSettings style={{ width: 16, height: 16 }} />
+      </button>
     </Dropdown.Trigger>
   ) : null;
 });

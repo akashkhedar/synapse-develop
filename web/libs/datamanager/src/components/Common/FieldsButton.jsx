@@ -1,6 +1,6 @@
 import { Button, Checkbox } from "@synapse/ui";
 import { inject, observer } from "mobx-react";
-import React from "react";
+import React, { useState } from "react";
 import { cn } from "../../utils/bem";
 import { Dropdown } from "@synapse/ui";
 import { Menu } from "./Menu/Menu";
@@ -90,6 +90,7 @@ export const FieldsButton = injector(
     openUpwardForShortViewport = true,
     "data-testid": dataTestId,
   }) => {
+    const [isHovered, setIsHovered] = useState(false);
     const content = [];
 
     if (title)
@@ -97,18 +98,43 @@ export const FieldsButton = injector(
         <React.Fragment key="f-button-title">{title}</React.Fragment>
       );
 
+    const baseStyle = {
+      // Spread custom style first (so it can be partially overridden if needed like minWidth)
+      ...style,
+      // Core styles
+      background: 'black',
+      borderRadius: '10px',
+      color: '#c4b5fd',
+      fontWeight: 600,
+      fontSize: '13px',
+      height: '32px',
+      padding: '0 14px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '6px',
+      fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+      outline: 'none',
+      transition: 'all 0.15s ease',
+      // Hover-dependent styles MUST be last so they can't be overridden
+      border: `1px solid ${isHovered ? 'rgba(139, 92, 246, 0.5)' : 'rgba(55, 65, 81, 0.5)'}`,
+      boxShadow: isHovered ? '0 0 12px rgba(139, 92, 246, 0.15)' : 'none',
+    };
+
     const renderButton = () => {
       return (
-        <Button
-          size="small"
-          look="outlined"
-          leading={icon}
-          trailing={trailingIcon}
+        <button
           data-testid={dataTestId}
           className={className}
+          style={baseStyle}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
         >
+          {icon && <span style={{ display: 'flex', alignItems: 'center' }}>{icon}</span>}
           {content.length ? content : null}
-        </Button>
+          {trailingIcon && <span style={{ display: 'flex', alignItems: 'center' }}>{trailingIcon}</span>}
+        </button>
       );
     };
 
@@ -135,17 +161,18 @@ export const FieldsButton = injector(
             ).toClassName()} h-[40px] flex items-center`}
             style={{ zIndex: 1000 }}
           >
-            <Button
-              tooltip={tooltip}
-              size={size}
-              look="outlined"
-              leading={icon}
-              trailing={trailingIcon}
+            <button
               data-testid={dataTestId}
               className={className}
+              style={baseStyle}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              title={tooltip}
             >
+              {icon && <span style={{ display: 'flex', alignItems: 'center' }}>{icon}</span>}
               {content.length ? content : null}
-            </Button>
+              {trailingIcon && <span style={{ display: 'flex', alignItems: 'center' }}>{trailingIcon}</span>}
+            </button>
           </div>
         ) : (
           renderButton()

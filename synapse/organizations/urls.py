@@ -58,6 +58,9 @@ urlpatterns = [
     path('api/organizations/switch', api.OrganizationSwitchAPI.as_view(), name='organization-switch'),
     # leave organization
     path('api/organizations/leave', api.OrganizationLeaveAPI.as_view(), name='organization-leave'),
+    # API key management (admin/owner only)
+    path('api/organizations/<int:pk>/api-key/', api.OrganizationApiKeyAPI.as_view(), name='organization-api-key'),
+    path('api/organizations/<int:pk>/api-key/reset/', api.OrganizationApiKeyResetAPI.as_view(), name='organization-api-key-reset'),
 ]
 
 

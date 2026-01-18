@@ -39,9 +39,9 @@
   --dm-error: #ef4444;
   --dm-info: #3b82f6;
   
-  // Typography
+  // Typography - Use Space Grotesk consistently across the app
   --dm-font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  --dm-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --dm-font-body: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --dm-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
   
   // Spacing
@@ -106,6 +106,62 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+// FORCE GLOBAL FONT OVERRIDES (for Portals, Dropdowns, etc.)
+// These elements are often rendered outside the main app root
+// We use hardcoded font-family here to ensure it works even if variables aren't resolved in portals
+body,
+.dropdown,
+[class*="dropdown"],
+.menu-dm,
+[class*="menu"],
+.table,
+.ant-tooltip,
+.ant-popover,
+.ant-select-dropdown,
+.ant-dropdown,
+.ant-menu,
+.ant-modal,
+.ant-modal-content,
+.ant-modal-header,
+.ant-modal-title,
+.ant-modal-confirm-title,
+.ant-modal-confirm-content,
+.ant-checkbox-wrapper,
+.ant-radio-wrapper,
+.ant-typography,
+.ant-btn,
+.ant-input,
+.sf-datepicker__wrapper,
+.ui-checkbox,
+label[class*="checkbox"],
+span[class*="checkbox"] {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+// Ensure specific elements within dropdowns/portals also inherit
+.dropdown *,
+[class*="dropdown"] *,
+.menu-dm *,
+[class*="menu"] *,
+.table *,
+.ant-dropdown *,
+.ant-menu *,
+.ant-modal *,
+.ant-popover * {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+// Force basic HTML elements in case they are used in detached nodes
+button,
+input,
+optgroup,
+select,
+textarea,
+label,
+span {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 // ========================================

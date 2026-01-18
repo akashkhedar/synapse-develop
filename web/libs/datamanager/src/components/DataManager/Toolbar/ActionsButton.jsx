@@ -294,6 +294,7 @@ export const ActionsButton = injector(
     const formRef = useRef();
     const selectedCount = store.currentView.selectedCount;
     const [isOpen, setIsOpen] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
     // Use TanStack Query hook for fetching actions
     const {
@@ -339,15 +340,14 @@ export const ActionsButton = injector(
         disabled={!hasSelected}
         onToggle={setIsOpen}
       >
-        <Button
-          size={size}
-          look="outlined"
+        <button
           disabled={!hasSelected}
-          trailing={<IconChevronDown />}
           aria-label="Tasks Actions"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           style={{
             background: 'black',
-            border: '1px solid rgba(55, 65, 81, 0.5)',
+            border: `1px solid ${isHovered && hasSelected ? 'rgba(139, 92, 246, 0.5)' : 'rgba(55, 65, 81, 0.5)'}`,
             borderRadius: '10px',
             color: '#c4b5fd',
             fontWeight: 600,
@@ -360,15 +360,18 @@ export const ActionsButton = injector(
             justifyContent: 'center',
             gap: '6px',
             opacity: hasSelected ? 1 : 0.5,
+            fontFamily: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+            transition: 'all 0.15s ease',
+            boxShadow: isHovered && hasSelected ? '0 0 12px rgba(139, 92, 246, 0.15)' : 'none',
           }}
-          {...rest}
         >
           {selectedCount > 0
             ? `${selectedCount} ${recordTypeLabel}${
                 selectedCount > 1 ? "s" : ""
               }`
             : "Actions"}
-        </Button>
+          <IconChevronDown style={{ width: 16, height: 16 }} />
+        </button>
       </Dropdown.Trigger>
     );
   })

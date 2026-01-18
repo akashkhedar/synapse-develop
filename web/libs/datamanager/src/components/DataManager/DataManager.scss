@@ -4,6 +4,11 @@
   height: 100%;
   width: 100%;
   display: flex;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  * {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
 
   &__tab {
     display: flex;
@@ -41,7 +46,7 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 12px;
-  font-family: 'Space Grotesk', -apple-system, sans-serif;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
 }
 
@@ -49,7 +54,7 @@
   color: #6b7280;
   text-transform: uppercase;
   font-size: 11px;
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 500;
 }
 
@@ -57,7 +62,7 @@
   color: #9ca3af;
   border-radius: 4px;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 :global(.react-datepicker .react-datepicker__day:hover) {

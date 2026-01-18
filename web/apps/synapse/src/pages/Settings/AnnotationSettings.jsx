@@ -39,7 +39,7 @@ export const AnnotationSettings = () => {
           >
             <Form.Row columnCount={1}>
               <div className={cn("settings-wrapper").elem("header").toClassName()}>Labeling Instructions</div>
-              <div class="settings-description">
+              <div className="settings-description">
                 <p style={{ marginBottom: "0" }}>Write instructions to help users complete labeling tasks.</p>
                 <p style={{ marginTop: "8px" }}>
                   The instruction field supports HTML markup and it allows use of images, iframes (pdf).
@@ -74,7 +74,7 @@ export const AnnotationSettings = () => {
               <Form.Indicator>
                 <span case="success">Saved!</span>
               </Form.Indicator>
-              <Button type="submit" look="primary" className="w-[150px]" aria-label="Save annotation settings">
+              <Button type="submit" look="primary" className="save-button w-[150px]" aria-label="Save annotation settings">
                 Save
               </Button>
             </Form.Actions>

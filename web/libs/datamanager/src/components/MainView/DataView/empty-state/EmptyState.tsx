@@ -266,7 +266,7 @@ export const EmptyState: FC<EmptyStateProps> = ({
 
       if (isAutoDistribution) {
         return renderEmptyStateLayout({
-          icon: <IconLsLabeling />,
+          // icon: <IconLsLabeling />,
           title: "Start labeling tasks",
           description: "Tasks you've labeled will appear here",
           actions: canAnnotate && onLabelAllTasks ? (

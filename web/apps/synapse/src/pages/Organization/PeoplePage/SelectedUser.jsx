@@ -7,7 +7,7 @@ import {
   IconCheck,
   IconUserAdd,
 } from "@synapse/icons";
-import { Userpic, Button } from "@synapse/ui";
+import { Userpic } from "@synapse/ui";
 import { Modal } from "../../../components/Modal/ModalPopup";
 import { useAPI } from "../../../providers/ApiProvider";
 import { cn } from "../../../utils/bem";
@@ -216,16 +216,20 @@ export const SelectedUser = ({
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: "4px",
-            padding: "4px 12px",
-            borderRadius: "12px",
-            backgroundColor: "#FFD700",
-            color: "#000",
-            fontSize: "12px",
+            gap: "6px",
+            padding: "6px 14px",
+            borderRadius: "0",
+            background: "linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(168, 85, 247, 0.15))",
+            border: "1px solid rgba(139, 92, 246, 0.5)",
+            color: "#c4b5fd",
+            fontSize: "11px",
             fontWeight: "600",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
           }}
         >
-          👑 Owner
+          Owner
         </span>
       );
     }
@@ -235,16 +239,20 @@ export const SelectedUser = ({
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: "4px",
-            padding: "4px 12px",
-            borderRadius: "12px",
-            backgroundColor: "#3B82F6",
-            color: "#fff",
-            fontSize: "12px",
+            gap: "6px",
+            padding: "6px 14px",
+            borderRadius: "0",
+            background: "linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(96, 165, 250, 0.1))",
+            border: "1px solid rgba(59, 130, 246, 0.4)",
+            color: "#93c5fd",
+            fontSize: "11px",
             fontWeight: "600",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
           }}
         >
-          ⭐ Admin
+          Admin
         </span>
       );
     }
@@ -253,30 +261,53 @@ export const SelectedUser = ({
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: "4px",
-          padding: "4px 12px",
-          borderRadius: "12px",
-          backgroundColor: "#E5E7EB",
-          color: "#4B5563",
-          fontSize: "12px",
-          fontWeight: "500",
+          gap: "6px",
+          padding: "6px 14px",
+          borderRadius: "0",
+          background: "rgba(55, 65, 81, 0.3)",
+          border: "1px solid rgba(75, 85, 99, 0.5)",
+          color: "#9ca3af",
+          fontSize: "11px",
+          fontWeight: "600",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
         }}
       >
-        👤 Member
+        Member
       </span>
     );
   };
 
   return (
     <div className={cn("user-info").toClassName()}>
-      <Button
-        look="string"
+      {/* Corner Borders */}
+      <div style={{ position: "absolute", width: "12px", height: "12px", top: 0, left: 0, borderColor: "#8b5cf6", borderStyle: "solid", borderTopWidth: "2px", borderLeftWidth: "2px", borderRightWidth: 0, borderBottomWidth: 0, pointerEvents: "none", zIndex: 10 }} />
+      <div style={{ position: "absolute", width: "12px", height: "12px", bottom: 0, right: 0, borderColor: "#8b5cf6", borderStyle: "solid", borderBottomWidth: "2px", borderRightWidth: "2px", borderTopWidth: 0, borderLeftWidth: 0, pointerEvents: "none", zIndex: 10 }} />
+
+      <button
         onClick={onClose}
-        className="absolute top-[20px] right-[24px]"
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "24px",
+          background: "transparent",
+          border: "none",
+          padding: "4px",
+          borderRadius: "4px",
+          color: "#6b7280",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; e.currentTarget.style.background = "transparent"; }}
         aria-label="Close user details"
       >
-        <IconCross />
-      </Button>
+        <IconCross style={{ width: 20, height: 20 }} />
+      </button>
 
       <div className={cn("user-info").elem("header").toClassName()}>
         <Userpic user={user} style={{ width: 64, height: 64, fontSize: 28 }} />
@@ -339,41 +370,127 @@ export const SelectedUser = ({
           style={{
             marginTop: "24px",
             paddingTop: "24px",
-            borderTop: "1px solid #e2e8f0",
+            borderTop: "1px solid rgba(139, 92, 246, 0.15)",
             display: "flex",
             flexDirection: "column",
             gap: "12px",
           }}
         >
           {canPromoteMember() && (
-            <Button
-              look="primary"
-              icon={<IconCheck />}
+            <button
               onClick={() => setShowPromoteDialog(true)}
               aria-label="Promote to admin"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+                width: "100%",
+                padding: "14px 20px",
+                background: "linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12))",
+                border: "1px solid rgba(139, 92, 246, 0.4)",
+                borderRadius: "0",
+                color: "#c4b5fd",
+                fontSize: "13px",
+                fontWeight: "600",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.18))";
+                e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.6)";
+                e.currentTarget.style.color = "#ffffff";
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(139, 92, 246, 0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12))";
+                e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.4)";
+                e.currentTarget.style.color = "#c4b5fd";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
+              <IconCheck style={{ width: 16, height: 16 }} />
               Make Admin
-            </Button>
+            </button>
           )}
           {canDemoteMember() && (
-            <Button
-              look="secondary"
-              icon={<IconUserAdd />}
+            <button
               onClick={() => setShowDemoteDialog(true)}
               aria-label="Demote to member"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+                width: "100%",
+                padding: "14px 20px",
+                background: "transparent",
+                border: "1px solid rgba(75, 85, 99, 0.5)",
+                borderRadius: "0",
+                color: "#9ca3af",
+                fontSize: "13px",
+                fontWeight: "600",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.5)";
+                e.currentTarget.style.color = "#c4b5fd";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "rgba(75, 85, 99, 0.5)";
+                e.currentTarget.style.color = "#9ca3af";
+              }}
             >
+              <IconUserAdd style={{ width: 16, height: 16 }} />
               Remove Admin Role
-            </Button>
+            </button>
           )}
           {canRemoveMember() && (
-            <Button
-              look="destructive"
-              icon={<IconTrash />}
+            <button
               onClick={() => setShowRemoveDialog(true)}
               aria-label="Remove member from organization"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+                width: "100%",
+                padding: "14px 20px",
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "0",
+                color: "#fca5a5",
+                fontSize: "13px",
+                fontWeight: "600",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.18)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                e.currentTarget.style.color = "#f87171";
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(239, 68, 68, 0.2)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                e.currentTarget.style.color = "#fca5a5";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
+              <IconTrash style={{ width: 16, height: 16 }} />
               Remove from Organization
-            </Button>
+            </button>
           )}
         </div>
       )}

@@ -25,6 +25,8 @@ export const API_CONFIG = {
     inviteLink: "/invite",
     resetInviteLink: "POST:/invite/reset-token",
     sendInviteEmail: "POST:/organizations/:pk/invite/email",
+    organizationApiKey: "GET:/organizations/:pk/api-key/",
+    organizationApiKeyReset: "POST:/organizations/:pk/api-key/reset/",
 
     // Project
     projects: "/projects",

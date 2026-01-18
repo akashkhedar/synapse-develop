@@ -95,13 +95,39 @@ export const GeneralSettings = () => {
               <Form.Indicator>
                 <span case="success">Saved!</span>
               </Form.Indicator>
-              <Button
+              <button
                 type="submit"
-                className="save-button w-[150px]"
                 aria-label="Save general settings"
+                style={{
+                  width: "150px",
+                  height: "44px",
+                  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12))",
+                  border: "1px solid rgba(139, 92, 246, 0.4)",
+                  borderRadius: "0",
+                  color: "#c4b5fd",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  cursor: "pointer",
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.18))";
+                  e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.6)";
+                  e.currentTarget.style.color = "#ffffff";
+                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(139, 92, 246, 0.25)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12))";
+                  e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.4)";
+                  e.currentTarget.style.color = "#c4b5fd";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               >
                 Save
-              </Button>
+              </button>
             </Form.Actions>
           </Form>
         </div>

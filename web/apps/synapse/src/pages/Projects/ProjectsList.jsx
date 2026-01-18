@@ -8,6 +8,7 @@ import {
   IconMinus,
   IconSparks,
   IconFolder,
+  IconPlus,
 } from "@synapse/icons";
 import { Userpic, Button, Dropdown, Tooltip } from "@synapse/ui";
 import { Menu, Pagination } from "../../components";
@@ -130,22 +131,80 @@ const StatBadge = ({ icon: Icon, value, label, color, gradient }) => {
   );
 };
 
+const CreateProjectCard = ({ onClick }) => {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+        minHeight: "220px",
+        background: "rgba(255, 255, 255, 0.02)",
+        border: "1px dashed rgba(167, 139, 250, 0.3)",
+        borderRadius: "12px",
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+        gap: "16px",
+      }}
+      className="create-project-card"
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(167, 139, 250, 0.05)";
+        e.currentTarget.style.borderColor = "rgba(167, 139, 250, 0.6)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
+        e.currentTarget.style.borderColor = "rgba(167, 139, 250, 0.3)";
+      }}
+    >
+      <div
+        style={{
+          width: "48px",
+          height: "48px",
+          borderRadius: "50%",
+          background: "rgba(167, 139, 250, 0.1)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#a78bfa",
+        }}
+      >
+        <IconPlus style={{ width: "24px", height: "24px" }} />
+      </div>
+      <span
+        style={{
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontSize: "16px",
+          fontWeight: 600,
+          color: "#a78bfa",
+        }}
+      >
+        Create New Project
+      </span>
+    </div>
+  );
+};
+
 export const ProjectsList = ({
   projects,
   currentPage,
   totalItems,
   loadNextPage,
   pageSize,
+  openModal,
 }) => {
   const { user } = useAuth();
   const isAnnotator = !!user?.is_annotator;
   const isExpert = !!user?.is_expert;
   // Both annotators and experts see simplified view
-  const role = (isAnnotator || isExpert) ? "worker" : "client";
-  console.log(projects)
+  const role = isAnnotator || isExpert ? "worker" : "client";
+  
   return (
     <>
       <div className={cn("projects-page").elem("list").toClassName()}>
+        {openModal && <CreateProjectCard onClick={openModal} />}
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} role={role} />
         ))}

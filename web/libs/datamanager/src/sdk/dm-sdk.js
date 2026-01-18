@@ -55,7 +55,7 @@ import { SFWrapper } from "./sf-sdk";
 import { taskToSFFormat } from "./sf-utils";
 
 const DEFAULT_TOOLBAR =
-  "actions columns filters ordering label-button loading-possum error-box | refresh import-button export-button density-toggle grid-size view-toggle";
+  "actions columns filters ordering settings label-button loading-possum error-box | refresh import-button export-button density-toggle grid-size view-toggle";
 
 const prepareInstruments = (instruments) => {
   const result = Object.entries(instruments).map(([name, builder]) => [

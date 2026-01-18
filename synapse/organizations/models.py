@@ -125,6 +125,24 @@ class Organization(OrganizationMixin, models.Model):
 
     contact_info = models.EmailField(_('contact info'), blank=True, null=True)
 
+    # API Key for SDK access - separate from invite token
+    api_key = models.CharField(
+        _('api key'),
+        max_length=64,
+        default=create_hash,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text='API key for SDK/programmatic access. Only visible to admins and owners.'
+    )
+    api_key_created_at = models.DateTimeField(
+        _('api key created at'),
+        auto_now_add=True,
+        null=True,
+        blank=True,
+        help_text='When the API key was created or last reset.'
+    )
+
     def __str__(self):
         return self.title + ', id=' + str(self.pk)
 
@@ -203,6 +221,13 @@ class Organization(OrganizationMixin, models.Model):
     def reset_token(self):
         self.token = create_hash()
         self.save(update_fields=['token'])
+
+    def reset_api_key(self):
+        """Reset the organization's API key and update timestamp."""
+        self.api_key = create_hash()
+        self.api_key_created_at = timezone.now()
+        self.save(update_fields=['api_key', 'api_key_created_at'])
+        return self.api_key
 
     def check_max_projects(self):
         """This check raise an exception if the projects limit is hit"""

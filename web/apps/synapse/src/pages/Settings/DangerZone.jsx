@@ -12,6 +12,7 @@ import { useAPI } from "../../providers/ApiProvider";
 import { useProject } from "../../providers/ProjectProvider";
 import { cn } from "../../utils/bem";
 import "./DangerZone.scss";
+import { Form, TextArea } from "../../components/Form";
 
 // Severity indicators for warnings - no emojis, dark theme
 const severityConfig = {
@@ -45,6 +46,12 @@ const dangerButtonStyle = {
   background: "rgba(239, 68, 68, 0.12)",
   border: "1px solid rgba(239, 68, 68, 0.3)",
   color: "#fca5a5",
+};
+
+const outlineButtonStyle = {
+  ...primaryButtonStyle,
+  background: "transparent",
+  color: "#8b5cf6",
 };
 
 export const DangerZone = () => {
@@ -285,13 +292,30 @@ export const DangerZone = () => {
               </div>
             )}
 
-            <Input
+            <TextArea
               label={`To proceed, type "${requiredWord}" in the field below:`}
               value={inputValue}
               onChange={(e) => ctrl?.setState({ inputValue: e.target.value })}
-              autoFocus
               data-testid="danger-zone-confirmation-input"
               autoComplete="off"
+              style={{
+                width: "100%",
+                fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                background: "rgba(0, 0, 0, 0.2)",
+                border: "1px solid #374151",
+                color: "#ffffff",
+                // minHeight: "42px",
+                outline: "none",
+                boxShadow: "none",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "#8b5cf6";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(139, 92, 246, 0.1)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "#374151";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             />
           </div>
         );
@@ -303,17 +327,32 @@ export const DangerZone = () => {
 
         return (
           <Space align="end">
-            <Button
-              variant="neutral"
-              look="outline"
+            <button
+              style={outlineButtonStyle}
               onClick={() => ctrl?.hide()}
               data-testid="danger-zone-cancel-button"
             >
               Cancel
-            </Button>
-            <Button
-              variant="negative"
+            </button>
+            <button
+              style={{
+                ...dangerButtonStyle,
+                opacity: isValid ? 1 : 0.5,
+                cursor: isValid ? "pointer" : "not-allowed",
+              }}
               disabled={!isValid}
+              onMouseEnter={(e) => {
+                if (isValid) {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (isValid) {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                }
+              }}
               onClick={async () => {
                 await onConfirm();
                 ctrl?.hide();
@@ -321,7 +360,7 @@ export const DangerZone = () => {
               data-testid="danger-zone-confirm-button"
             >
               {buttonText}
-            </Button>
+            </button>
           </Space>
         );
       },

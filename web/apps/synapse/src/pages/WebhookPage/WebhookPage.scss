@@ -1,0 +1,95 @@
+.webhook-page {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: #fff;
+  width: 100%;
+  max-width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important; /* CENTER EVERYTHING GLOBALLY */
+  text-align: center;
+
+  // Force font on everything in this subtree
+  *, button, input, div, span, h1, h2, h3, h4, h5, h6, p {
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  }
+
+  // Allow monospace explicitly where needed
+  .font-mono, [style*="monospace"] {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+  }
+
+  header {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #1f2937;
+    width: 100%;
+    max-width: 800px; /* Constrain width for readability when centered */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center header content */
+
+    h2, .headline {
+       font-size: 24px;
+       font-weight: 700;
+       letter-spacing: -0.02em;
+       margin-bottom: 8px;
+       text-align: center;
+    }
+    
+    p {
+        color: #9ca3af;
+        font-size: 14px;
+        line-height: 1.5;
+        text-align: center;
+    }
+  }
+
+  .webhook-settings {
+     // Ensure the parent container (if specific) is also full width/centered
+     width: 100%;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+  }
+
+
+  .webhook-list-item {
+      border: 1px solid #374151;
+      background: #000000;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+      width: 100%;
+      
+      &:hover {
+          border-color: #8b5cf6;
+          background: rgba(139, 92, 246, 0.05);
+      }
+      
+      .status-badge {
+        font-size: 10px;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        padding: 4px 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        
+        &.active {
+            color: #34d399;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        &.inactive {
+             color: #9ca3af;
+             background: rgba(107, 114, 128, 0.1);
+             border: 1px solid rgba(107, 114, 128, 0.2);
+        }
+      }
+  }
+}

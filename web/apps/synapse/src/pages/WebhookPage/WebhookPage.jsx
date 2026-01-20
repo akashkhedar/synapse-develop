@@ -7,6 +7,8 @@ import { useProject } from "../../providers/ProjectProvider";
 import WebhookDetail from "./WebhookDetail";
 import WebhookList from "./WebhookList";
 import { createTitleFromSegments, useUpdatePageTitle } from "@synapse/core";
+import "../Settings/settings.scss";
+import "./WebhookPage.scss";
 
 const Webhook = () => {
   const [activeWebhook, setActiveWebhook] = useState(null);
@@ -109,7 +111,7 @@ const Webhook = () => {
       />
     );
   }
-  return <section className="w-[42rem] webhook-settings">{content}</section>;
+  return <section className="webhook-page webhook-settings">{content}</section>;
 };
 
 export const WebhookPage = {

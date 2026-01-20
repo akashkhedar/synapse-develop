@@ -1,7 +1,7 @@
 import { EnterpriseBadge, Select, Typography } from "@synapse/ui";
 import { useCallback, useContext } from "react";
 import { Button } from "@synapse/ui";
-import { Form, Input, TextArea } from "../../components/Form";
+import { Form, TextArea } from "../../components/Form";
 import { RadioGroup } from "../../components/Form/Elements/RadioGroup/RadioGroup";
 import { ProjectContext } from "../../providers/ProjectProvider";
 import { cn } from "../../utils/bem";
@@ -50,7 +50,7 @@ export const GeneralSettings = () => {
             onSubmit={updateProject}
           >
             <Form.Row columnCount={1} rowGap="16px">
-              <Input name="title" label="Project Name" />
+              <TextArea name="title" label="Project Name" />
 
               <TextArea
                 name="description"

@@ -150,7 +150,7 @@ client = Synapse(api_key="your-api-key")
         parameters: [
           { name: "title", type: "str", required: false, description: "Project title/name" },
           { name: "description", type: "str", required: false, description: "Project description" },
-          { name: "label_config", type: "str", required: false, description: "XML label configuration (Label Studio format)" },
+          { name: "label_config", type: "str", required: false, description: "XML label configuration (Synapse format)" },
           { name: "expert_instruction", type: "str", required: false, description: "Instructions for annotators" },
           { name: "color", type: "str", required: false, description: "Project color (hex code)" },
         ],

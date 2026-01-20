@@ -10,6 +10,26 @@
   overflow-y: auto;
   background: #000000;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  position: relative;
+
+  // Grid overlay
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  // Ensure content is above grid
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 
   .modal-ls__header {
     border-bottom: 1px solid #1f2937;
@@ -21,10 +41,12 @@
       margin-right: auto;
       margin-bottom: 0;
       margin-top: 0;
+      margin-top: 0;
       font-size: 24px;
-      font-weight: 400;
+      font-weight: 700;
       color: #ffffff;
       letter-spacing: -0.02em;
+      font-family: 'Space Grotesk', sans-serif;
 
       &::before {
         content: '// ';
@@ -39,12 +61,47 @@
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.1em;
+      border-radius: 0 !important;
+      font-weight: 600;
+      transition: all 200ms ease;
     }
 
     .toggle-items {
       width: 500px;
       margin-right: auto;
       box-sizing: border-box;
+
+      // Overrides for Lambda Design System
+      border-radius: 0 !important;
+      background: #1f1f1f !important; // Solid dark grey container
+      border: 1px solid #374151 !important;
+      padding: 0 !important;
+      gap: 1px;
+      background-color: #000000 !important; // Gap color
+
+      &__item {
+        border-radius: 0 !important;
+        color: #9ca3af !important;
+        font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-size: 11px;
+        transition: all 200ms ease;
+        padding: 8px 16px !important;
+        background: #000000 !important; // Solid black items
+        border: none !important;
+
+        &:hover {
+          color: #e5e7eb !important;
+          background: #111111 !important;
+        }
+
+        &_active {
+          color: #ffffff !important;
+          background: rgba(139, 92, 246, 0.2) !important; // Purple tint for active
+          box-shadow: inset 0 0 0 1px #7e4cf5 !important; // Sharp purple border
+        }
+      }
     }
 
     .space-ls_direction_horizontal {
@@ -92,7 +149,7 @@
       background: transparent !important;
       border: 1px solid #374151 !important;
       color: #ffffff !important;
-      border-radius: 6px;
+      border-radius: 0;
       padding: 14px 16px;
       font-size: 14px;
       font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;

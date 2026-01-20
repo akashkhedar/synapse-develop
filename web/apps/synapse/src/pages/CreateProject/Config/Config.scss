@@ -383,6 +383,7 @@ $scroll-width: 6px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 11px;
+  border-radius: 0 !important;
 }
 
 .configure__container>header {
@@ -438,6 +439,11 @@ $scroll-width: 6px;
 
 .configure__container>header .toggle-items {
   margin-left: auto;
+  border-radius: 0;
+
+  .toggle-items__item {
+    border-radius: 0;
+  }
 }
 
 .wizard .configure__code {
@@ -704,9 +710,10 @@ $scroll-width: 6px;
     position: relative;
     background: transparent;
     border: 1px solid #1f2937;
-    border-radius: 6px;
+    border-radius: 0;
     padding: 10px 12px;
     transition: all 200ms ease;
+    overflow: hidden;
 
     &_choice {
       label {
@@ -731,18 +738,19 @@ $scroll-width: 6px;
         opacity: 0.15;
         left: 0;
         right: 0;
-        border-radius: 6px;
+        top: 0;
+        border-radius: 0;
       }
 
       &::after {
         position: absolute;
-        left: -1px;
+        left: 0;
         width: 4px;
         content: "";
-        height: calc(100% + 2px);
-        top: -1px;
+        top: 0;
+        bottom: 0;
         background: inherit;
-        border-radius: 6px 0 0 6px;
+        border-radius: 0;
         transition: 0.2s all;
         will-change: width, left;
       }
@@ -760,7 +768,7 @@ $scroll-width: 6px;
     .configure__delete-label {
       min-width: 0;
       border: 0;
-      border-radius: 0 6px 6px 0;
+      border-radius: 0 0 0 0;
       background: none;
       cursor: pointer;
       padding: 2px 6px;
@@ -784,7 +792,7 @@ $scroll-width: 6px;
       border-color: #8b5cf6;
 
       label::before {
-        border-radius: 6px;
+        border-radius: 0;
       }
 
       label::after {

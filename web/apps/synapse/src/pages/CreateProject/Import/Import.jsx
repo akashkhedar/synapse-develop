@@ -532,7 +532,7 @@ export const ImportPage = ({
                           <td>
                             <div className="flex items-center gap-2">
                               {sample.title}
-                              <Badge variant="info" className="h-5 text-xs rounded-sm">
+                              <Badge variant="info" className="h-5 text-xs rounded-none">
                                 Sample
                               </Badge>
                             </div>
@@ -630,7 +630,7 @@ export const ImportPage = ({
                         <Spinner className="h-6 w-6" />
                       </div>
                     ) : sampleConfig.isError ? (
-                      <div className="w-[calc(100%-24px)] text-lg text-negative-content bg-negative-background border m-3 rounded-md border-negative-border-subtle p-4">
+                      <div className="w-[calc(100%-24px)] text-lg text-negative-content bg-negative-background border m-3 rounded-none border-negative-border-subtle p-4">
                         Something went wrong, the sample data could not be loaded.
                       </div>
                     ) : null}
@@ -638,7 +638,7 @@ export const ImportPage = ({
                 ) : (
                   <SimpleCard className="w-full h-full flex flex-col items-center justify-center text-center p-wide">
                     <div className="flex flex-col items-center gap-tight">
-                      <div className="bg-primary-background rounded-largest p-tight flex items-center justify-center">
+                      <div className="bg-primary-background rounded-none p-tight flex items-center justify-center">
                         <IconCode className="w-6 h-6 text-primary-icon" />
                       </div>
                       <div className="flex flex-col items-center gap-tighter">

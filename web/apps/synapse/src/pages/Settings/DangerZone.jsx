@@ -22,6 +22,31 @@ const severityConfig = {
   info: { label: "INFO", color: "#9ca3af", bgColor: "rgba(156, 163, 175, 0.1)" },
 };
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
+const dangerButtonStyle = {
+  ...primaryButtonStyle,
+  background: "rgba(239, 68, 68, 0.12)",
+  border: "1px solid rgba(239, 68, 68, 0.3)",
+  color: "#fca5a5",
+};
+
 export const DangerZone = () => {
   const { project } = useProject();
   const api = useAPI();
@@ -513,19 +538,33 @@ export const DangerZone = () => {
                       style={{ width: 600, display: "block" }}
                     />
                   )}
-                  <Button
+                  <button
                     key={btn.type}
-                    variant="negative"
-                    look="outlined"
                     disabled={disabled}
-                    waiting={waiting}
                     onClick={handleOnClick(btn.type)}
-                    style={{ marginTop: 16 }}
+                    style={{
+                      ...dangerButtonStyle,
+                      marginTop: 16,
+                      opacity: disabled ? 0.6 : 1,
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!disabled) {
+                         e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                         e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                       if (!disabled) {
+                          e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
+                          e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                       }
+                    }}
                   >
                     {btn.type === "project" && loadingWarnings
                       ? "Checking project status..."
                       : btn.label}
-                  </Button>
+                  </button>
                 </div>
               )
             );

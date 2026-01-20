@@ -72,6 +72,38 @@ const InfoIcon = () => (
   </svg>
 );
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
+const dangerButtonStyle = {
+  ...primaryButtonStyle,
+  background: "rgba(239, 68, 68, 0.12)",
+  border: "1px solid rgba(239, 68, 68, 0.3)",
+  color: "#fca5a5",
+};
+
+const successButtonStyle = {
+  ...primaryButtonStyle,
+  background: "#10b981",
+  borderColor: "#10b981",
+  color: "#ffffff",
+};
+
 /**
  * SecurityDeposit component for collecting security deposit during project creation.
  *
@@ -272,16 +304,28 @@ export const SecurityDeposit = ({
               </div>
             </div>
             <div className="security-deposit__modal-actions">
-              <Button look="primary" size="medium" onClick={goToBillingPage}>
+              <button
+                style={primaryButtonStyle}
+                onMouseEnter={(e) => e.currentTarget.style.background = "#7c3aed"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "#8b5cf6"}
+                onClick={goToBillingPage}
+              >
                 Purchase Credits
-              </Button>
-              <Button
-                look="outlined"
-                size="medium"
+              </button>
+              <button
+                style={dangerButtonStyle}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                }}
                 onClick={() => setShowInsufficientModal(false)}
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         </Modal>
@@ -293,7 +337,8 @@ export const SecurityDeposit = ({
           lineHeight: 1.7,
           fontSize: '14px',
           letterSpacing: '0.02em',
-          margin: '12px 0 0 0'
+          letterSpacing: '0.02em',
+          margin: '12px 0 24px 0'
         }}>
           A refundable security deposit is required to publish your project.
           This helps ensure project quality and prevents abandoned projects.
@@ -325,7 +370,8 @@ export const SecurityDeposit = ({
             background: 'transparent',
             border: '1px solid #1f2937',
             borderRadius: '8px',
-            padding: '28px',
+            borderRadius: '8px',
+            padding: '32px',
             display: 'flex',
             flexDirection: 'column',
             gap: 0,
@@ -366,7 +412,7 @@ export const SecurityDeposit = ({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '14px 0',
+              padding: '24px 0',
               borderBottom: '1px solid #1f2937'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -389,7 +435,7 @@ export const SecurityDeposit = ({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '14px 0',
+              padding: '24px 0',
               borderBottom: '1px solid #1f2937'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -414,7 +460,7 @@ export const SecurityDeposit = ({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '14px 0',
+              padding: '24px 0',
               borderBottom: '1px solid #1f2937'
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -524,8 +570,8 @@ export const SecurityDeposit = ({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '20px 0 0',
-              marginTop: '12px',
+              padding: '32px 0 8px',
+              marginTop: '16px',
               borderTop: '1px solid #374151'
             }}>
               <span style={{
@@ -595,15 +641,23 @@ export const SecurityDeposit = ({
                 <SmallWarningIcon />
                 <span>You need {creditsNeeded} more credits to pay this deposit.</span>
               </div>
-              <Button look="outlined" size="small" onClick={goToBillingPage} style={{
-                fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                fontSize: '11px',
-                whiteSpace: 'nowrap'
-              }}>
+              <button
+                style={{
+                  ...primaryButtonStyle,
+                  height: "32px",
+                  fontSize: "11px",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#7c3aed")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "#8b5cf6")
+                }
+                onClick={goToBillingPage}
+              >
                 Purchase Credits
-              </Button>
+              </button>
             </div>
           )}
 
@@ -614,7 +668,8 @@ export const SecurityDeposit = ({
             padding: '20px',
             color: '#9ca3af',
             lineHeight: 1.7,
-            fontSize: '12px'
+            fontSize: '12px',
+            marginTop: '24px'
           }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
               <div style={{ color: '#8b5cf6', marginTop: '2px' }}>
@@ -653,14 +708,30 @@ export const SecurityDeposit = ({
               <span>Security deposit collected successfully</span>
             </div>
           ) : (
-            <div className="security-deposit__action">
-              <Button
-                look={hasInsufficientCredits ? "outlined" : "primary"}
-                size="medium"
+            <div className="security-deposit__action" style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <button
+                style={
+                  loading || !depositInfo
+                    ? {
+                        ...primaryButtonStyle,
+                        opacity: 0.6,
+                        cursor: "not-allowed",
+                        background: "#4b5563",
+                        borderColor: "#4b5563",
+                      }
+                    : primaryButtonStyle
+                }
+                onMouseEnter={(e) => {
+                  if (!(loading || !depositInfo))
+                    e.currentTarget.style.background = "#7c3aed";
+                }}
+                onMouseLeave={(e) => {
+                  if (!(loading || !depositInfo))
+                    e.currentTarget.style.background = "#8b5cf6";
+                }}
                 onClick={
                   hasInsufficientCredits ? goToBillingPage : collectDeposit
                 }
-                waiting={loading}
                 disabled={loading || !depositInfo}
               >
                 {hasInsufficientCredits
@@ -668,7 +739,7 @@ export const SecurityDeposit = ({
                   : `Pay ${Math.round(
                       depositInfo.total_deposit || 500
                     )} Credits`}
-              </Button>
+              </button>
 
               {error && (
                 <div style={{
@@ -699,9 +770,18 @@ export const SecurityDeposit = ({
           textAlign: 'center'
         }}>
           <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>
-          <Button look="outlined" size="medium" onClick={calculateDeposit}>
+          <button
+            style={primaryButtonStyle}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "#7c3aed")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "#8b5cf6")
+            }
+            onClick={calculateDeposit}
+          >
             Retry
-          </Button>
+          </button>
         </div>
       ) : null}
     </div>

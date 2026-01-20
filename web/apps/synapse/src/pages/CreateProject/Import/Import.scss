@@ -15,12 +15,11 @@
 
   &::-webkit-scrollbar-track {
     background: transparent;
-    border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb {
     background: #8b5cf6;
-    border-radius: 3px;
+    border-radius: 0; // Sharp scrollbar
     transition: background-color 0.2s ease;
 
     &:hover {
@@ -44,7 +43,7 @@
     color: #ef4444;
     border: 1px solid rgba(239, 68, 68, 0.3);
     background: rgba(239, 68, 68, 0.1);
-    border-radius: 6px;
+    border-radius: 0; // Sharp
     padding: 16px 20px;
     margin: 0 40px 24px;
     display: flex;
@@ -58,6 +57,8 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-size: 11px;
+    border-radius: 0 !important; // Sharp buttons
+    font-weight: 600;
   }
 
   &>header {
@@ -78,11 +79,11 @@
 
     input {
       border: 1px solid #374151 !important;
-      background: transparent !important;
+      background: rgba(0, 0, 0, 0.3) !important; // Darker transparent bg
       color: #ffffff !important;
       line-height: 1em;
       width: 320px;
-      border-radius: 6px 0 0 6px;
+      border-radius: 0 !important; // Sharp
       box-shadow: none;
       transition: all 200ms ease;
       padding: 12px 16px;
@@ -96,20 +97,53 @@
       &:focus-visible {
         border-color: #8b5cf6 !important;
         outline: none;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        box-shadow: none; // Remove shadow glow for sharper look
+        background: rgba(139, 92, 246, 0.05) !important;
       }
     }
 
     button {
       margin-left: -1px;
-      border-radius: 0 6px 6px 0;
+      border-radius: 0 !important;
+      background: rgba(139, 92, 246, 0.1) !important;
+      border: 1px solid rgba(139, 92, 246, 0.3) !important;
+      color: #a78bfa !important;
+      transition: all 200ms ease;
+
+      &:hover {
+        background: rgba(139, 92, 246, 0.2) !important;
+        border-color: rgba(139, 92, 246, 0.5) !important;
+        color: #ffffff !important;
+      }
     }
 
     &+span {
       color: #6b7280;
       font-size: 13px;
+      padding: 0 12px; // Add spacing around "or"
     }
   }
+
+  // Specific targeting for the separate Upload Files button if it's a direct sibling or in header
+  // Based on structure: header > button
+  &>header > button {
+    background: rgba(139, 92, 246, 0.1) !important;
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    color: #a78bfa !important;
+    transition: all 200ms ease;
+
+    &:hover {
+      background: rgba(139, 92, 246, 0.2) !important;
+      border-color: rgba(139, 92, 246, 0.5) !important;
+      color: #ffffff !important;
+    }
+
+    svg {
+      color: #8b5cf6;
+    }
+  }
+
+
 
   &__status {
     margin-left: auto;
@@ -125,11 +159,12 @@
 
     flex: 1;
     overflow-y: auto;
-    background: #000000;
+    background: transparent; // Transparent to show grid
   }
 
   table {
     table-layout: fixed;
+    border-collapse: collapse;
     
     tr {
       border-bottom: 1px solid #1f2937;
@@ -145,8 +180,9 @@
       }
     }
 
+    // Remove odd child background for cleaner look, or adapt
     tr:nth-child(odd) {
-      background: rgba(31, 41, 55, 0.3);
+      background: transparent; // Keep clean
 
       &:hover {
         background: rgba(139, 92, 246, 0.05);
@@ -163,13 +199,13 @@
   &__file-status {
     background: #10b981;
     border: 1px solid rgba(16, 185, 129, 0.4);
-    border-radius: 4px;
+    border-radius: 0; // Sharp
     width: 140px;
-    height: 8px;
+    height: 6px; // Slightly thinner
     display: block;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    box-shadow: none; // Remove glow
 
     &_uploading {
       border: 1px solid rgba(139, 92, 246, 0.4);
@@ -230,8 +266,8 @@
       color: #9ca3af;
       box-shadow: none;
       border: 1px solid #1f2937;
-      background: rgba(31, 41, 55, 0.3);
-      border-radius: 6px;
+      background: rgba(31, 41, 55, 0.2); // More transparent
+      border-radius: 0; // Sharp
     }
   }
 
@@ -255,7 +291,7 @@
       border: 1px solid #8b5cf6;
       background: rgba(139, 92, 246, 0.1);
       padding: 8px 16px;
-      border-radius: 6px;
+      border-radius: 0; // Sharp
     }
 
     label {
@@ -283,7 +319,7 @@
     position: absolute;
     inset: 0;
     z-index: 10;
-    border-radius: 6px;
+    border-radius: 0;
     pointer-events: none;
     backdrop-filter: blur(2px);
   }
@@ -310,14 +346,15 @@
     }
   }
 
+  // Hover state border
   &::before {
     content: "";
     transition: all 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
     position: absolute;
     inset: 16px 48px 48px;
     pointer-events: none;
-    border: 2px dashed transparent;
-    border-radius: 8px;
+    border: 1px dashed transparent; // Thinner border
+    border-radius: 0; // Sharp
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -336,10 +373,10 @@
       content: "Drop file(s) to upload";
       position: absolute;
       inset: 0 40px 40px;
-      border: 2px dashed #8b5cf6;
+      border: 1px dashed #8b5cf6;
       background: rgba(139, 92, 246, 0.05);
       font-size: 28px;
-      box-shadow: inset 0 0 32px rgba(139, 92, 246, 0.1);
+      box-shadow: none; // Removed blur shadow for cleaner look
       backdrop-filter: blur(4px);
     }
   }
@@ -359,15 +396,16 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    background: transparent;
+    background: transparent; // Max transparency
     border: 1px solid #1f2937;
     color: #9ca3af;
     padding: 64px 48px;
-    border-radius: 8px;
+    border-radius: 0; // Sharp
     transition: all 200ms ease;
     position: relative;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
+    // L-shaped corners
     &::before {
       content: '';
       position: absolute;
@@ -431,7 +469,7 @@
     .tips {
       background: rgba(139, 92, 246, 0.05);
       border: 1px solid rgba(139, 92, 246, 0.2);
-      border-radius: 6px;
+      border-radius: 0; // Sharp
       padding: 20px 24px;
       font-size: 12px;
       line-height: 1.7;

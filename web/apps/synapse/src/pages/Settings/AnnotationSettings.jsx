@@ -9,6 +9,24 @@ import { ModelVersionSelector } from "./AnnotationSettings/ModelVersionSelector"
 import { ProjectContext } from "../../providers/ProjectProvider";
 import { Divider } from "../../components/Divider/Divider";
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
 export const AnnotationSettings = () => {
   const { project, fetchProject } = useContext(ProjectContext);
   const pageContext = useContext(MenubarContext);
@@ -74,9 +92,9 @@ export const AnnotationSettings = () => {
               <Form.Indicator>
                 <span case="success">Saved!</span>
               </Form.Indicator>
-              <Button type="submit" look="primary" className="save-button w-[150px]" aria-label="Save annotation settings">
+              <button style={primaryButtonStyle} type="submit" look="primary" className="save-button w-[150px]" aria-label="Save annotation settings">
                 Save
-              </Button>
+              </button>
             </Form.Actions>
           </Form>
         </div>

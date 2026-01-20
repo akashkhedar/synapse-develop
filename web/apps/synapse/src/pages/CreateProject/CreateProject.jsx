@@ -18,6 +18,38 @@ import { FF_LSDV_E_297, isFF } from "../../utils/feature-flags";
 
 import { SecurityDeposit } from "./SecurityDeposit/SecurityDeposit";
 
+const primaryButtonStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    padding: "0 16px",
+    height: "40px",
+    minWidth: "90px",
+    background: "#8b5cf6",
+    border: "1px solid #8b5cf6",
+    color: "#ffffff",
+    fontSize: "13px",
+    fontWeight: 600,
+    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+};
+  
+const dangerButtonStyle = {
+    ...primaryButtonStyle,
+    background: "rgba(239, 68, 68, 0.12)",
+    border: "1px solid rgba(239, 68, 68, 0.3)",
+    color: "#fca5a5",
+};
+  
+const successButtonStyle = {
+  ...primaryButtonStyle,
+  background: "#10b981",
+  borderColor: "#10b981",
+  color: "#ffffff",
+};
+
 const ProjectName = ({
   name,
   setName,
@@ -217,6 +249,18 @@ export const CreateProject = ({ onClose }) => {
     return fileIds?.length || project?.task_number || 0;
   }, [fileIds, project?.task_number]);
 
+  const isDisabled = !project || uploadDisabled || !!error || !depositPaid;
+
+  const saveButtonStyle = isDisabled
+    ? {
+        ...primaryButtonStyle,
+        background: "rgba(55, 65, 81, 0.5)",
+        borderColor: "rgba(55, 65, 81, 0.5)",
+        color: "#6b7280",
+        cursor: "not-allowed",
+      }
+    : primaryButtonStyle;
+
   return (
     <Modal
       onHide={onDelete}
@@ -232,24 +276,39 @@ export const CreateProject = ({ onClose }) => {
           <ToggleItems items={steps} active={step} onSelect={setStep} />
 
           <Space>
-            <Button
-              variant="negative"
+            <button
+              style={dangerButtonStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+              }}
               look="outlined"
               onClick={onDelete}
               waiting={waiting}
               aria-label="Cancel project creation"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               look="primary"
               onClick={onCreate}
+              style={saveButtonStyle}
+              onMouseEnter={(e) => {
+                if (!isDisabled) e.currentTarget.style.background = "#7c3aed";
+              }}
+              onMouseLeave={(e) => {
+                if (!isDisabled) e.currentTarget.style.background = "#8b5cf6";
+              }}
               waiting={waiting || uploading}
               waitingClickable={false}
-              disabled={!project || uploadDisabled || error || !depositPaid}
+              disabled={isDisabled}
             >
               Save
-            </Button>
+            </button>
           </Space>
         </Modal.Header>
         <ProjectName

@@ -22,6 +22,30 @@ import snakeCase from "lodash/snakeCase";
 const wizardClass = cn("wizard");
 const configClass = cn("configure");
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
+const outlineButtonStyle = {
+  ...primaryButtonStyle,
+  background: "transparent",
+  color: "#8b5cf6",
+};
+
 const EmptyConfigPlaceholder = () => (
   <div className={configClass.elem("empty-config")}>
     <p>Your labeling configuration is empty. It is required to label your data.</p>
@@ -107,9 +131,18 @@ const ConfigureControl = ({ control, template }) => {
           onKeyPress={onKeyPress}
           className="sf-textarea-ls p-2 px-3"
         />
-        <Button type="button" size="small" look="outlined" onClick={onAddLabels} aria-label="Add labels">
+        <button
+          type="button"
+          size="small"
+          look="outlined"
+          style={primaryButtonStyle}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139, 92, 246, 0.1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          onClick={onAddLabels}
+          aria-label="Add labels"
+        >
           Add
-        </Button>
+        </button>
       </form>
       <div className={configClass.elem("current-labels")}>
         <h3>
@@ -488,16 +521,19 @@ const Configurator = ({
       <div className={configClass.elem("container")}>
         <h1>Labeling Interface{hasChanges ? " *" : ""}</h1>
         <header>
-          <Button
+          <button
             type="button"
             data-leave={true}
             onClick={onBrowse}
             size="small"
+            style={outlineButtonStyle}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139, 92, 246, 0.1)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             look="outlined"
             aria-label="Browse templates"
           >
             Browse Templates
-          </Button>
+          </button>
           <ToggleItems items={{ code: "Code", visual: "Visual" }} active={configure} onSelect={onSelect} />
         </header>
         <div className={configClass.elem("editor")}>
@@ -559,6 +595,7 @@ const Configurator = ({
               className="w-[120px]"
               onClick={onSave}
               waiting={waiting}
+              style={primaryButtonStyle}
               aria-label="Save configuration"
             >
               {waiting ? "Saving..." : "Save"}

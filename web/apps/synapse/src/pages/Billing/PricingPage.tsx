@@ -260,7 +260,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
 
       {/* Subscription Plans Section */}
       <section className="pricing-section">
-        <div className="section-header">
+        <div className="section-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <h2>Subscription Plans</h2>
           <div className="billing-cycle-toggle">
             <button
@@ -343,7 +343,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
 
       {/* Pay As You Go Section */}
       <section className="pricing-section payg-section">
-        <div className="section-header">
+        <div className="section-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <h2>Pay As You Go</h2>
           <p>One-time credit purchases. Perfect for trying out or occasional use.</p>
         </div>

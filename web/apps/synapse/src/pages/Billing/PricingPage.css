@@ -7,7 +7,7 @@
   margin: 0 auto;
   padding: 64px 40px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  background: #000000;
+  background: #000000; 
 }
 
 /* Header */
@@ -161,8 +161,9 @@
 
 /* Pricing Cards */
 .pricing-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 24px;
   max-width: 1100px;
   margin: 0 auto;
@@ -177,6 +178,9 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  text-align: center;
+  align-items: center;
+  width: 320px;
 }
 
 .pricing-card::before {
@@ -248,11 +252,13 @@
   color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  text-align: center;
 }
 
 .price {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 4px;
   margin-bottom: 8px;
 }
@@ -286,6 +292,7 @@
 .card-body {
   flex: 1;
   margin: 28px 0;
+  width: 100%;
 }
 
 .features {
@@ -296,12 +303,14 @@
 
 .features li {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 12px;
   margin-bottom: 14px;
   color: #9ca3af;
   font-size: 13px;
   letter-spacing: 0.02em;
+  text-align: center;
 }
 
 .features .icon {
@@ -466,13 +475,18 @@
 }
 
 .features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 40px;
 }
 
 .feature-item {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 260px;
 }
 
 .feature-icon {
@@ -519,6 +533,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 32px;
+  justify-content: center;
 }
 
 .faq-item {
@@ -527,6 +542,7 @@
   border: 1px solid #1f2937;
   border-radius: 8px;
   transition: all 200ms ease;
+  text-align: center;
 }
 
 .faq-item:hover {

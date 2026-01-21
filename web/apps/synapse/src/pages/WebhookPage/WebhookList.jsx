@@ -7,6 +7,8 @@ import { Toggle } from "../../components/Form";
 import { useAPI } from "../../providers/ApiProvider";
 import { WebhookDeleteModal } from "./WebhookDeleteModal";
 import { ABILITY, useAuth } from "@synapse/core/providers/AuthProvider";
+import "../Settings/settings.scss";
+import { cn } from "../../utils/bem";
 
 const WebhookListItem = ({ webhook, onSelectActive, onDelete, canChangeWebhooks }) => {
   return (
@@ -100,93 +102,95 @@ const WebhookList = ({ onSelectActive, onAddWebhook, webhooks, fetchWebhooks }) 
   };
 
   return (
-    <>
-      <header className="mb-8 w-full text-center flex flex-col items-center">
-        <Typography variant="headline" size="medium" className="mb-2">
-          Webhooks
-        </Typography>
-        <Typography
-          size="small"
-          className="text-neutral-content-subtler max-w-2xl"
-        >
-          Setup integrations that subscribe to certain events. When an event is
-          triggered, Synapse sends an HTTP POST request to the configured URL.
-        </Typography>
-      </header>
+    <div className={cn("webhook-settings").toClassName()}>
+      <div className={cn("webhook-settings").elem("wrapper").toClassName()}>
+        <h1>Webhooks</h1>
 
-      <div className="w-full flex flex-col items-center">
-        {webhooks.length === 0 ? (
-          <div className="settings-wrapper flex flex-col items-center justify-center text-center !pb-16 !pt-16">
-            {/* Icon Container */}
-            <div className="w-20 h-20 flex items-center justify-center mb-8 relative">
-              <div className="absolute inset-0 bg-violet-500/10 rotate-45 border border-violet-500/30"></div>
-              <IconWebhook className="text-violet-400 w-10 h-10 relative z-10" />
-            </div>
+        <div className={cn("settings-wrapper").toClassName()}>
+          {webhooks.length === 0 ? (
+            <>
+              <div className="settings-description mb-6">
+                Setup integrations that subscribe to certain events. When an
+                event is triggered, Synapse sends an HTTP POST request to the
+                configured URL.
+              </div>
+            <div className="flex flex-col items-center justify-center text-center py-16">
+              {/* Icon Container */}
+              <div className="w-20 h-20 flex items-center justify-center mb-8 relative">
+                <div className="absolute inset-0 bg-violet-500/10 rotate-45 border border-violet-500/30"></div>
+                <IconWebhook className="text-violet-400 w-10 h-10 relative z-10" />
+              </div>
 
-            <h3 className="section-title mb-4 text-center">No Webhooks Configured</h3>
+              <h3 className="section-title mb-4 text-center">
+                No Webhooks Configured
+              </h3>
 
-            <p className="text-neutral-content-subtler max-w-md mb-8 text-sm text-center">
-              Add your first webhook to start integrating with external
-              services.
-            </p>
+              <p className="text-neutral-content-subtler max-w-md mb-8 text-sm text-center">
+                Add your first webhook to start integrating with external
+                services.
+              </p>
 
-            {canChangeWebhooks ? (
-              <button
-                style={primaryButtonStyle}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onClick={onAddWebhook}
-              >
-                Add Webhook
-              </button>
-            ) : (
-              <Typography variant="body" size="small">
-                Contact your administrator to create Webhooks
-              </Typography>
-            )}
-          </div>
-        ) : (
-          <div className="settings-wrapper">
-             <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-800">
-              <h3 className="section-title !mb-0">Active Integrations</h3>
-              {canChangeWebhooks && (
+              {canChangeWebhooks ? (
                 <button
-                  style={{
-                    ...primaryButtonStyle,
-                    height: "32px",
-                    minWidth: "auto",
-                    padding: "0 16px",
-                    fontSize: "11px",
-                  }}
+                  style={primaryButtonStyle}
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
                   onClick={onAddWebhook}
                 >
-                  + Add Webhook
+                  Add Webhook
                 </button>
+              ) 
+              : (
+                <Typography variant="body" size="small">
+                  Contact your administrator to create Webhooks
+                </Typography>
               )}
-            </div>
+              </div>
+              
+              </>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-800">
+                <h3 className="section-title !mb-0">Active Integrations</h3>
+                {canChangeWebhooks && (
+                  <button
+                    style={{
+                      ...primaryButtonStyle,
+                      height: "32px",
+                      minWidth: "auto",
+                      padding: "0 16px",
+                      fontSize: "11px",
+                    }}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    onClick={onAddWebhook}
+                  >
+                    + Add Webhook
+                  </button>
+                )}
+              </div>
 
-            <div className="flex flex-col gap-0 w-full">
-              {webhooks.map((obj) => (
-                <WebhookListItem
-                  key={obj.id}
-                  webhook={obj}
-                  onSelectActive={onSelectActive}
-                  onDelete={async () => {
-                    await api.callApi("deleteWebhook", {
-                      params: { pk: obj.id },
-                    });
-                    await fetchWebhooks();
-                  }}
-                  canChangeWebhooks={canChangeWebhooks}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+              <div className="flex flex-col gap-0 w-full">
+                {webhooks.map((obj) => (
+                  <WebhookListItem
+                    key={obj.id}
+                    webhook={obj}
+                    onSelectActive={onSelectActive}
+                    onDelete={async () => {
+                      await api.callApi("deleteWebhook", {
+                        params: { pk: obj.id },
+                      });
+                      await fetchWebhooks();
+                    }}
+                    canChangeWebhooks={canChangeWebhooks}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -85,9 +85,6 @@ class ProjectSerializer(FlexFieldsModelSerializer):
     parsed_label_config = serializers.JSONField(
         default=None, read_only=True, help_text='JSON-formatted labeling configuration'
     )
-    start_training_on_annotation_update = SerializerMethodField(
-        default=None, read_only=False, help_text='Start model training after any annotations are submitted or updated'
-    )
     config_has_control_tags = SerializerMethodField(
         default=None, read_only=True, help_text='Flag to detect is project ready for labeling'
     )
@@ -173,17 +170,10 @@ class ProjectSerializer(FlexFieldsModelSerializer):
     def get_parsed_label_config(project):
         return project.get_parsed_config()
 
-    def get_start_training_on_annotation_update(self, instance) -> bool:
-        # FIXME: remake this logic with start_training_on_annotation_update
-        return True if instance.min_annotations_to_start_training else False
-
     def to_internal_value(self, data):
         # FIXME: remake this logic with start_training_on_annotation_update
         initial_data = data
         data = super().to_internal_value(data)
-
-        if 'start_training_on_annotation_update' in initial_data:
-            data['min_annotations_to_start_training'] = int(initial_data['start_training_on_annotation_update'])
 
         if 'expert_instruction' in initial_data:
             data['expert_instruction'] = bleach.clean(
@@ -223,13 +213,10 @@ class ProjectSerializer(FlexFieldsModelSerializer):
             'color',
             'maximum_annotations',
             'is_published',
-            'model_version',
             'is_draft',
             'created_by',
             'created_at',
-            'min_annotations_to_start_training',
-            'start_training_on_annotation_update',
-            'show_collab_predictions',
+            'created_at',
             'num_tasks_with_annotations',
             'task_number',
             'useful_annotation_number',
@@ -245,7 +232,6 @@ class ProjectSerializer(FlexFieldsModelSerializer):
             'task_data_password',
             'control_weights',
             'parsed_label_config',
-            'evaluate_predictions_automatically',
             'config_has_control_tags',
             'skip_queue',
             'reveal_preannotations_interactively',
@@ -267,31 +253,6 @@ class ProjectSerializer(FlexFieldsModelSerializer):
             # Existing project is updated
             self.instance.validate_config(value)
         return value
-
-    def validate_model_version(self, value):
-        """Custom model_version validation"""
-        p = self.instance
-
-        # Only run the validation if model_version is about to change
-        # and it contains a string
-        if p is not None and p.model_version != value and value != '':
-            # that model_version should either match live ml backend
-            # or match version in predictions
-
-            if p.ml_backends.filter(title=value).union(p.predictions.filter(project=p, model_version=value)).exists():
-                return value
-            else:
-                raise serializers.ValidationError(
-                    "Model version doesn't exist either as live model or as static predictions."
-                )
-
-        return value
-
-    def update(self, instance, validated_data):
-        if validated_data.get('show_collab_predictions') is False:
-            instance.model_version = ''
-
-        return super().update(instance, validated_data)
 
     def get_queue_total(self, project) -> int:
         remain = project.tasks.filter(
@@ -441,16 +402,7 @@ class ProjectReimportSerializer(serializers.ModelSerializer):
         ]
 
 
-class ProjectModelVersionExtendedSerializer(serializers.Serializer):
-    model_version = serializers.CharField()
-    count = serializers.IntegerField()
-    latest = serializers.DateTimeField()
 
-
-class ProjectModelVersionParamsSerializer(serializers.Serializer):
-    extended = serializers.BooleanField(required=False, default=False)
-    include_live_models = serializers.BooleanField(required=False, default=False)
-    limit = serializers.IntegerField(required=False, default=None)
 
 
 class GetFieldsSerializer(serializers.Serializer):

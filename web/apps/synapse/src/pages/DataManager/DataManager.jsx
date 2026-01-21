@@ -98,13 +98,7 @@ export const DataManagerPage = ({ ...props }) => {
     if (!project?.id) return;
     if (dataManagerRef.current) return;
 
-    const mlBackends = await api.callApi("mlBackends", {
-      params: { project: project.id },
-    });
 
-    const interactiveBacked = (mlBackends ?? []).find(
-      ({ is_interactive }) => is_interactive
-    );
 
     // Fetch current user data to check annotation permissions
     const currentUser = await api.callApi("me");
@@ -114,7 +108,7 @@ export const DataManagerPage = ({ ...props }) => {
       (await initializeDataManager(root.current, props, {
         ...params,
         project,
-        autoAnnotation: isDefined(interactiveBacked),
+        autoAnnotation: false,
         // Annotators and experts can annotate, clients cannot
         canAnnotate:
           currentUser?.is_annotator === true || currentUser?.is_expert === true,
@@ -191,44 +185,7 @@ export const DataManagerPage = ({ ...props }) => {
       else history.push("/projects");
     });
 
-    if (interactiveBacked) {
-      dataManager.on("sf:regionFinishedDrawing", (reg, group) => {
-        const { sf, task, currentAnnotation: annotation } = dataManager.sf;
-        const ids = group.map((r) => r.cleanId);
-        const result = annotation
-          .serializeAnnotation()
-          .filter((res) => ids.includes(res.id));
 
-        const suggestionsRequest = api.callApi("mlInteractive", {
-          params: { pk: interactiveBacked.id },
-          body: {
-            task: task.id,
-            context: { result },
-          },
-        });
-
-        // we'll check that we are processing the same task
-        const wrappedRequest = new Promise(async (resolve, reject) => {
-          const response = await suggestionsRequest;
-
-          // right now task might be an old task,
-          // so in order to get a current one we need to get it from sf
-          if (task.id === dataManager.SF.task.id) {
-            resolve(response);
-          } else {
-            reject();
-          }
-        });
-
-        sf.loadSuggestions(wrappedRequest, (response) => {
-          if (response.data) {
-            return response.data.result;
-          }
-
-          return null;
-        });
-      });
-    }
 
     setContextProps({ dmRef: dataManager });
   }, [projectId]);

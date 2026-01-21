@@ -361,7 +361,6 @@ class TaskAPI(generics.RetrieveUpdateDestroyAPIView):
             "io_storages_redisimportstoragelink",
             "io_storages_s3importstoragelink",
             "file_upload",
-            "project__ml_backends",
         )
 
     def get_retrieve_serializer_context(self, request):
@@ -786,17 +785,7 @@ class AnnotationsListAPI(GetParentObjectMixin, generics.ListCreateAPIView):
         # save stats about how well annotator annotations coincide with current prediction
         # only for finished task annotations
         if result is not None:
-            prediction = Prediction.objects.filter(
-                task=task, model_version=task.project.model_version
-            )
-            if prediction.exists():
-                prediction = prediction.first()
-                prediction_ser = PredictionSerializer(prediction).data
-            else:
-                logger.debug(
-                    f"User={self.request.user}: there are no predictions for task={task}"
-                )
-                prediction_ser = {}
+            prediction_ser = {}
             # serialize annotation
             extra_args.update({"prediction": prediction_ser, "updated_by": user})
 

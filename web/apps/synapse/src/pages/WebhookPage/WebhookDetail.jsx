@@ -8,6 +8,75 @@ import { cn } from "../../utils/bem";
 import { useProject } from "../../providers/ProjectProvider";
 import { WebhookDeleteModal } from "./WebhookDeleteModal";
 
+// Button Styles matching GeneralSettings/WebhookList
+const primaryButtonStyle = {
+  minWidth: "150px",
+  height: "44px",
+  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12))",
+  border: "1px solid rgba(139, 92, 246, 0.4)",
+  borderRadius: "0",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: "600",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  cursor: "pointer",
+  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const dangerButtonStyle = {
+  ...primaryButtonStyle,
+  background: "rgba(239, 68, 68, 0.1)",
+  border: "1px solid rgba(239, 68, 68, 0.3)",
+  color: "#fca5a5",
+};
+
+const neutralButtonStyle = {
+  ...primaryButtonStyle,
+  background: "transparent",
+  border: "1px solid rgba(75, 85, 99, 0.5)",
+  color: "#9ca3af",
+};
+
+const handleMouseEnter = (e, variant = "primary") => {
+  if (variant === "primary") {
+    e.currentTarget.style.background = "linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.18))";
+    e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.6)";
+    e.currentTarget.style.color = "#ffffff";
+    e.currentTarget.style.boxShadow = "0 4px 16px rgba(139, 92, 246, 0.25)";
+  } else if (variant === "danger") {
+    e.currentTarget.style.background = "rgba(239, 68, 68, 0.18)";
+    e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+    e.currentTarget.style.color = "#f87171";
+    e.currentTarget.style.boxShadow = "0 4px 16px rgba(239, 68, 68, 0.2)";
+  } else if (variant === "neutral") {
+     e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.5)";
+     e.currentTarget.style.color = "#c4b5fd";
+  }
+};
+
+const handleMouseLeave = (e, variant = "primary") => {
+  if (variant === "primary") {
+    e.currentTarget.style.background = "linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.12))";
+    e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.4)";
+    e.currentTarget.style.color = "#c4b5fd";
+    e.currentTarget.style.boxShadow = "none";
+  } else if (variant === "danger") {
+    e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+    e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+    e.currentTarget.style.color = "#fca5a5";
+    e.currentTarget.style.boxShadow = "none";
+  } else if (variant === "neutral") {
+    e.currentTarget.style.background = "transparent";
+    e.currentTarget.style.borderColor = "rgba(75, 85, 99, 0.5)";
+    e.currentTarget.style.color = "#9ca3af";
+  }
+};
+
 const WebhookForm = ({
   webhook,
   webhooksInfo,
@@ -57,7 +126,7 @@ const WebhookForm = ({
       className="flex flex-col gap-6"
     >
       {/* General Section */}
-      <div className="webhook-card">
+      <div className={cn("settings-wrapper").toClassName()}>
         <h3 className="section-title">General Information</h3>
         <div className="grid grid-cols-[1fr_auto] gap-6 items-start">
           <Input 
@@ -78,19 +147,19 @@ const WebhookForm = ({
       </div>
 
       {/* Headers Section */}
-      <div className="webhook-card">
+      <div className={cn("settings-wrapper").toClassName()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="section-title !mb-0">Headers</h3>
-          <Button
+          <button
             type="button"
-            variant="neutral"
-            look="outlined"
-            size="small"
+            style={{...neutralButtonStyle, height: '32px', minWidth: 'auto', padding: '0 12px', fontSize: '11px'}}
+            onMouseEnter={(e) => handleMouseEnter(e, "neutral")}
+            onMouseLeave={(e) => handleMouseLeave(e, "neutral")}
             onClick={onAddHeaderClick}
-            icon={<IconPlus />}
+            className="flex items-center gap-2"
           >
-            Add Header
-          </Button>
+            <IconPlus style={{ width: 12, height: 12 }}/> Add Header
+          </button>
         </div>
         
         {headers.length === 0 ? (
@@ -111,15 +180,25 @@ const WebhookForm = ({
                   value={header.value}
                   onChange={(e) => onHeaderChange("value", e, index)}
                 />
-                <Button
-                  variant="negative"
-                  look="string"
-                  className="h-8 w-8 !p-0 flex items-center justify-center opacity-50 hover:opacity-100"
+                <button
                   type="button"
-                  icon={<IconCross />}
+                  style={{
+                    ...dangerButtonStyle, 
+                    height: '32px', 
+                    width: '32px', 
+                    minWidth: 'auto', 
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => handleMouseEnter(e, "danger")}
+                  onMouseLeave={(e) => handleMouseLeave(e, "danger")}
                   onClick={() => onHeaderRemove(index)}
-                  tooltip="Remove"
-                />
+                  title="Remove"
+                >
+                  <IconCross style={{ width: 14, height: 14 }} />
+                </button>
               </div>
             ))}
           </div>
@@ -127,7 +206,7 @@ const WebhookForm = ({
       </div>
 
       {/* Payload Section */}
-      <div className="webhook-card">
+      <div className={cn("settings-wrapper").toClassName()}>
         <h3 className="section-title">Events & Payload</h3>
         <div className="space-y-4">
           <Toggle
@@ -171,10 +250,11 @@ const WebhookForm = ({
       {/* Actions Footer */}
       <div className="flex items-center justify-between mt-4">
         {webhook !== null ? (
-          <Button
+          <button
             type="button"
-            variant="negative"
-            look="outlined"
+            style={dangerButtonStyle}
+            onMouseEnter={(e) => handleMouseEnter(e, "danger")}
+            onMouseLeave={(e) => handleMouseLeave(e, "danger")}
             onClick={() =>
               WebhookDeleteModal({
                 onDelete: async () => {
@@ -188,27 +268,29 @@ const WebhookForm = ({
             }
           >
             Delete Webhook
-          </Button>
+          </button>
         ) : <div />} 
 
         <div className="flex items-center gap-3">
            <div className={rootClass.elem("status")}>
              <Form.Indicator />
            </div>
-           <Button
-            variant="neutral"
-            look="outlined"
+           <button
             type="button"
+            style={neutralButtonStyle}
+            onMouseEnter={(e) => handleMouseEnter(e, "neutral")}
+            onMouseLeave={(e) => handleMouseLeave(e, "neutral")}
             onClick={onBack}
           >
             Cancel
-          </Button>
-          <Button
-            className="gradient-button"
-            aria-label={webhook === null ? "Add Webhook" : "Save Changes"}
+          </button>
+          <button
+            style={primaryButtonStyle}
+            onMouseEnter={(e) => handleMouseEnter(e, "primary")}
+            onMouseLeave={(e) => handleMouseLeave(e, "primary")}
           >
             {webhook === null ? "Add Webhook" : "Save Changes"}
-          </Button>
+          </button>
         </div>
       </div>
     </Form>
@@ -309,22 +391,13 @@ const WebhookDetail = ({ webhook, webhooksInfo, fetchWebhooks, onBack, onSelectA
   if (projectId === undefined) return <></>;
 
   return (
-    <>
-      <header className="page-header flex items-center gap-2">
-        <Typography
-          as="a"
-          variant="headline"
-          size="medium"
-          onClick={() => onSelectActive(null)}
-          className="cursor-pointer text-neutral-content-subtler hover:text-neutral-content-subtle"
-        >
-          Webhooks
-        </Typography>
-        <Typography variant="headline" size="medium" className="text-neutral-content-subtler">
-          / {webhook === null ? "New Webhook" : "Edit Webhook"}
-        </Typography>
-      </header>
-      <div className="mt-base">
+    <div className={cn("webhook-settings").toClassName()}>
+      <div className={cn("webhook-settings").elem("wrapper").toClassName()}>
+        <h1>{webhook === null ? "New Webhook" : "Edit Webhook"}</h1>
+        <div className="settings-description mb-6">
+           Configure the payload URL, secret headers, and trigger events for this webhook.
+        </div>
+
         <WebhookForm
           webhook={webhook}
           webhooksInfo={webhooksInfo}
@@ -348,7 +421,7 @@ const WebhookDetail = ({ webhook, webhooksInfo, fetchWebhooks, onBack, onSelectA
           rootClass={rootClass}
         />
       </div>
-    </>
+    </div>
   );
 };
 

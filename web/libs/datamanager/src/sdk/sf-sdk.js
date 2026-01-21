@@ -580,12 +580,7 @@ export class SFWrapper {
         this.predictions.length > 0 &&
         !this.isInteractivePreannotations
       ) {
-        const predictionByModelVersion = this.predictions.find(
-          (p) => p.createdBy === this.project.model_version
-        );
-        annotation = cs.addAnnotationFromPrediction(
-          predictionByModelVersion ?? this.predictions[0]
-        );
+        annotation = cs.addAnnotationFromPrediction(this.predictions[0]);
       } else if (this.annotations.length > 0 && id && id !== "auto") {
         annotation = this.annotations.find((c) => c.pk === id || c.id === id);
       } else if (

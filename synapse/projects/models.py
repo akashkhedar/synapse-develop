@@ -309,12 +309,6 @@ class Project(ProjectMixin, FsmHistoryStateModel):
         "If the number of annotations per task is equal or greater "
         "to this value, the task is completed (is_labeled=True)",
     )
-    min_annotations_to_start_training = models.IntegerField(
-        _("min_annotations_to_start_training"),
-        default=0,
-        help_text="Minimum number of completed tasks after which model training is started",
-    )
-
     control_weights = JSONField(
         _("control weights"),
         null=True,
@@ -324,21 +318,6 @@ class Project(ProjectMixin, FsmHistoryStateModel):
         "For example, if bounding box annotation with control tag named my_bbox should be included with 0.33 weight in agreement calculation, "
         "and the first label Car should be twice more important than Airplaine, then you have to need the specify: "
         "{'my_bbox': {'type': 'RectangleLabels', 'labels': {'Car': 1.0, 'Airplaine': 0.5}, 'overall': 0.33}",
-    )
-
-    # Welcome reader! You might be wondering how `model_version` is
-    # set and used; let's explain. `model_version` can either be set
-    # to the prediction `model_version` associated with the
-    # `tasks.Prediction` model, or to the ML backend title. Yes,
-    # understandably, this can be confusing. However, this appears to
-    # be the best approach we currently have for improving the
-    # experience while maintaining backward compatibility.
-    model_version = models.TextField(
-        _("model version"),
-        blank=True,
-        null=True,
-        default="",
-        help_text="Machine learning model version",
     )
 
     data_types = JSONField(_("data_types"), default=dict, null=True)
@@ -546,20 +525,6 @@ class Project(ProjectMixin, FsmHistoryStateModel):
     @property
     def num_tasks(self):
         return self.tasks.count()
-
-    @property
-    def ml_backend(self):
-        return fast_first(self.ml_backends.all())
-
-    @property
-    def should_retrieve_predictions(self):
-        """Returns true if the model was set to be used"""
-        if self.show_collab_predictions:
-            ml = self.ml_backend
-            if ml:
-                return ml.title == self.model_version
-
-        return False
 
     @property
     def num_annotations(self):
@@ -1333,55 +1298,7 @@ class Project(ProjectMixin, FsmHistoryStateModel):
                 result[field] = value
         return result
 
-    def get_model_versions(self, with_counters=False, extended=False, limit=None):
-        """
-        Get model_versions from project predictions.
-        :param with_counters: Boolean, if True, counts predictions for each version. Default is False.
-        :param extended: Boolean, if True, returns additional information. Default is False.
-        :return: Dict or list containing model versions and their count predictions.
-        """
-        predictions = Prediction.objects.filter(project=self)
 
-        model_versions = (
-            predictions.values("model_version")
-            .annotate(count=Count("model_version"), latest=Max("created_at"))
-            .order_by("-latest")
-        )
-
-        if extended:
-            return list(model_versions)
-        else:
-            if limit:
-                model_versions = model_versions[:limit]
-            output = {r["model_version"]: r["count"] for r in model_versions}
-
-            # Ensure that self.model_version exists in output
-            if self.model_version and self.model_version not in output:
-                if limit and len(output) < limit:
-                    output[self.model_version] = 0
-                elif not limit:
-                    output[self.model_version] = 0
-
-            # Return as per requirement
-            return output if with_counters else list(output.keys())
-
-    def get_ml_backends(self, *args, **kwargs):
-        from ml.models import MLBackend
-
-        return MLBackend.objects.filter(project=self, **kwargs)
-
-    def has_ml_backend(self, *args, **kwargs):
-        return self.get_ml_backends(**kwargs).exists()
-
-    @property
-    def ml_backend_in_model_version(self):
-        """
-        Returns True if the ml_backend title matches this model version.
-        If this model version is not set, Returns False
-        """
-        return bool(
-            self.model_version and self.has_ml_backend(title=self.model_version)
-        )
 
     def update_ml_backends_state(self):
         """

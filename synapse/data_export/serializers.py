@@ -7,7 +7,7 @@ from django.conf import settings
 from fsm.serializer_fields import FSMStateField
 from synapse_sdk._extensions.synapse_tools.core.label_config import is_video_object_tracking
 from synapse_sdk._extensions.synapse_tools.postprocessing.video import extract_key_frames
-from ml.mixins import InteractiveMixin
+from synapse_sdk._extensions.synapse_tools.postprocessing.video import extract_key_frames
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
 from tasks.models import Annotation, Task
@@ -248,8 +248,7 @@ class ExportParamSerializer(serializers.Serializer):
     )
 
 
-class BaseExportDataSerializerForInteractive(InteractiveMixin, BaseExportDataSerializer):
-    pass
+
 
 
 ExportDataSerializer = load_func(settings.EXPORT_DATA_SERIALIZER)

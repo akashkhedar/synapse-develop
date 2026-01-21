@@ -4,53 +4,66 @@
   height: var(--pagination-height);
   display: inline-flex;
   align-items: center;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
 
-  --button-color: var(--color-primary-content);
+  --button-color: #a78bfa;
+  --button-hover-bg: rgba(167, 139, 250, 0.1);
+  --button-hover-border: rgba(167, 139, 250, 0.5);
+  --border-color: rgba(75, 85, 99, 0.5);
+  --bg-color: transparent;
 
   &_disabled {
-    --button-color: var(--color-neutral-content-subtlest);
-
-    background-color: var(--color-neutral-surface);
+    opacity: 0.5;
     pointer-events: none;
   }
 
   &__label {
     padding-right: 16px;
-    font-size: 16px;
-    line-height: 19px;
-    color: var(--color-neutral-content-subtler);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--color-neutral-content-subtle);
   }
 
   &__navigation {
     display: flex;
     height: 100%;
     align-items: center;
-    border-radius: 5px;
-    background: var(--color-neutral-background);
-    border: 1px solid var(--color-neutral-border);
+    border-radius: 0;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
 
     &_waiting & {
       pointer-events: none;
-      animation: button-waiting 1s linear infinite;
-
-      --button-background-image: var(--button-waiting-animation-bg);
+      opacity: 0.7;
     }
   }
 
   &__divider {
     width: 1px;
-    height: 30px;
-    background-color: var(--color-neutral-border);
+    height: 100%;
+    background-color: var(--border-color);
   }
 
   &__btn {
-    width: 37px;
+    width: 40px;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     user-select: none;
     cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+
+    &:hover {
+      background: var(--button-hover-bg);
+      
+      &::before, &::after {
+        border-color: #c4b5fd;
+      }
+    }
 
     &_waiting & {
       opacity: 0.5;
@@ -58,8 +71,7 @@
 
     &_disabled {
       pointer-events: none;
-
-      --button-color: var(--color-neutral-content-subtlest);
+      opacity: 0.3;
     }
 
     &_arrow-left,
@@ -73,11 +85,12 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        width: 9px;
-        height: 9px;
-        border: 2px solid var(--color-primary-icon);
+        width: 8px;
+        height: 8px;
+        border: 2px solid var(--button-color);
         border-bottom: none;
         border-right: none;
+        transition: border-color 0.2s ease;
       }
 
       &::after {
@@ -88,84 +101,138 @@
     &_arrow-left {
       &::before,
       &::after {
-        transform: translate3d(-50%, -50%, 0) rotate(-45deg);
+        transform: translate3d(-40%, -50%, 0) rotate(-45deg);
       }
     }
 
     &_arrow-right {
       &::before,
       &::after {
-        transform: translate3d(-50%, -50%, 0) rotate(135deg);
+        transform: translate3d(-60%, -50%, 0) rotate(135deg);
       }
     }
 
     &_arrow-left-double {
       &::after {
         display: block;
-        margin-left: 7px;
+        margin-left: 6px;
       }
     }
 
     &_arrow-right-double {
       &::after {
         display: block;
-        margin-left: -7px;
+        margin-left: -6px;
       }
     }
   }
 
   &__input {
-    width: 100px;
-    height: var(--pagination-height);
+    width: 120px;
+    height: 100%;
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--color-neutral-border);
-    border-top: none;
-    border-bottom: none;
-    background: var(--color-neutral-surface);
-    margin: 1px 0;
-
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.2);
+    
     &_waiting & {
       opacity: 0.5;
     }
 
     input {
       width: 100%;
-      height: calc(100% - 2px);
+      height: 100%;
       border: none;
-      margin: 1px 0;
       padding: 0;
       outline: none;
       text-align: center;
       background: none;
-      font-weight: 500;
-      font-size: 16px;
-      line-height: 19px;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      color: #e5e7eb;
+      
+      &:focus {
+        background: rgba(167, 139, 250, 0.05);
+      }
     }
   }
 
   &__page-indicator {
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 19px;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #e5e7eb;
     flex: 1;
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 100%;
+    cursor: text;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
 
     span {
-      font-weight: normal;
-      opacity: 0.4;
+      font-weight: 500;
+      color: var(--button-color);
+      opacity: 0.8;
+      font-size: 13px;
     }
   }
 
-  &__page-size {
-    min-width: 150px;
-    padding-left: 16px;
-    box-sizing: content-box;
-
-    .select__list {
-      padding-right: 0;
+  &__select-trigger {
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    border: 1px solid var(--border-color) !important;
+    min-height: 40px !important;
+    color: #e5e7eb !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    
+    // override some shadcn/internal styles if needed
+    &:hover {
+         background-color: var(--button-hover-bg) !important;
+         border-color: var(--button-hover-border) !important;
     }
+
+    &[data-state='open'] {
+        border-color: var(--button-hover-border) !important;
+        background-color: var(--button-hover-bg) !important;
+    }
+    
+    // Target the inner chevron icon if possible, or leave as is (shadcn usually puts it in a span or svg)
+    svg {
+        opacity: 0.7;
+    }
+  }
+
+  &__select-content {
+      border-radius: 0 !important;
+      border: 1px solid var(--border-color) !important;
+      background-color: #000000 !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+      padding: 4px !important;
+      
+      // Target command/list items inside
+      [role="option"], [data-radix-collection-item] {
+          cursor: pointer;
+          font-family: 'Space Grotesk', system-ui, sans-serif !important;
+          color: #d1d5db !important;
+          border-radius: 0 !important;
+          
+          &:hover, &[data-selected="true"], &[data-highlighted] {
+              background-color: var(--button-hover-bg) !important;
+              color: #f3f4f6 !important;
+          }
+      }
   }
 }
+
+

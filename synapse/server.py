@@ -78,7 +78,7 @@ def _get_config(config_path):
 
 
 def _create_project(
-    title, user, label_config=None, sampling=None, description=None, ml_backends=None
+    title, user, label_config=None, sampling=None, description=None
 ):
     from organizations.models import Organization
     from projects.models import Project
@@ -102,13 +102,8 @@ def _create_project(
     if description is not None:
         project.description = description
 
-    if ml_backends is not None:
-        from ml.models import MLBackend
-
-        # e.g.: localhost:8080,localhost:8081;localhost:8082
-        for url in ml_backends:
-            logger.info("Adding new ML backend %s", url)
-            MLBackend.objects.create(project=project, url=url)
+    project.save()
+    return project
 
     project.save()
     return project
@@ -221,7 +216,6 @@ def _init(input_args, config):
             label_config=input_args.label_config,
             description=input_args.project_desc,
             sampling=sampling_map.get(input_args.sampling, "sequential"),
-            ml_backends=input_args.ml_backends,
         )
     elif input_args.project_name:
         print('Project "{0}" already exists'.format(input_args.project_name))

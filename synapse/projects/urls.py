@@ -77,12 +77,7 @@ _api_urlpatterns = [
         api.ProjectSampleTask.as_view(),
         name="project-sample-task",
     ),
-    # List available model versions
-    path(
-        "<int:pk>/model-versions/",
-        api.ProjectModelVersions.as_view(),
-        name="project-model-versions",
-    ),
+
     # List all annotators for project
     path(
         "<int:pk>/annotators/",

@@ -262,9 +262,11 @@ export const Pagination: FC<PaginationProps> = forwardRef(
           <div className={cn("pagination-ls").elem("page-size").toClassName()}>
             <Select
               value={pageSize}
+              triggerClassName={cn("pagination-ls").elem("select-trigger").toClassName()}
+              contentClassName={cn("pagination-ls").elem("select-content").toClassName()}
               options={pageSizeOptions.map((v) => ({ label: `${v} per page`, value: v }))}
-              onChange={(val: string) => {
-                const newPageSize = Number.parseInt(val);
+              onChange={(val: any) => {
+                const newPageSize = Number(val);
 
                 setPageSize(newPageSize);
 

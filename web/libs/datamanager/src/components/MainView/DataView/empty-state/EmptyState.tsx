@@ -22,6 +22,30 @@ declare global {
   }
 }
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
+const outlineButtonStyle = {
+  ...primaryButtonStyle,
+  background: "transparent",
+  color: "#8b5cf6",
+};
+
 // TypeScript interfaces for props
 interface EmptyStateProps {
   canImport: boolean;
@@ -161,45 +185,6 @@ const StorageProviderIcons = () => (
   </div>
 );
 
-// Documentation link component
-const DocumentationLink = () => {
-  if (window.APP_SETTINGS?.whitelabel_is_active) {
-    return null;
-  }
-
-  return (
-    <Typography variant="label" size="small" className="text-primary-link hover:underline">
-      <a
-        href={getDocsUrl("guide/tasks")}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1"
-        data-testid="dm-docs-data-import-link"
-      >
-        See docs on importing data
-        <span className="sr-only"> (opens in a new tab)</span>
-        <IconExternal width={20} height={20} />
-      </a>
-    </Typography>
-  );
-};
-
-/**
- * Unified empty state for Data Manager
- * Handles different empty states based on user role and context
- *
- * Props:
- * - canImport: boolean — whether import is enabled in interfaces
- * - onOpenSourceStorageModal: () => void — opens Connect Source Storage modal
- * - onOpenImportModal: () => void — opens Import modal
- * - userRole: string — User role (REVIEWER, ANNOTATOR, etc.) - optional
- * - project: object — Project object with assignment settings - optional
- * - hasData: boolean — Whether the project has any tasks - optional
- * - hasFilters: boolean — Whether filters are currently applied - optional
- * - canLabel: boolean — Whether the Label All Tasks button would be enabled - optional
- * - onLabelAllTasks: function — Callback for Label All Tasks action - optional
- * - onClearFilters: function — Callback to clear all applied filters - optional
- */
 
 export const EmptyState: FC<EmptyStateProps> = ({
   canImport,
@@ -312,31 +297,26 @@ export const EmptyState: FC<EmptyStateProps> = ({
     actions: (
       <>
         {permissions.can(ABILITY.can_manage_storage) && (
-          <Button
-            variant="primary"
-            look="filled"
-            className="flex-1"
+          <button
+            style={primaryButtonStyle}
             onClick={onOpenSourceStorageModal}
             data-testid="dm-connect-source-storage-button"
           >
             Connect Cloud Storage
-          </Button>
+          </button>
         )}
 
         {isImportEnabled && (
-          <Button
-            variant="primary"
-            look="outlined"
-            className="flex-1"
+          <button
+            style={outlineButtonStyle}
             onClick={onOpenImportModal}
             data-testid="dm-import-button"
           >
             Import
-          </Button>
+          </button>
         )}
       </>
     ),
-    footer: <DocumentationLink />,
   });
 };
 

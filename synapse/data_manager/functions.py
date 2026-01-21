@@ -205,16 +205,7 @@ def get_all_columns(project, *_):
             "visibility_defaults": {"explore": False, "labeling": False},
             "project_defined": False,
         },
-        {
-            "id": "predictions_model_versions",
-            "title": "Prediction model versions",
-            "type": "List",
-            "target": "tasks",
-            "help": "Model versions aggregated over all predictions",
-            "schema": {"items": project.get_model_versions(), "multiple": True},
-            "visibility_defaults": {"explore": False, "labeling": False},
-            "project_defined": False,
-        },
+
         {
             "id": "predictions_results",
             "title": "Prediction results",
@@ -377,12 +368,7 @@ def evaluate_predictions(tasks):
     if not tasks:
         return
 
-    project = tasks[0].project
-
-    backend = project.ml_backend
-
-    if backend:
-        return backend.predict_tasks(tasks=tasks)
+    pass
 
 
 def filters_ordering_selected_items_exist(data):

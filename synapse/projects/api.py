@@ -38,7 +38,6 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from synapse_sdk.synapse_interface.interface import LabelInterface
-from ml.serializers import MLBackendSerializer
 from projects.functions.next_task import get_next_task
 from projects.functions.stream_history import get_label_stream_history
 from projects.functions.utils import (
@@ -56,8 +55,6 @@ from projects.serializers import (
     ProjectCountsSerializer,
     ProjectImportSerializer,
     ProjectLabelConfigSerializer,
-    ProjectModelVersionExtendedSerializer,
-    ProjectModelVersionParamsSerializer,
     ProjectReimportSerializer,
     ProjectSerializer,
     ProjectSummarySerializer,
@@ -1125,56 +1122,6 @@ class ProjectSampleTask(generics.RetrieveAPIView):
             )
 
 
-@extend_schema(exclude=True)
-class ProjectModelVersions(generics.RetrieveAPIView):
-    parser_classes = (JSONParser,)
-    permission_required = all_permissions.projects_view
-
-    def get_queryset(self):
-        return Project.objects.filter(
-            organization=self.request.user.active_organization
-        )
-
-    def get(self, request, *args, **kwargs):
-        project = self.get_object()
-        serializer = ProjectModelVersionParamsSerializer(data=self.request.query_params)
-        serializer.is_valid(raise_exception=True)
-        extended = serializer.validated_data.get("extended", False)
-        include_live_models = serializer.validated_data.get(
-            "include_live_models", False
-        )
-        limit = serializer.validated_data.get("limit", None)
-        data = project.get_model_versions(
-            with_counters=True, extended=extended, limit=limit
-        )
-
-        if extended:
-            serializer_models = None
-            serializer = ProjectModelVersionExtendedSerializer(data, many=True)
-
-            if include_live_models:
-                ml_models = project.get_ml_backends()
-                serializer_models = MLBackendSerializer(ml_models, many=True)
-
-            return Response(
-                {
-                    "static": serializer.data,
-                    "live": serializer_models and serializer_models.data,
-                }
-            )
-        else:
-            return Response(data=data)
-
-    def delete(self, request, *args, **kwargs):
-        project = self.get_object()
-        model_version = request.data.get("model_version", None)
-
-        if not model_version:
-            raise RestValidationError("model_version param is required")
-
-        count = project.delete_predictions(model_version=model_version)
-
-        return Response(data=count)
 
 
 @method_decorator(

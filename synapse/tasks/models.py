@@ -289,24 +289,7 @@ class Task(TaskMixin, FsmHistoryStateModel):
         project = self.project
         predictions = self.predictions
 
-        # TODO if we use live_model on project then we will need to check for it here
-        if project.show_collab_predictions and project.model_version is not None:
-            if project.ml_backend_in_model_version:
-                new_predictions = evaluate_predictions([self])
-                # TODO this is not as clean as I'd want it to
-                # be. Effectively retrieve_predictions will work only for
-                # tasks where there is no predictions matching current
-                # model version. In case it will return a model_version
-                # and we can grab predictions explicitly
-                if isinstance(new_predictions, str):
-                    model_version = new_predictions
-                    return predictions.filter(model_version=model_version)
-                else:
-                    return new_predictions
-            else:
-                return predictions.filter(model_version=project.model_version)
-        else:
-            return []
+        return []
 
     def get_lock_exclude_query(self, user):
         """
@@ -1113,20 +1096,6 @@ class Prediction(models.Model):
         help_text="A string value that for model version that produced the prediction. Used in both live models and when uploading offline predictions.",
     )
 
-    model = models.ForeignKey(
-        "ml.MLBackend",
-        on_delete=models.CASCADE,
-        related_name="predictions",
-        null=True,
-        help_text="An ML Backend instance that created the prediction.",
-    )
-    model_run = models.ForeignKey(
-        "ml_models.ModelRun",
-        on_delete=models.CASCADE,
-        related_name="predictions",
-        null=True,
-        help_text="A run of a ModelVersion that created the prediction.",
-    )
     cluster = models.IntegerField(
         _("cluster"),
         default=None,
@@ -1257,7 +1226,7 @@ class Prediction(models.Model):
 
     @classmethod
     def create_no_commit(
-        cls, project, label_interface, task_id, data, model_version, model_run
+        cls, project, label_interface, task_id, data, model_version
     ) -> Optional["Prediction"]:
         """
         Creates a Prediction object from the given result data, without committing it to the database.
@@ -1277,7 +1246,6 @@ class Prediction(models.Model):
                         ```
             task_id: The ID of the Task object to associate with the Prediction object.
             model_version: The model version that produced the prediction.
-            model_run: The model run that created the prediction.
         """
         try:
 
@@ -1291,7 +1259,6 @@ class Prediction(models.Model):
                 project=project,
                 task_id=int(task_id),
                 model_version=model_version,
-                model_run=model_run,
                 score=1.0,  # Setting to 1.0 for now as we don't get back a score
                 result=pred["result"],
             )
@@ -1325,27 +1292,6 @@ class FailedPrediction(models.Model):
         default=None,
         null=True,
         help_text="The type of error that caused prediction to fail",
-    )
-    ml_backend_model = models.ForeignKey(
-        "ml.MLBackend",
-        on_delete=models.SET_NULL,
-        related_name="failed_predictions",
-        null=True,
-        help_text="An ML Backend instance that created the failed prediction.",
-    )
-    model_version = models.TextField(
-        _("model version"),
-        default=None,
-        blank=True,
-        null=True,
-        help_text="A string value that for model version that produced the failed prediction. Used in both live models and when uploading offline predictions.",
-    )
-    model_run = models.ForeignKey(
-        "ml_models.ModelRun",
-        on_delete=models.CASCADE,
-        related_name="failed_predictions",
-        null=True,
-        help_text="A run of a ModelVersion that created the failed prediction.",
     )
     project = models.ForeignKey(
         "projects.Project",

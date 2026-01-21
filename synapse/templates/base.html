@@ -23,20 +23,103 @@
     <!-- iOS Safari -->
 
     <!-- Preload fonts -->
-    <link
-      rel="preload"
-      href="{{ settings.HOSTNAME }}/static/fonts/Figtree-Regular.ttf"
-      as="font"
-      type="font/ttf"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="preload"
-      href="{{ settings.HOSTNAME }}/static/fonts/Figtree-SemiBold.ttf"
-      as="font"
-      type="font/ttf"
-      crossorigin="anonymous"
-    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+      :root {
+        /* Tech/Cyber Theme Variables */
+        --background-primary: #111827;
+        --background-secondary: #1F2937;
+        --text-primary: #F9FAFB;
+        --text-secondary: #9CA3AF;
+        --accent-primary: #8B5CF6; /* Violet/Purple */
+        --accent-secondary: #7C3AED;
+        --border-color: #374151;
+        --font-display: 'Space Grotesk', sans-serif;
+        --font-body: 'Inter', sans-serif;
+        --radius-sm: 0px; /* Sharp corners */
+        --radius-md: 0px;
+        --radius-lg: 0px;
+      }
+
+      body {
+        background-color: var(--background-primary);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-display);
+        letter-spacing: -0.02em;
+        margin-top: 0;
+      }
+
+      a {
+        color: var(--accent-primary);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      a:hover {
+        color: var(--accent-secondary);
+      }
+
+      .app-wrapper {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      /* Utility classes for templates to use */
+      .container {
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+      
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--accent-primary);
+        color: white;
+        font-family: var(--font-display);
+        font-weight: 500;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.875rem;
+      }
+      
+      .btn:hover {
+        background-color: var(--accent-secondary);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+      }
+    </style>
 
     <!-- CSS -->
     {% block app-css %}
@@ -49,20 +132,8 @@
     {% if feature_flags.fflag_feat_front_optic_1217_theme_toggle_short %}
     <script>
       function handleThemeColor() {
-        let themeColor = window.localStorage.getItem("preferred-color-scheme");
-        if (themeColor === "Auto") {
-          themeColor =
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "Dark"
-              : "Light";
-        } else if (!themeColor) {
-          themeColor = "Light";
-        }
-        document.documentElement.setAttribute(
-          "data-color-scheme",
-          themeColor.toLowerCase()
-        );
+        // Force Dark Mode for coherence with new design
+        document.documentElement.setAttribute("data-color-scheme", "dark");
       }
       handleThemeColor();
     </script>
@@ -97,20 +168,22 @@
   </head>
 
   <body>
-    <div class="app-wrapper"></div>
+    {% block app_interface %}
+    <div class="app-wrapper">
+      <template id="main-content">
+        <main class="main {% block main_class %}{% endblock %}">
+          <!-- Space & Divider -->
+          {% block divider %}
+          <!-- Removed divider for cleaner look -->
+          {% endblock %}
 
-    <template id="main-content">
-      <main class="main">
-        <!-- Space & Divider -->
-        {% block divider %}
-        <div class="ui divider divider-wide"></div>
-        {% endblock %}
-
-        <!-- Content -->
-        {% block content %} 
-        {% endblock %}
-      </main>
-    </template>
+          <!-- Content -->
+          {% block content %} 
+          {% endblock %}
+        </main>
+      </template>
+    </div>
+    {% endblock %}
 
     <template id="context-menu-left">
       {% block context_menu_left %}
@@ -124,7 +197,18 @@
 
     <script id="app-settings" nonce="{{request.csp_nonce}}">
 
-      var __customHotkeys = {{ user.custom_hotkeys|json_dumps_ensure_ascii|safe }};
+      var __customHotkeys = {};
+      {% if user.is_authenticated and user.custom_hotkeys %}
+      try {
+         // Safe injection of custom hotkeys
+         var _customHotkeysData = "{{ user.custom_hotkeys|json_dumps_ensure_ascii|escapejs }}";
+         if (_customHotkeysData && _customHotkeysData !== "null") {
+            __customHotkeys = JSON.parse(_customHotkeysData);
+         }
+      } catch (e) {
+          console.error("Error parsing custom_hotkeys:", e);
+      }
+      {% endif %}
 
       // Filter custom hotkeys for editor-specific ones
       var editorCustomHotkeys = {};
@@ -259,11 +343,10 @@
     as we do not intend this to change frequently. If for any reason we need to
     invalidate the cache, we can do so by changing the version number.
     {%endcomment %}
-    <script src="{{settings.FRONTEND_HOSTNAME}}/react-app/vendor.js?v=1"></script>
+    <script src="{{settings.FRONTEND_HOSTNAME}}/react-app/vendor.js?v=1"></script>    
     <script src="{{settings.FRONTEND_HOSTNAME}}/react-app/main.js?v={{ versions.backend.commit }}"></script>
     {% endblock %} {% block bottomjs %}
-    <script src="{{settings.HOSTNAME}}
-    {% static 'js/jquery.min.js' %}">
+    <script src="{{ settings.HOSTNAME }}{% static 'js/jquery.min.js' %}"></script>
   </script>
     <script nonce="{{request.csp_nonce}}">
       // CSRF

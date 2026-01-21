@@ -7,16 +7,10 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ml_models', '0004_modelrun_job_id'),
         ('tasks', '0045_auto_20231124_1238'),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='prediction',
-            name='model_run',
-            field=models.ForeignKey(help_text='A run of a ModelVersion that created the prediction.', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='predictions', to='ml_models.modelrun'),
-        ),
     ]
 
 

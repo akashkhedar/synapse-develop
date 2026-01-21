@@ -24,7 +24,7 @@ from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import path, re_path
-from django.views.generic.base import RedirectView
+from django.views.generic.base import RedirectView, TemplateView
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularJSONAPIView,
@@ -211,6 +211,12 @@ urlpatterns = [
     ),
     path("docs/api/schema/json/", SpectacularJSONAPIView.as_view(), name="schema-json"),
     path("docs/api/schema/yaml/", SpectacularYAMLAPIView.as_view(), name="schema-yaml"),
+    
+    # Test routes for template redesign verification
+    path('test-render/404/', TemplateView.as_view(template_name='404.html')),
+    path('test-render/500/', TemplateView.as_view(template_name='500.html')),
+    path('test-render/403/', TemplateView.as_view(template_name='403.html')),
+    path('test-render/base/', TemplateView.as_view(template_name='base.html')),
 ]
 
 if settings.DEBUG:

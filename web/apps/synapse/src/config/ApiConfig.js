@@ -64,18 +64,7 @@ export const API_CONFIG = {
     validateStorage: "POST:/storages/:target?/:type/validate",
     storageFiles: "POST:/storages/:target?/:type/files",
 
-    // ML
-    mlBackends: "GET:/ml",
-    mlBackend: "GET:/ml/:pk",
-    addMLBackend: "POST:/ml",
-    updateMLBackend: "PATCH:/ml/:pk",
-    deleteMLBackend: "DELETE:/ml/:pk",
-    trainMLBackend: "POST:/ml/:pk/train",
-    predictWithML: "POST:/ml/:pk/predict/test",
-    projectModelVersions: "/projects/:pk/model-versions",
-    deletePredictions: "DELETE:/projects/:pk/model-versions",
-    modelVersions: "/ml/:pk/versions",
-    mlInteractive: "POST:/ml/:pk/interactive-annotating",
+
 
     // Export
     export: "/projects/:pk/export",

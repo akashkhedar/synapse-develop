@@ -111,7 +111,7 @@ const Webhook = () => {
       />
     );
   }
-  return <section className="webhook-page webhook-settings">{content}</section>;
+  return <section className="webhook-page">{content}</section>;
 };
 
 export const WebhookPage = {

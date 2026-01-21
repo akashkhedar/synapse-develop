@@ -14,7 +14,7 @@ from io_storages.azure_blob.models import AzureBlobExportStorage, AzureBlobImpor
 from io_storages.gcs.models import GCSExportStorage, GCSImportStorage
 from io_storages.redis.models import RedisExportStorage, RedisImportStorage
 from io_storages.s3.models import S3ExportStorage, S3ImportStorage
-from ml.models import MLBackend
+from io_storages.s3.models import S3ExportStorage, S3ImportStorage
 from tasks.models import Annotation, Prediction, Task
 
 
@@ -211,11 +211,7 @@ def _migrate_storages(project, config):
             )
 
 
-def _migrate_ml_backends(project, config):
-    """Migrate ml backend settings from config.json to database"""
-    ml_backends = config.get('ml_backends', [])
-    for ml_backend in ml_backends:
-        MLBackend.objects.create(project=project, url=ml_backend.get('url'), title=ml_backend.get('name'))
+
 
 
 def _migrate_uploaded_files(project, project_path):
@@ -240,7 +236,7 @@ def migrate_existing_project(project_path, project, config):
     _migrate_tasks(project_path, project)
     _migrate_tabs(project_path, project)
     _migrate_storages(project, config)
-    _migrate_ml_backends(project, config)
+    _migrate_storages(project, config)
     _migrate_uploaded_files(project, project_path)
 
 

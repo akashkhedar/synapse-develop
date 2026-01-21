@@ -7,16 +7,11 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ml', '0007_auto_20240314_1957'),
         ('tasks', '0045_auto_20231124_1238'),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='prediction',
-            name='model',
-            field=models.ForeignKey(help_text='An ML Backend instance that created the prediction.', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='predictions', to='ml.mlbackend'),
-        ),
+
         migrations.AlterField(
             model_name='prediction',
             name='model_version',

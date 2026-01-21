@@ -7,19 +7,86 @@
 {% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{{ settings.HOSTNAME }}{% static 'css/error.css' %}"/>
+  <style>
+    .error-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
+      position: relative;
+    }
+    
+    .error-code {
+      font-family: var(--font-display);
+      font-size: clamp(6rem, 15vw, 12rem);
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-primary);
+      opacity: 0.1;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      pointer-events: none;
+    }
+    
+    .content-wrapper {
+      position: relative;
+      z-index: 1;
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(8px);
+      padding: 3rem;
+      border: 1px solid var(--border-color);
+      max-width: 600px;
+    }
+
+    .error-title {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+      background: linear-gradient(to right, #fff, #9CA3AF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .error-message {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+  </style>
 {% endblock %}
 
-
 {% block content %}
-<div class="ls-global-error">
-  <img class="ls-global-error__heidi" src="{{ settings.HOSTNAME }}{% static 'images/heidi-500.svg' %}" alt="Heidi's down" draggable="false" />
-  <h1>Uh oh, something went wrong.</h1>
-  <h2>Here’s a few things you can try:</h2>
-  <p class="ls-global-error__actions">
-    <button onClick="history.back()">Go Back</button>
-    <button onClick="location.reload()">Refresh</button>
-    <button onClick="window.location.href='/'" class="ls-global-error__primary_button">Go to Home</button>
-  </p>
+<div class="container error-page">
+  <div class="error-code">500</div>
+  
+  <div class="content-wrapper">
+    <h1 class="error-title">System Error</h1>
+    <p class="error-message">
+      Something went wrong on our end. We're working to fix it.
+      <br>Please try refreshing the page.
+    </p>
+    
+    <div class="actions">
+      <button class="btn" style="background: transparent; border: 1px solid var(--border-color);" onclick="location.reload()">
+        Refresh Page
+      </button>
+      <a href="/" class="btn">
+        Return Home
+      </a>
+    </div>
+  </div>
 </div>
 {% endblock %}

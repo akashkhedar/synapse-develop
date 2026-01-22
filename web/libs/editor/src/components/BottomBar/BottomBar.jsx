@@ -12,13 +12,22 @@ export const BottomBar = observer(({ store }) => {
 
   const isViewAll = annotationStore?.viewingAll === true;
 
+  // Check User Role
+  const userRole = window.APP_SETTINGS?.user?.role;
+  // Define roles
+  const MANAGER_ROLES = ["OW", "AD", "MA"];
+  const ANNOTATOR_ROLES = ["AN", "RE"];
+  // Check if user is an expert reviewing a task
+  const isExpertReview = store.hasInterface("expert-review");
+  const isClient = !MANAGER_ROLES.includes(userRole) && !ANNOTATOR_ROLES.includes(userRole) && !isExpertReview;
+
   return store && !isViewAll ? (
     <div
       className={cn("bottombar").toClassName()}
       style={{ borderTop: isFF(FF_DEV_3873) && "1px solid rgba(0,0,0,0.1)" }}
     >
       <div className={cn("bottombar").elem("group").toClassName()}>
-        <Actions store={store} />
+        {!isClient && <Actions store={store} />}
       </div>
       <div className={cn("bottombar").elem("group").toClassName()}>
         {store.hasInterface("controls") && (store.hasInterface("review") || !isPrediction) && (

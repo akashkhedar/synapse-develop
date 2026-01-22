@@ -16,12 +16,16 @@
       font-size: 14px;
       line-height: 24px;
       border-color: rgba(139, 92, 246, 0.25);
-      border-radius: 10px;
+      border-radius: 2px; /* Sharp edges */
       transition: all 0.2s ease;
+      font-family: 'Space Grotesk', sans-serif; /* Ensure font consistency */
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
 
       &:hover:not(.button_look_primary) {
         background-color: rgba(139, 92, 246, 0.08);
         border-color: rgba(139, 92, 246, 0.4);
+        box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
       }
 
       &_look_danger {
@@ -30,12 +34,13 @@
         &:hover {
           background-color: rgba(239, 68, 68, 0.1);
           border-color: rgba(239, 68, 68, 0.5);
+          box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
         }
       }
     }
 
     .submit {
-      border-radius: 10px;
+      border-radius: 2px; /* Sharp edges */
       background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
       box-shadow: 
         0 4px 12px rgba(139, 92, 246, 0.35),
@@ -51,20 +56,21 @@
       font-style: normal;
       font-weight: 600;
       line-height: 24px;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       flex-direction: row-reverse;
       padding: 0;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      border: none;
+      border: 1px solid rgba(139, 92, 246, 0.5); /* Slight border */
 
       &:hover {
         background: linear-gradient(135deg, #9d6ffa 0%, #8b5cf6 100%);
         box-shadow: 
-          0 6px 20px rgba(139, 92, 246, 0.45),
+          0 0 15px rgba(139, 92, 246, 0.6), /* Glow effect */
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
         transform: translateY(-1px);
+        border-color: #a78bfa;
       }
       
       &:active {
@@ -86,6 +92,7 @@
           color: #6b7280;
           cursor: not-allowed;
           transform: none;
+          box-shadow: none;
         }
       }
 

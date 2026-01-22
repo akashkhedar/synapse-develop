@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Page } from "../types/Page";
 import "./ApiDocsPage.css";
@@ -823,6 +823,13 @@ const ExportFormatsSection = () => {
 export const ApiDocsPage: Page = () => {
   const [activeSection, setActiveSection] = useState("installation");
   const currentSection = sdkSections.find((s) => s.id === activeSection) || sdkSections[0];
+
+  // Scroll to top when switching sections
+  useLayoutEffect(() => {
+     window.scrollTo(0, 0);
+     document.body.scrollTop = 0;
+     document.documentElement.scrollTop = 0;
+  }, [activeSection]);
 
   return (
     <div className="api-docs-page">

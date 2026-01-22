@@ -17,12 +17,7 @@ export const Spinner = ({ className, style, size = 32, stopped = false }: Spinne
 
   return (
     <div className={fullClassName} style={{ ...(style ?? {}), "--spinner-size": sizeWithUnit }}>
-      <div className={bodyClassName}>
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
+      <div className={bodyClassName} />
     </div>
   );
 };

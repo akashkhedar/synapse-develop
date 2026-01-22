@@ -19,27 +19,18 @@ export const LabelingViewOnly = observer(({ store }) => {
     loadCurrentTask();
   }, [store.taskStore.selected]);
 
-  const loadCurrentTask = async () => {
+  const loadCurrentTask = () => {
     const selectedTask = store.taskStore.selected;
     if (!selectedTask) return;
 
     try {
       setLoading(true);
-      const taskId = selectedTask.id;
-      
-      // Fetch full task details with annotations
-      const response = await fetch(`/api/tasks/${taskId}/`, {
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (response.ok) {
-        const taskData = await response.json();
-        setTask(taskData);
-        setAnnotations(taskData.annotations || []);
-        setCurrentAnnotationIndex(0);
-      }
+      // Use existing task data from store instead of finding it via API
+      setTask(selectedTask);
+      setAnnotations(selectedTask.annotations || []);
+      setCurrentAnnotationIndex(0);
     } catch (error) {
-      console.error('Failed to load task:', error);
+      console.error('Failed to load task data:', error);
     } finally {
       setLoading(false);
     }

@@ -230,7 +230,7 @@ export const CreateProject = ({ onClose }) => {
   const onDelete = React.useCallback(() => {
     const performClose = async () => {
       setWaitingStatus(true);
-      if (project)
+      if (project?.id)
         await api.callApi("deleteProject", {
           params: {
             pk: project.id,

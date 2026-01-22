@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useHistory } from "react-router-dom";
-import { Button, useToast, ToastType } from "@synapse/ui";
+import { Button, useToast, ToastType, Spinner } from "@synapse/ui";
 import { formatCurrency as formatCurrencyUtil } from "../../utils/formatters";
 import "./PayoutPage.css";
 
@@ -303,7 +303,7 @@ export const PayoutPage: React.FC<PayoutPageProps> = ({
   if (loading) {
     return (
       <div className="payout-loading">
-        <div className="spinner" />
+        <Spinner size={64} />
         <p>Loading...</p>
       </div>
     );

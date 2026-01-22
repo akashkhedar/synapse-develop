@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Spinner } from "@synapse/ui";
 import "./SpecialtySelection.css";
 
 export interface Specialty {
@@ -203,7 +204,10 @@ export const SpecialtySelection: React.FC<SpecialtySelectionProps> = ({
           disabled={selectedSpecialties.length === 0 || isLoading}
         >
           {isLoading ? (
-            <span className="specialty-selection__loading">Loading tests...</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Spinner size="small" />
+              <span>Loading tests...</span>
+            </div>
           ) : (
             <>
               Start Test

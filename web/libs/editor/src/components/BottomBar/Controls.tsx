@@ -167,7 +167,7 @@ const RejectModal = observer(
       <>
         <Button
           variant="negative"
-          className="w-[150px]"
+          className="w-[150px] btn_danger"
           disabled={disabled || isInProgress}
           onClick={() => {
             setRejectionReason("");
@@ -425,13 +425,49 @@ export const Controls = controlsInjector(
       // Check if user is an expert reviewing a task
       const isExpertReview = store.hasInterface("expert-review");
 
+      // Check User Role
+      const userRole = (window as any).APP_SETTINGS?.user?.role;
+      // Define roles
+      const MANAGER_ROLES = ["OW", "AD", "MA"];
+      const ANNOTATOR_ROLES = ["AN", "RE"]; // RE might be reviewer, but often acts as annotator in some flows
+      const isClient = !MANAGER_ROLES.includes(userRole) && !ANNOTATOR_ROLES.includes(userRole) && !isExpertReview && !isReview;
+
+      if (isClient) {
+        // Client View: Show Close Button
+         buttons.push(
+          <ButtonTooltip key="close" title="Close task view">
+            <Button
+              aria-label="Close task"
+              className="w-[150px] btn_outline"
+              look="outlined"
+              onClick={() => {
+                 if (history.length > 1) {
+                    window.history.back();
+                 } else {
+                    // Fallback if no history (e.g. direct link), maybe close window or redirect
+                    // Trying to close the stream/modal logic
+                    const searchParams = new URLSearchParams(window.location.search);
+                    searchParams.set("exitStream", "true");
+                    const newRelativePathQuery = `${window.location.pathname}?${searchParams.toString()}`;
+                    window.location.href = newRelativePathQuery; 
+                 }
+              }}
+            >
+              Close
+            </Button>
+          </ButtonTooltip>
+        );
+        return <div className={cn("controls").toClassName()}>{buttons}</div>;
+      }
+
+
       if (isExpertReview) {
         // Expert Accept Button
         buttons.push(
           <Button
             key="expert-accept"
             variant="primary"
-            className="w-[150px]"
+            className="w-[150px] btn_success"
             disabled={disabled}
             onClick={async () => {
               if (disabled || isInProgress) return;
@@ -647,7 +683,7 @@ export const Controls = controlsInjector(
                   <Button
                     aria-label="Submit current annotation"
                     name="submit"
-                    className="w-[150px]"
+                    className="w-[150px] btn_primary"
                     disabled={isDisabled}
                     onClick={async (event) => {
                       if (
@@ -713,7 +749,7 @@ export const Controls = controlsInjector(
                 <Button
                   aria-label="submit"
                   name="submit"
-                  className="w-[150px]"
+                  className={`w-[150px] ${isUpdate ? "btn_outline" : "btn_primary"}`}
                   disabled={isUpdateDisabled}
                   onClick={async (event) => {
                     if (

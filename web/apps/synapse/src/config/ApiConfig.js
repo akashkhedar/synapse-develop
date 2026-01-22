@@ -1,14 +1,6 @@
-// Provide defaults for dev mode when APP_SETTINGS is not available
-const getHostname = () => {
-  if (window.APP_SETTINGS?.hostname) {
-    return window.APP_SETTINGS.hostname;
-  }
-  // Default to current origin for dev mode
-  return window.location.origin;
-};
-
 export const API_CONFIG = {
-  gateway: `${getHostname()}/api`,
+  // Use relative path to ensure cookies are sent with current origin
+  gateway: "/api",
   endpoints: {
     // Users
     users: "/users",

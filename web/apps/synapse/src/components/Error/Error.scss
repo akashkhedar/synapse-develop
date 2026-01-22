@@ -102,3 +102,41 @@
   border-radius: 16px;
   overflow: hidden;
 }
+
+/* Custom Cyber Button for Error Page */
+.cyber-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 1.5rem;
+  background-color: var(--accent-primary, #8B5CF6); /* Fallback to purple */
+  color: white !important;
+  font-family: var(--font-display, 'Space Grotesk', sans-serif);
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 0px) !important; /* Sharp corners */
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+  &:hover:not(:disabled) {
+    background-color: var(--accent-secondary, #7C3AED);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #374151; /* gray-700 */
+    color: #9CA3AF !important; /* gray-400 */
+  }
+}

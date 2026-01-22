@@ -45,10 +45,7 @@
 }
 
 .pricing-loading {
-  color: #6b7280;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  /* Spinner container */
 }
 
 .pricing-error h3 {

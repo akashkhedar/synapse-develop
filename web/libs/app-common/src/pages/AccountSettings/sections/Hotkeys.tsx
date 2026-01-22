@@ -26,26 +26,118 @@ import { useHotkeys } from "../hooks/useHotkeys";
 // Type the imported defaults
 const typedHotkeySections = HOTKEY_SECTIONS as Section[];
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
+const outlineButtonStyle = {
+  ...primaryButtonStyle,
+  background: "transparent",
+  color: "#8b5cf6",
+};
+
+const dangerButtonStyle = {
+  ...primaryButtonStyle,
+  background: "rgba(239, 68, 68, 0.12)",
+  border: "1px solid rgba(239, 68, 68, 0.3)",
+  color: "#fca5a5",
+};
+
+const StyledButton = ({
+  style,
+  hoverStyle = {},
+  children,
+  onClick,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { style: React.CSSProperties; hoverStyle?: React.CSSProperties }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <button
+      style={{
+        ...style,
+        ...(isHovered ? hoverStyle : {}),
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
 export const HotkeysHeaderButtons = () => {
   const [importDialogOpen, setImportDialogOpen] = useState<boolean>(false);
-  const { handleResetToDefaults, handleExportHotkeys, handleImportHotkeys } = useHotkeys();
+  const [resetConfirmOpen, setResetConfirmOpen] = useState<boolean>(false);
+  const { resetHotkeys, handleExportHotkeys, handleImportHotkeys } = useHotkeys();
+
+  const handleReset = async () => {
+    await resetHotkeys();
+    setResetConfirmOpen(false);
+  };
 
   return (
     <>
       <div className={`${styles.flexRow} justify-end gap-tight`}>
-        <Button variant="neutral" look="outlined" onClick={() => setImportDialogOpen(true)}>
+        <StyledButton onClick={() => setImportDialogOpen(true)} style={primaryButtonStyle} hoverStyle={{ opacity: 0.9 }}>
           Import
-        </Button>
-        <Button variant="neutral" look="outlined" onClick={handleExportHotkeys}>
+        </StyledButton>
+        <StyledButton onClick={handleExportHotkeys} style={primaryButtonStyle} hoverStyle={{ opacity: 0.9 }}>
           Export
-        </Button>
-        <Button variant="negative" look="outlined" onClick={handleResetToDefaults}>
+        </StyledButton>
+        <StyledButton onClick={() => setResetConfirmOpen(true)} style={outlineButtonStyle} hoverStyle={{ background: "rgba(139, 92, 246, 0.1)" }}>
           Reset to Defaults
-        </Button>
+        </StyledButton>
       </div>
 
       {/* Import Dialog */}
       <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImportHotkeys} />
+
+      {/* Reset Confirmation Dialog */}
+      <Dialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <DialogContent className="bg-black border-[#333] text-white">
+          <DialogHeader>
+            <DialogTitle>Reset Hotkeys to Defaults?</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Are you sure you want to reset all hotkeys and settings to their default values? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <StyledButton 
+              style={outlineButtonStyle} 
+              hoverStyle={{ background: "rgba(139, 92, 246, 0.1)" }}
+              onClick={() => setResetConfirmOpen(false)}
+            >
+              Cancel
+            </StyledButton>
+            <StyledButton 
+              style={dangerButtonStyle} 
+              hoverStyle={{ background: "rgba(239, 68, 68, 0.2)", borderColor: "rgba(239, 68, 68, 0.5)" }}
+              onClick={handleReset}
+            >
+              Reset to Defaults
+            </StyledButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
@@ -363,10 +455,10 @@ export const HotkeysManager = () => {
           </DialogDescription>
 
           <DialogFooter>
-            <Button variant="neutral" onClick={handleCancelDuplicate}>
+            <button style={dangerButtonStyle} onClick={handleCancelDuplicate}>
               Cancel
-            </Button>
-            <Button onClick={handleConfirmDuplicate}>Allow Duplicate</Button>
+            </button>
+            <button style={primaryButtonStyle} onClick={handleConfirmDuplicate}>Allow Duplicate</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -38,7 +38,6 @@ const commonSections = (): SectionType[] => [
     title: (
       <div className="flex items-center gap-tight">
         <span>Hotkeys</span>
-        <Badge variant="beta">Beta</Badge>
       </div>
     ),
     id: "hotkeys",

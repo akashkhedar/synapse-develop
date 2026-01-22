@@ -22,9 +22,11 @@
 {% endblock %}
 
 {% block app_interface %}
-  <main class="main">
-    {% block content %}{% endblock %}
-  </main>
+  <div class="app-wrapper">
+    <main class="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 {% endblock %}
 
 <!-- Override complex blocks to keep it simple -->
@@ -32,4 +34,3 @@
 {% block sidebar %}{% endblock %}
 {% block subnav %}{% endblock %}
 {% block footer %}{% endblock %}
-

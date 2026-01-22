@@ -65,7 +65,14 @@ const initializeDataManager = async (root, props, params) => {
     // Pass role flags to DataManager instance (store.SDK)
     isAnnotator: params.isAnnotator,
     isExpert: params.isExpert,
+    isExpert: params.isExpert,
     canAnnotate: params.canAnnotate,
+    spinnerSize: {
+      middle: 64,
+      large: 64,
+      small: 24,
+    },
+    spinner: Spinner,
   };
 
   return new window.DataManager(dmConfig);
@@ -221,7 +228,7 @@ export const DataManagerPage = ({ ...props }) => {
   ) : (
     <>
       {loading && (
-        <div className="flex-1 absolute inset-0 flex items-center justify-center">
+        <div className="flex-1 absolute inset-0 flex items-center justify-center bg-black z-50">
           <Spinner size={64} />
         </div>
       )}

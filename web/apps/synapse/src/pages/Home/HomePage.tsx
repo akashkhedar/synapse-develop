@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useUpdatePageTitle } from "@synapse/core";
+import { useAuth } from "@synapse/core/providers/AuthProvider";
 import { motion } from "framer-motion";
 
 import { useAPI } from "../../providers/ApiProvider";
@@ -17,31 +18,9 @@ import { CreateProject } from "../CreateProject/CreateProject";
 import { InviteLink } from "../Organization/PeoplePage/InviteLink";
 import type { Page } from "../types/Page";
 import styles from "./HomePage.module.css";
+import { InviteMembersDialog } from "../../components/InviteMembersDialog";
 
 const PROJECTS_TO_SHOW = 10;
-
-const resources = [
-  {
-    title: "Documentation",
-    url: "https://synapse.io/guide/",
-  },
-  {
-    title: "API Reference",
-    url: "https://api.synapse.io/api-reference/introduction/getting-started",
-  },
-  {
-    title: "Release Notes",
-    url: "https://synapse.io/learn/categories/release-notes/",
-  },
-  {
-    title: "Blog",
-    url: "https://synapse.io/blog/",
-  },
-  {
-    title: "Community",
-    url: "https://slack.synapse.io",
-  },
-];
 
 const actions = [
   {
@@ -83,6 +62,7 @@ const itemVariants = {
 
 export const HomePage: Page = () => {
   const api = useAPI();
+  const { user } = useAuth();
   const [creationDialogOpen, setCreationDialogOpen] = useState(false);
   const [invitationOpen, setInvitationOpen] = useState(false);
 
@@ -209,45 +189,16 @@ export const HomePage: Page = () => {
               ) : null}
             </div>
           </motion.section>
-
-          <motion.aside
-            className={styles.sidebarSection}
-            variants={itemVariants}
-          >
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Resources</h2>
-              </div>
-              <p className={styles.cardDescription}>
-                Learn, explore and get help
-              </p>
-              <div className={styles.resourcesList}>
-                {resources.map((link) => {
-                  return (
-                    <a
-                      key={link.title}
-                      href={link.url}
-                      className={styles.resourceLink}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {link.title}
-                      <IconExternal />
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.aside>
         </div>
       </motion.div>
 
       {creationDialogOpen && (
         <CreateProject onClose={() => setCreationDialogOpen(false)} />
       )}
-      <InviteLink
-        opened={invitationOpen}
-        onClosed={() => setInvitationOpen(false)}
+      <InviteMembersDialog
+        isOpen={invitationOpen}
+        onClose={() => setInvitationOpen(false)}
+        organizationId={user?.active_organization}
       />
     </main>
   );

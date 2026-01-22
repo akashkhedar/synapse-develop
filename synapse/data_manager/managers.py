@@ -817,41 +817,7 @@ def annotate_annotators(queryset):
 
 
 def annotate_predictions_score(queryset):
-    first_task = queryset.first()
-    if not first_task:
-        return queryset
-
-    # new approach with each ML backend contains it's version
-    if flag_set(
-        "ff_front_dev_1682_model_version_dropdown_070622_short",
-        first_task.project.organization.created_by,
-    ):
-        model_versions = list(
-            first_task.project.ml_backends.filter(
-                project=first_task.project
-            ).values_list("model_version", flat=True)
-        )
-        if len(model_versions) == 0:
-            return queryset.annotate(predictions_score=Avg("predictions__score"))
-
-        else:
-            return queryset.annotate(
-                predictions_score=Avg(
-                    "predictions__score",
-                    filter=Q(predictions__model_version__in=model_versions),
-                )
-            )
-    else:
-        model_version = first_task.project.model_version
-        if model_version is None:
-            return queryset.annotate(predictions_score=Avg("predictions__score"))
-        else:
-            return queryset.annotate(
-                predictions_score=Avg(
-                    "predictions__score",
-                    filter=Q(predictions__model_version=model_version),
-                )
-            )
+    return queryset.annotate(predictions_score=Avg("predictions__score"))
 
 
 def annotate_annotations_ids(queryset):

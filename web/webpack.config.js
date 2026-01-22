@@ -326,10 +326,9 @@ module.exports = composePlugins(
             allowedHosts: "all", // Allow access from Django's server
             proxy: [
               {
-                context: ["/api"],
-                target: `${DJANGO_HOSTNAME}/api`,
+                context: ["/api", "/user", "/admin", "/django-rq", "/static", "/data", "/media"],
+                target: `${DJANGO_HOSTNAME}`,
                 changeOrigin: true,
-                pathRewrite: { "^/api": "" },
                 secure: false,
               },
               {

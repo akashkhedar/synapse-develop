@@ -1,13 +1,10 @@
 import { Fragment, useCallback, useMemo, useState } from "react";
 import sanitizeHtml from "sanitize-html";
-import { IconSlack } from "@synapse/icons";
 import { cn } from "../../utils/bem";
 import { absoluteURL, copyText } from "../../utils/helpers";
 import { Button } from "@synapse/ui";
 import { Space } from "../Space/Space";
 import "./Error.scss";
-
-const SLACK_INVITE_URL = "https://slack.synapse.io/?source=product-error-msg";
 
 export const ErrorWrapper = ({
   title,
@@ -95,39 +92,32 @@ export const ErrorWrapper = ({
 
       {!minimal && (
         <div className={cn("error-message").elem("actions").toClassName()}>
-          <Space spread>
-            <Button
-              className={cn("error-message").elem("action-slack").toClassName()}
-              target="_blank"
-              icon={<IconSlack />}
-              href={SLACK_INVITE_URL}
-            >
-              Ask on Slack
-            </Button>
+            <Space spread>
+              {/* Slack button removed as per user request */}
 
-            <Space size="small">
-              {preparedStackTrace && (
-                <Button
-                  disabled={copied}
-                  onClick={copyStacktrace}
-                  className="w-[100px]"
-                  aria-label="Copy error stacktrace"
-                >
-                  {copied ? "Copied" : "Copy Stacktrace"}
-                </Button>
-              )}
-              {onGoBack && (
-                <Button onClick={onGoBack} aria-label="Go back">
-                  Go Back
-                </Button>
-              )}
-              {onReload && (
-                <Button onClick={onReload} aria-label="Reload page">
-                  Reload
-                </Button>
-              )}
+              <Space size="small">
+                {preparedStackTrace && (
+                  <Button
+                    disabled={copied}
+                    onClick={copyStacktrace}
+                    className="w-[100px] cyber-button"
+                    aria-label="Copy error stacktrace"
+                  >
+                    {copied ? "Copied" : "Copy Stacktrace"}
+                  </Button>
+                )}
+                {onGoBack && (
+                  <Button onClick={onGoBack} aria-label="Go back" className="cyber-button">
+                    Go Back
+                  </Button>
+                )}
+                {onReload && (
+                  <Button onClick={onReload} aria-label="Reload page" className="cyber-button">
+                    Reload
+                  </Button>
+                )}
+              </Space>
             </Space>
-          </Space>
         </div>
       )}
     </div>

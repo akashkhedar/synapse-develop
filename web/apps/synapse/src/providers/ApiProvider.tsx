@@ -33,7 +33,16 @@ const apiInstance = createApiInstance({
   ...API_CONFIG,
   onRequestFinished(res) {
     if (res.status === 401) {
-      location.href = "/";
+      console.log("DEBUG: 401 in onRequestFinished", location.href);
+      const isAnnotatorRoute = location.pathname.startsWith("/annotator/");
+      const isAuthRoute = location.pathname.startsWith("/user/");
+      
+      if (!isAnnotatorRoute && !isAuthRoute) {
+        console.log("DEBUG: Redirecting to '/' from onRequestFinished");
+        location.href = "/";
+      } else {
+        console.log("DEBUG: IGNORING 401 redirect from onRequestFinished", {isAnnotatorRoute, isAuthRoute});
+      }
     }
   },
 });

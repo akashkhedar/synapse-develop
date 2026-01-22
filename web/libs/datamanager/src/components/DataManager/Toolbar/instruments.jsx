@@ -14,7 +14,6 @@ import { ActionsButton } from "./ActionsButton";
 import { DensityToggle } from "./DensityToggle";
 import { GridWidthButton } from "./GridWidthButton";
 import { LabelButton } from "./LabelButton";
-import { LoadingPossum } from "./LoadingPossum";
 import { OrderButton } from "./OrderButton";
 import { RefreshButton } from "./RefreshButton";
 import { ViewToggle } from "./ViewToggle";
@@ -150,9 +149,6 @@ export const instruments = {
   },
   refresh: ({ size }) => {
     return <RefreshButton size={size} />;
-  },
-  "loading-possum": () => {
-    return <LoadingPossum />;
   },
   "label-button": ({ size }) => {
     return <LabelButton size={size} />;

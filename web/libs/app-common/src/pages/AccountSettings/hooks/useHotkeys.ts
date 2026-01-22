@@ -16,6 +16,37 @@ import {
 // Type the imported defaults and convert numeric ids to strings
 const typedDefaultHotkeys: Hotkey[] = getTypedDefaultHotkeys();
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
+const outlineButtonStyle = {
+  ...primaryButtonStyle,
+  background: "transparent",
+  color: "#8b5cf6",
+};
+
+const dangerButtonStyle = {
+  ...primaryButtonStyle,
+  background: "rgba(239, 68, 68, 0.12)",
+  border: "1px solid rgba(239, 68, 68, 0.3)",
+  color: "#fca5a5",
+};
+
 export const useHotkeys = () => {
   const toast = useToast();
   const [hotkeys, setHotkeys] = useState<Hotkey[]>([]);
@@ -222,51 +253,45 @@ export const useHotkeys = () => {
     [api],
   );
 
-  // Handle resetting all hotkeys to defaults
-  const handleResetToDefaults = useCallback(() => {
-    confirm({
-      title: "Reset Hotkeys to Defaults?",
-      body: "Are you sure you want to reset all hotkeys and settings to their default values? This action cannot be undone.",
-      okText: "Reset to Defaults",
-      buttonLook: "negative",
-      style: { width: 500 },
-      onOk: async () => {
-        setIsLoading(true);
+  // Reset hotkeys to defaults (logic only)
+  const resetHotkeys = useCallback(async () => {
+    setIsLoading(true);
 
-        try {
-          // Reset hotkeys to defaults in the backend API (sets custom_hotkeys to {})
-          const result = await saveHotkeysToAPI([], {});
+    try {
+      // Reset hotkeys to defaults in the backend API (sets custom_hotkeys to {})
+      const result = await saveHotkeysToAPI([], {});
 
-          if (result.ok) {
-            if (toast) {
-              toast.show({
-                message: "All hotkeys and settings have been reset to defaults and saved",
-                type: ToastType.info,
-              });
-            }
-            // Update local state to reflect the reset
-            setHotkeys([...typedDefaultHotkeys]);
-          } else {
-            if (toast) {
-              toast.show({
-                message: `Failed to save reset hotkeys: ${result.error || "Unknown error"}`,
-                type: ToastType.error,
-              });
-            }
-          }
-        } catch (error: unknown) {
-          if (toast) {
-            const errorMessage = error instanceof Error ? error.message : "Unknown error";
-            toast.show({
-              message: `Error resetting hotkeys: ${errorMessage}`,
-              type: ToastType.error,
-            });
-          }
-        } finally {
-          setIsLoading(false);
+      if (result.ok) {
+        if (toast) {
+          toast.show({
+            message: "All hotkeys and settings have been reset to defaults",
+            type: ToastType.info,
+          });
         }
-      },
-    });
+        // Update local state to reflect the reset
+        setHotkeys([...typedDefaultHotkeys]);
+        return true;
+      } else {
+        if (toast) {
+          toast.show({
+            message: `Failed to save reset hotkeys: ${result.error || "Unknown error"}`,
+            type: ToastType.error,
+          });
+        }
+        return false;
+      }
+    } catch (error: unknown) {
+      if (toast) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        toast.show({
+          message: `Error resetting hotkeys: ${errorMessage}`,
+          type: ToastType.error,
+        });
+      }
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   }, [saveHotkeysToAPI, toast]);
 
   // Handle exporting hotkeys
@@ -363,7 +388,7 @@ export const useHotkeys = () => {
     setIsLoading,
     loadHotkeysFromAPI,
     saveHotkeysToAPI,
-    handleResetToDefaults,
+    resetHotkeys,
     handleExportHotkeys,
     handleImportHotkeys,
   };

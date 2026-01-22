@@ -3,15 +3,23 @@
 import { createBrowserHistory } from "history";
 import { render } from "react-dom";
 import { Router } from "react-router-dom";
-import { LEAVE_BLOCKER_KEY, leaveBlockerCallback } from "../components/LeaveBlocker/LeaveBlocker";
+import {
+  LEAVE_BLOCKER_KEY,
+  leaveBlockerCallback,
+} from "../components/LeaveBlocker/LeaveBlocker";
 import { initSentry } from "../config/Sentry";
+import { ScrollToTop } from "../components/ScrollToTop/ScrollToTop";
 import { ApiProvider, useAPI } from "../providers/ApiProvider";
 import { AppStoreProvider } from "../providers/AppStoreProvider";
 import { ConfigProvider } from "../providers/ConfigProvider";
 import { MultiProvider } from "../providers/MultiProvider";
 import { ProjectProvider } from "../providers/ProjectProvider";
 import { RoutesProvider } from "../providers/RoutesProvider";
-import { DRAFT_GUARD_KEY, DraftGuard, draftGuardCallback } from "../components/DraftGuard/DraftGuard";
+import {
+  DRAFT_GUARD_KEY,
+  DraftGuard,
+  draftGuardCallback,
+} from "../components/DraftGuard/DraftGuard";
 import { AsyncPage } from "./AsyncPage/AsyncPage";
 import ErrorBoundary from "./ErrorBoundary";
 import { FF_UNSAVED_CHANGES, isFF } from "../utils/feature-flags";
@@ -26,7 +34,12 @@ import "@synapse/ui/src/tailwind.css";
 import "./App.scss";
 import { AuthProvider } from "@synapse/core/providers/AuthProvider";
 
-const baseURL = new URL(APP_SETTINGS.hostname || location.origin);
+const getBaseUrl = () => {
+  const hostname = window.APP_SETTINGS?.hostname;
+  return new URL(hostname || window.location.origin);
+};
+
+const baseURL = getBaseUrl();
 export const UNBLOCK_HISTORY_MESSAGE = "UNBLOCK_HISTORY";
 
 const browserHistory = createBrowserHistory({
@@ -40,7 +53,11 @@ const browserHistory = createBrowserHistory({
     const callbackWrapper = (result) => {
       browserHistory.isBlocking = false;
       callback(result);
-      isFF(FF_UNSAVED_CHANGES) && window.postMessage({ source: "synapse", payload: UNBLOCK_HISTORY_MESSAGE });
+      isFF(FF_UNSAVED_CHANGES) &&
+        window.postMessage({
+          source: "synapse",
+          payload: UNBLOCK_HISTORY_MESSAGE,
+        });
     };
     if (message === DRAFT_GUARD_KEY) {
       draftGuardCallback.current = callbackWrapper;
@@ -60,6 +77,7 @@ const App = ({ content }) => {
   return (
     <ErrorBoundary>
       <Router history={browserHistory}>
+        <ScrollToTop />
         <MultiProvider
           providers={[
             <QueryClientProvider client={queryClient} key="query" />,
@@ -89,12 +107,13 @@ const root = document.querySelector(".app-wrapper");
 const content = document.querySelector("#main-content");
 
 // Apply dark theme
-document.documentElement.setAttribute('data-color-scheme', 'dark');
-document.body.setAttribute('data-color-scheme', 'dark');
+document.documentElement.setAttribute("data-color-scheme", "dark");
+document.body.setAttribute("data-color-scheme", "dark");
 
-render(<App content={content.innerHTML} />, root);
+if (root && content) {
+  render(<App content={content.innerHTML} />, root);
+}
 
 if (module?.hot) {
   module.hot.accept(); // Enable HMR for React components
 }
-

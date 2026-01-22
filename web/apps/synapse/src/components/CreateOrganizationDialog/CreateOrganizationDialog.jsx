@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Button, Spinner } from "@synapse/ui"; // Keeping Spinner/Button for utility, but might style button manually if needed
+import { Button } from "@synapse/ui"; // Keeping Spinner/Button for utility, but might style button manually if needed
+import { Spinner } from "libs/datamanager/src/components/Common/Spinner";
 import { IconCross } from "@synapse/icons";
 import { cn } from "../../utils/bem";
 import "./CreateOrganizationDialog.scss";

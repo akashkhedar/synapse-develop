@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { onSnapshot } from "mobx-state-tree";
+import { Spinner } from "@synapse/ui";
 import type { TestCase, AnnotationResult } from "../data/testCases";
 import "./AnnotationTestTask.css";
 
@@ -384,7 +385,7 @@ export const AnnotationTestTask: React.FC<AnnotationTestTaskProps> = ({
       <div className="annotation-test-task__editor-container">
         {isLoading && (
           <div className="annotation-test-task__loading">
-            <div className="annotation-test-task__spinner" />
+            <Spinner size={64} />
             <span>Loading annotation interface...</span>
           </div>
         )}

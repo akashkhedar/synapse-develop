@@ -184,7 +184,7 @@ export class APIProxy<T extends {}> {
           method: requestMethod,
           headers: requestHeaders,
           mode: this.requestMode,
-          credentials: this.requestMode === "cors" ? "omit" : "same-origin",
+          credentials: "include",
         };
 
         if (signal) {

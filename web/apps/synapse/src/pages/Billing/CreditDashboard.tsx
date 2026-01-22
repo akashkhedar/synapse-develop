@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { billingApi, BillingDashboard, CreditTransaction, Payment } from '../../services/billingApi';
+import { Spinner } from "@synapse/ui";
 import './CreditDashboard.css';
 
 // SVG Icons
@@ -465,8 +466,7 @@ export const CreditDashboard: React.FC = () => {
     return (
       <div className="credit-dashboard">
         <div className="dashboard-loading">
-          <div className="spinner"></div>
-          <p>Loading billing information...</p>
+          <Spinner size={64} />
         </div>
       </div>
     );

@@ -32,6 +32,8 @@ export const RootPage = ({ content }) => {
     "/careers",
     "/blog",
     "/docs",
+    "/user/login",
+    "/user/signup",
   ];
 
   // Semi-protected annotator routes (need auth but not full menubar)

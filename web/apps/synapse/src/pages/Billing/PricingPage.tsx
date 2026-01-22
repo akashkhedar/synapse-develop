@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { billingApi, SubscriptionPlan, CreditPackage } from '../../services/billingApi';
+import { Spinner } from "@synapse/ui";
 import './PricingPage.css';
 
 // SVG Icons for Features
@@ -232,7 +233,9 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
   if (loading) {
     return (
       <div className="pricing-page">
-        <div className="pricing-loading">Loading pricing information...</div>
+        <div className="pricing-loading">
+          <Spinner size={64} />
+        </div>
       </div>
     );
   }

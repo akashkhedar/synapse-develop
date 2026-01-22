@@ -8,12 +8,7 @@ export const Spinner = ({ className, style, size = 32, stopped = false }) => {
 
   return (
     <div className={rootClass.mix(className)} style={{ ...(style ?? {}), "--spinner-size": sizeWithUnit }}>
-      <div className={rootClass.elem("body").mod({ stopped })}>
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
+      <div className={rootClass.elem("body").mod({ stopped })} />
     </div>
   );
 };

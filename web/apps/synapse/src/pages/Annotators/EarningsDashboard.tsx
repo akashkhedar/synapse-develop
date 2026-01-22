@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useHistory } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button, useToast, ToastType } from "@synapse/ui";
+import { Button, useToast, ToastType, Spinner } from "@synapse/ui";
 import "./EarningsDashboard.css";
 
 interface TrustLevel {
@@ -337,11 +337,7 @@ export const EarningsDashboard: React.FC = () => {
     return (
       <div className="earnings-page">
         <div className="earnings-loading">
-          <motion.div
-            className="loader-dot"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
+          <Spinner size={64} />
           <span className="loader-text">Loading earnings data...</span>
         </div>
       </div>

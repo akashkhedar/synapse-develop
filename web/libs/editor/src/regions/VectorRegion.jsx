@@ -2,7 +2,6 @@ import { getRoot, isAlive, types } from "mobx-state-tree";
 import NormalizationMixin from "../mixins/Normalization";
 import RegionsMixin from "../mixins/Regions";
 import Registry from "../core/Registry";
-import { ImageModel } from "../tags/object/Image";
 import { guidGenerator } from "../core/Helpers";
 import { AreaMixin } from "../mixins/AreaMixin";
 import { useRegionStyles } from "../hooks/useRegionColor";
@@ -43,7 +42,9 @@ const Model = types
     pid: types.optional(types.string, guidGenerator),
     type: "vectorregion",
     object: types.late(() => {
-      return types.reference(ImageModel);
+      return types.reference(
+        types.union(Registry.getModelByTag("image"), Registry.getModelByTag("dicom"))
+      );
     }),
 
     vertices: types.array(types.frozen()), // Store whatever format KonvaVector gives us

@@ -37,6 +37,7 @@ const supportedExtensions = {
   html: ["html", "htm", "xml"],
   pdf: ["pdf"],
   structuredData: ["csv", "tsv", "json"],
+  medical: ["dcm", "dicom"],
 };
 const allSupportedExtensions = flatten(Object.values(supportedExtensions));
 
@@ -153,6 +154,7 @@ export const ImportPage = ({
   setCsvHandling,
   addColumns,
   openLabelingConfig,
+  onDicomDetected,
 }) => {
   const [error, setError] = useState();
   const [newlyUploadedFiles, setNewlyUploadedFiles] = useState(new Set());
@@ -160,6 +162,8 @@ export const ImportPage = ({
   const api = useAPI();
   const projectConfigured = project?.label_config !== "<View></View>";
   const sampleConfig = useAtomValue(sampleDatasetAtom);
+  
+
 
   const processFiles = (state, action) => {
     if (action.sending) {
@@ -191,6 +195,12 @@ export const ImportPage = ({
     uploading: [],
     ids: [],
   });
+
+  useEffect(() => {
+    if (files.uploaded.some((f) => /\.(dcm|dicom)$/i.test(f.file))) {
+      onDicomDetected?.(true);
+    }
+  }, [files.uploaded]);
   const showList = Boolean(files.uploaded?.length || files.uploading?.length || sample);
 
   const loadFilesList = useCallback(
@@ -465,6 +475,8 @@ export const ImportPage = ({
                       <dd>{supportedExtensions.text.join(", ")}</dd>
                       <dt>Structured data</dt>
                       <dd>{supportedExtensions.structuredData.join(", ")}</dd>
+                      <dt>Medical</dt>
+                      <dd>{supportedExtensions.medical.join(", ")}</dd>
                       <dt>PDF</dt>
                       <dd>{supportedExtensions.pdf.join(", ")}</dd>
                     </dl>

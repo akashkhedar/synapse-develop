@@ -12,7 +12,6 @@ import { guidGenerator } from "../core/Helpers";
 import { useRegionStyles } from "../hooks/useRegionColor";
 import { AreaMixin } from "../mixins/AreaMixin";
 import { KonvaRegionMixin } from "../mixins/KonvaRegion";
-import { ImageModel } from "../tags/object/Image";
 import { FF_DEV_3793, isFF } from "../utils/feature-flags";
 import { createDragBoundFunc } from "../utils/image";
 import { AliveRegion } from "./AliveRegion";
@@ -79,7 +78,11 @@ const Model = types
     id: types.optional(types.identifier, guidGenerator),
     pid: types.optional(types.string, guidGenerator),
     type: "keypointregion",
-    object: types.late(() => types.reference(ImageModel)),
+    object: types.late(() =>
+      types.reference(
+        types.union(Registry.getModelByTag("image"), Registry.getModelByTag("dicom"))
+      )
+    ),
 
     x: types.number,
     y: types.number,

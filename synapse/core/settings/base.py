@@ -264,7 +264,8 @@ INSTALLED_APPS = [
     "session_policy",
     "billing",
     "annotators",  # Annotator management system
-    # "telemetry",  # DISABLED - Behavioral surveillance system
+    "telemetry",  # Behavioral surveillance system
+    # "ml", # Machine Learning Pipeline (Deferred)
 ]
 
 MIDDLEWARE = [
@@ -423,7 +424,7 @@ REDIS_HOST = get_env(
     "REDIS_HOST", "redis-17244.c212.ap-south-1-1.ec2.cloud.redislabs.com"
 )
 REDIS_PORT = int(get_env("REDIS_PORT", "17244"))
-REDIS_PASSWORD = get_env("REDIS_PASSWORD", "NCn8NgomLxlfyvhlO8lg2lKYrOXKVH7S")
+REDIS_PASSWORD = get_env("REDIS_PASSWORD", "")
 REDIS_DB = int(get_env("REDIS_DB", 0))
 
 # Build RQ queue config with optional password
@@ -586,6 +587,8 @@ SUPPORTED_EXTENSIONS = set(
         ".webm",
         ".webp",
         ".pdf",
+        ".dcm",
+        ".dicom",
     ]
 )
 

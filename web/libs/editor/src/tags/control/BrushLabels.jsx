@@ -34,7 +34,7 @@ import ControlBase from "./Base";
  */
 
 const Validation = types.model({
-  controlledTags: Types.unionTag(["Image"]),
+  controlledTags: Types.unionTag(["Image", "Dicom", "dicom"]),
 });
 
 const ModelAttrs = types.model("BrushLabelsModel", {
@@ -54,6 +54,13 @@ const BrushLabelsModel = types.compose(
 );
 
 const HtxBrushLabels = observer(({ item }) => {
+  console.log("Rendering BrushLabels", {
+    visible: item.visible,
+    children: item.children?.length,
+    toName: item.toname,
+    toNameTag: item.toNameTag,
+    inline: item.showinline
+  });
   return <HtxLabels item={item} />;
 });
 

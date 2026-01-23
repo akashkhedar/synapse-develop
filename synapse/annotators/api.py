@@ -391,12 +391,24 @@ class AnnotatorTestSubmitAPI(APIView):
                     logger.warning(f"Test submit: Could not get user from session: {e}")
             
             # Update status if we found the user
-            if user and user.is_annotator:
-                user.annotator_status = status_value
-                user.save(update_fields=["annotator_status"])
-                logger.info(f"SUCCESS: Updated annotator_status to '{status_value}' for user {user.email}")
+            if user:
+                try:
+                    profile = user.annotator_profile
+                    # Only update if status is changing to avoid unnecessary db writes
+                    if profile.status != status_value:
+                        profile.status = status_value
+                        profile.save(update_fields=["status"])
+                        
+                        # If approved, set approved_at timestamp
+                        if status_value == "approved" and not profile.approved_at:
+                            profile.approved_at = timezone.now()
+                            profile.save(update_fields=["approved_at"])
+                            
+                        logger.info(f"SUCCESS: Updated annotator_profile status to '{status_value}' for user {user.email}")
+                except AnnotatorProfile.DoesNotExist:
+                    logger.warning(f"Test submit: User {user.email} has no annotator profile")
             else:
-                logger.warning(f"Test submit: Could not update status - no valid annotator user found")
+                logger.warning(f"Test submit: Could not update status - no valid user found")
 
             # Return the enriched results
             response_data = {
@@ -457,9 +469,19 @@ class AnnotatorTestSubmitAPI(APIView):
         # UPDATE USER STATUS IN DATABASE
         if request.user.is_authenticated:
             user = request.user
-            user.annotator_status = status_value
-            user.save(update_fields=["annotator_status"])
-            logger.info(f"Updated annotator_status to '{status_value}' for user {user.email}")
+            try:
+                profile = user.annotator_profile
+                if profile.status != status_value:
+                    profile.status = status_value
+                    profile.save(update_fields=["status"])
+                    
+                    if status_value == "approved" and not profile.approved_at:
+                        profile.approved_at = timezone.now()
+                        profile.save(update_fields=["approved_at"])
+                        
+                    logger.info(f"Updated annotator_profile status to '{status_value}' for user {user.email}")
+            except AnnotatorProfile.DoesNotExist:
+                logger.warning(f"Test submit: User {user.email} has no annotator profile")
 
         results.update(
             {

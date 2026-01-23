@@ -391,6 +391,20 @@ class TaskAPI(generics.RetrieveUpdateDestroyAPIView):
             self.task, many=False, context=context, expand=["annotations.completed_by"]
         )
         data = serializer.data
+
+        # AUDIT LOGGING
+        try:
+            from telemetry.utils import log_audit_event
+            log_audit_event(
+                user=request.user, 
+                log_type="access", 
+                summary=f"Viewed task {self.task.id}", 
+                payload={"task_id": self.task.id, "project_id": self.task.project.id},
+                ip_address=request.META.get("REMOTE_ADDR")
+            )
+        except ImportError:
+            pass
+
         return Response(data)
 
     def get_excluded_fields_for_evaluation(self):
@@ -588,6 +602,20 @@ class AnnotationAPI(generics.RetrieveUpdateDestroyAPIView):
 
         task.update_is_labeled()
         task.save(update_fields=["updated_at"])  # refresh task metrics
+
+        # AUDIT LOGGING
+        try:
+            from telemetry.utils import log_audit_event
+            log_audit_event(
+                user=request.user, 
+                log_type="action", 
+                summary=f"Updated annotation {annotation.id} for task {task.id}", 
+                payload={"annotation_id": annotation.id, "task_id": task.id},
+                ip_address=request.META.get("REMOTE_ADDR")
+            )
+        except ImportError:
+            pass
+
         return result
 
     def get(self, request, *args, **kwargs):
@@ -815,6 +843,19 @@ class AnnotationsListAPI(GetParentObjectMixin, generics.ListCreateAPIView):
         # create annotation
         logger.debug(f"User={self.request.user}: save annotation")
         annotation = ser.save(**extra_args)
+
+        # AUDIT LOGGING
+        try:
+            from telemetry.utils import log_audit_event
+            log_audit_event(
+                user=self.request.user, 
+                log_type="action", 
+                summary=f"Created annotation {annotation.id} for task {task.id}", 
+                payload={"annotation_id": annotation.id, "task_id": task.id},
+                ip_address=self.request.META.get("REMOTE_ADDR")
+            )
+        except ImportError:
+            pass
 
         logger.debug(f"Save activity for user={self.request.user}")
         self.request.user.activity_at = timezone.now()

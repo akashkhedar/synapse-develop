@@ -10,7 +10,6 @@ import { guidGenerator } from "../core/Helpers";
 import { AreaMixin } from "../mixins/AreaMixin";
 import IsReadyMixin from "../mixins/IsReadyMixin";
 import { KonvaRegionMixin } from "../mixins/KonvaRegion";
-import { ImageModel } from "../tags/object/Image";
 import { FF_DEV_3793, isFF } from "../utils/feature-flags";
 import { AliveRegion } from "./AliveRegion";
 import { RegionWrapper } from "./RegionWrapper";
@@ -28,7 +27,11 @@ const Model = types
     id: types.optional(types.identifier, guidGenerator),
     pid: types.optional(types.string, guidGenerator),
     type: "bitmaskregion",
-    object: types.late(() => types.reference(ImageModel)),
+    object: types.late(() =>
+      types.reference(
+        types.union(Registry.getModelByTag("image"), Registry.getModelByTag("dicom"))
+      )
+    ),
 
     /**
      * Used to restore an image from the result or from a drawing region

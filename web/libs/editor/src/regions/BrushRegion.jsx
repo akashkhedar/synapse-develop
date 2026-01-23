@@ -16,7 +16,6 @@ import { guidGenerator } from "../core/Helpers";
 import { AreaMixin } from "../mixins/AreaMixin";
 import IsReadyMixin from "../mixins/IsReadyMixin";
 import { KonvaRegionMixin } from "../mixins/KonvaRegion";
-import { ImageModel } from "../tags/object/Image";
 import { colorToRGBAArray, rgbArrayToHex } from "../utils/colors";
 import { FF_DEV_3793, FF_ZOOM_OPTIM, isFF } from "../utils/feature-flags";
 import { AliveRegion } from "./AliveRegion";
@@ -119,7 +118,11 @@ const Model = types
     pid: types.optional(types.string, guidGenerator),
 
     type: "brushregion",
-    object: types.late(() => types.reference(ImageModel)),
+    object: types.late(() =>
+      types.reference(
+        types.union(Registry.getModelByTag("image"), Registry.getModelByTag("dicom"))
+      )
+    ),
 
     coordstype: types.optional(types.enumeration(["px", "perc"]), "perc"),
 

@@ -16,6 +16,7 @@ import { TreeValidation } from "../TreeValidation/TreeValidation";
  * Tags
  */
 import "../../tags/object";
+import "../../tags/object/Dicom/Dicom.jsx";
 import "../../tags/control";
 import "../../tags/visual";
 import "../../tags/Custom";

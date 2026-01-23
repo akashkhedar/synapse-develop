@@ -625,6 +625,7 @@ export const ConfigPage = ({
   disableSaveButton,
   show = true,
   hasChanges,
+  hasDicom,
 }) => {
   const [config, _setConfig] = React.useState("");
   const [mode, setMode] = React.useState("list"); // view | list
@@ -713,8 +714,18 @@ export const ConfigPage = ({
     if (initialConfig) {
       setTemplate(initialConfig);
       setMode("view");
+    } else if (hasDicom) {
+       const dicomConfig = `<View>
+  <Dicom name="dicom" value="$image" zoom="true" pan="true" />
+  <BrushLabels name="tag" toName="dicom">
+    <Label value="Tumor" background="#FF0000" />
+    <Label value="Tissue" background="#00FF00" />
+  </BrushLabels>
+</View>`;
+      setTemplate(dicomConfig);
+      setMode("view");
     }
-  }, []);
+  }, [hasDicom]);
 
   if (!show) return null;
 

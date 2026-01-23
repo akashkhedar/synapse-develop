@@ -42,22 +42,28 @@ function tagsTypes(arr) {
 }
 
 function allModelsTypes() {
-  const args = [
-    {
-      dispatcher: (sn) => {
-        if (!sn) return types.literal(undefined);
-        if (Registry.tags.includes(sn.type)) {
-          return Registry.getModelByTag(sn.type);
-        }
-        throw new ConfigurationError(`Not expecting tag: ${sn.type}`);
+  return types.late(() => {
+    const models = Registry.modelsArr();
+    console.log("Types.js: allModelsTypes evaluated. Models count:", models.length);
+    console.log("Types.js: Models names:", models.map(m => m.name));
+    
+    const args = [
+      {
+        dispatcher: (sn) => {
+          if (!sn) return types.literal(undefined);
+          if (Registry.tags.includes(sn.type)) {
+            return Registry.getModelByTag(sn.type);
+          }
+          throw new ConfigurationError(`Not expecting tag: ${sn.type}`);
+        },
       },
-    },
-    Registry.modelsArr(),
-  ];
+      models,
+    ];
 
-  const results = [].concat.apply([], args);
+    const results = [].concat.apply([], args);
 
-  return types.union.apply(null, results);
+    return types.union.apply(null, results);
+  });
 }
 
 function isType(node, types) {

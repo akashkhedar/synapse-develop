@@ -125,6 +125,8 @@ export const CreateProject = ({ onClose }) => {
     __lsa(`create_project.tab.${eventNameMap[step]}`);
   }, []);
 
+  const [hasDicom, setHasDicom] = React.useState(false);
+
   React.useEffect(() => {
     setError(null);
   }, [name]);
@@ -327,6 +329,7 @@ export const CreateProject = ({ onClose }) => {
           sample={sample}
           onSampleDatasetSelect={setSample}
           openLabelingConfig={() => setStep("config")}
+          onDicomDetected={setHasDicom}
           {...pageProps}
         />
         <ConfigPage
@@ -337,6 +340,7 @@ export const CreateProject = ({ onClose }) => {
           show={step === "config"}
           columns={columns}
           disableSaveButton={true}
+          hasDicom={hasDicom}
         />
         <SecurityDeposit
           project={project}

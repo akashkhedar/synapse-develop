@@ -208,5 +208,7 @@ export class Loader extends HTMLElement {
   }
 }
 
-customElements.define("loading-progress-bar", Loader);
+if (!customElements.get("loading-progress-bar")) {
+  customElements.define("loading-progress-bar", Loader);
+}
 

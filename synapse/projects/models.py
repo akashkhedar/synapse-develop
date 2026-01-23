@@ -1212,6 +1212,23 @@ class Project(ProjectMixin, FsmHistoryStateModel):
         return config_line_stipped(c)
 
     def get_sample_task(self, label_config=None):
+        if self.tasks.exists():
+            return self.tasks.first().data
+
+        from data_import.models import FileUpload
+        file_upload = FileUpload.objects.filter(project=self).last()
+        if file_upload:
+            config_str = label_config or self.label_config
+            # Avoid circular import if extract_data_types is not available in scope (it is imported at top)
+            dt = extract_data_types(config_str)
+            logger.info(f"DEBUG_SAMPLE_TASK: Project {self.id}, Config: {config_str[:100]}..., Extracted Types: {dt}")
+            keys = list(dt.keys())
+            if keys:
+                return {keys[0]: file_upload.url}
+            
+            logger.warning(f"DEBUG_SAMPLE_TASK: No keys found in config. Returning undefined name for file {file_upload.url}")
+            return {settings.DATA_UNDEFINED_NAME: file_upload.url}
+
         config = label_config or self.label_config
         task, _, _ = get_sample_task(config)
         return task

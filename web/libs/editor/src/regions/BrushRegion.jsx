@@ -118,11 +118,14 @@ const Model = types
     pid: types.optional(types.string, guidGenerator),
 
     type: "brushregion",
-    object: types.late(() =>
-      types.reference(
-        types.union(Registry.getModelByTag("image"), Registry.getModelByTag("dicom"))
-      )
-    ),
+    object: types.late(() => {
+      const img = Registry.getModelByTag("image");
+      const dicom = Registry.getModelByTag("dicom");
+      console.log("BrushRegion resolving object reference. Image:", !!img, "Dicom:", !!dicom);
+      return types.reference(
+        types.union(img, dicom)
+      );
+    }),
 
     coordstype: types.optional(types.enumeration(["px", "perc"]), "perc"),
 

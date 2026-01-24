@@ -54,13 +54,6 @@ const BrushLabelsModel = types.compose(
 );
 
 const HtxBrushLabels = observer(({ item }) => {
-  console.log("Rendering BrushLabels", {
-    visible: item.visible,
-    children: item.children?.length,
-    toName: item.toname,
-    toNameTag: item.toNameTag,
-    inline: item.showinline
-  });
   return <HtxLabels item={item} />;
 });
 

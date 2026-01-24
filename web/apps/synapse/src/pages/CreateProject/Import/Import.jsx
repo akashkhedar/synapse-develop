@@ -155,6 +155,7 @@ export const ImportPage = ({
   addColumns,
   openLabelingConfig,
   onDicomDetected,
+  onTypeDetected,
 }) => {
   const [error, setError] = useState();
   const [newlyUploadedFiles, setNewlyUploadedFiles] = useState(new Set());
@@ -197,10 +198,52 @@ export const ImportPage = ({
   });
 
   useEffect(() => {
+    if (!files.uploaded.length) return;
+
+    const counts = {};
+    let maxCount = 0;
+    let dominantType = null;
+
+    files.uploaded.forEach((f) => {
+      const ext = getFileExtension(f.file);
+      for (const [type, extensions] of Object.entries(supportedExtensions)) {
+        if (extensions.includes(ext)) {
+          counts[type] = (counts[type] || 0) + 1;
+          if (counts[type] > maxCount) {
+            maxCount = counts[type];
+            dominantType = type;
+          }
+          break;
+        }
+      }
+    });
+
+    // Special handling: Dicom is "medical", but we want to be specific? 
+    // supportedExtensions has "medical": ["dcm", "dicom"]
+    // If medical is detected, we pass "medical" (or 'dicom' if consistent with earlier logic).
+    
+    // Existing logic just checked for any dicom:
+    // if (files.uploaded.some((f) => /\.(dcm|dicom)$/i.test(f.file))) { onDicomDetected?.(true); }
+    
+    // We keep existing dcm check but also add general type detection
     if (files.uploaded.some((f) => /\.(dcm|dicom)$/i.test(f.file))) {
-      onDicomDetected?.(true);
+        onDicomDetected?.(true);
+        // Medical overrides others for our specific use case?
+        // Let's rely on dominantType but prefer medical if present?
+        // Actually, if I upload 10 images and 1 dicom, is it dicom project? 
+        // For now let's use dominant, but maybe Dicom usually implies Dicom project. 
+        // Let's stick to dominant for generic types.
     }
-  }, [files.uploaded]);
+    
+    if (dominantType) {
+        // Pass the detected type up
+        // We need to add this prop to ImportPage
+        // reusing onTypeDetected if it exists, or create new prop?
+        // The instruction said "pass setDetectedFileType to ImportPage".
+        // Let's assume onTypeDetected is that prop.
+        onTypeDetected?.(dominantType);
+    }
+  }, [files.uploaded, onDicomDetected, onTypeDetected]);
   const showList = Boolean(files.uploaded?.length || files.uploading?.length || sample);
 
   const loadFilesList = useCallback(

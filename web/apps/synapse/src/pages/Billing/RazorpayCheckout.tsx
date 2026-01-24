@@ -100,10 +100,8 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
       return;
     }
 
-    const options = {
+    const options: any = {
       key: razorpayKey,
-      amount: order.amount,
-      currency: order.currency,
       name: 'Synapse',
       description: order.description,
       order_id: order.order_id,
@@ -111,7 +109,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         await handlePaymentSuccess(response);
       },
       prefill: {
-        email: '', // Can be filled from user context
+        // Only set if we have user info, otherwise let Razorpay ask
       },
       theme: {
         color: '#4299e1',
@@ -129,6 +127,11 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
       },
     };
 
+    // Add customer_id if present to link payment to the customer
+    if (order.customer_id) {
+      options.customer_id = order.customer_id;
+    }
+
     const razorpayInstance = new window.Razorpay(options);
     razorpayInstance.open();
     setLoading(false);
@@ -136,6 +139,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
 
   const handlePaymentSuccess = async (response: any) => {
     try {
+      console.log('Razorpay payment success:', response);
       setLoading(true);
       
       await billingApi.verifyPayment({
@@ -144,11 +148,15 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         razorpay_signature: response.razorpay_signature,
       });
 
+      console.log('Payment verification successful');
       // Success!
       onSuccess();
       onClose();
     } catch (err: any) {
+      console.error('Payment verification failed:', err);
       setError(err.message || 'Payment verification failed');
+      // alerts are bad UX usually but helpful for debugging right now
+      alert(`Payment verification failed: ${err.message}`);
     } finally {
       setLoading(false);
     }

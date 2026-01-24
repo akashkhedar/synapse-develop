@@ -126,6 +126,7 @@ export const CreateProject = ({ onClose }) => {
   }, []);
 
   const [hasDicom, setHasDicom] = React.useState(false);
+  const [detectedFileType, setDetectedFileType] = React.useState(null);
 
   React.useEffect(() => {
     setError(null);
@@ -143,18 +144,33 @@ export const CreateProject = ({ onClose }) => {
 
   const rootClass = cn("create-project");
   const tabClass = rootClass.elem("tab");
+  
+  // Pre-calculate valid states for rendering (duplicated logic for render scope, or move logic up?)
+  // Better to move logic up. 
+  // Wait, I can't access isNameValid here because it's defined later.
+  // I need to reorganize the component slightly or define the checks earlier.
+  // ... Or just inline the checks here.
+  
+  const _isNameValid = !!name && !error;
+  const _isImportValid = _isNameValid && (fileIds?.length > 0 || (project?.task_number && project.task_number > 0));
+  const _isConfigValid = _isImportValid && !!project?.label_config && project.label_config !== "<View></View>";
+
   const steps = {
     name: (
       <span className={tabClass.mod({ disabled: !!error })}>Project Name</span>
     ),
     import: (
-      <span className={tabClass.mod({ disabled: uploadDisabled })}>
+      <span className={tabClass.mod({ disabled: !_isNameValid })}>
         Data Import
       </span>
     ),
-    config: "Labeling Setup",
+    config: (
+      <span className={tabClass.mod({ disabled: !_isImportValid })}>
+        Labeling Setup
+      </span>
+    ),
     deposit: (
-      <span className={tabClass.mod({ disabled: !depositPaid })}>
+      <span className={tabClass.mod({ disabled: !_isConfigValid })}>
         Security Deposit
       </span>
     ),
@@ -253,6 +269,20 @@ export const CreateProject = ({ onClose }) => {
 
   const isDisabled = !project || uploadDisabled || !!error || !depositPaid;
 
+  // Validation Logic for Steps
+  const isNameValid = !!name && !error;
+  const isImportValid = isNameValid && (fileIds?.length > 0 || (project?.task_number && project.task_number > 0));
+  const isConfigValid = isImportValid && !!project?.label_config && project.label_config !== "<View></View>";
+  
+  // Custom setStep to enforce sequential navigation
+  const handleSetStep = React.useCallback((newStep) => {
+    if (newStep === "import" && !isNameValid) return;
+    if (newStep === "config" && !isImportValid) return;
+    if (newStep === "deposit" && !isConfigValid) return;
+    
+    setStep(newStep);
+  }, [isNameValid, isImportValid, isConfigValid, setStep]);
+
   const saveButtonStyle = isDisabled
     ? {
         ...primaryButtonStyle,
@@ -275,7 +305,7 @@ export const CreateProject = ({ onClose }) => {
       <div className={rootClass}>
         <Modal.Header>
           <h1>Create Project</h1>
-          <ToggleItems items={steps} active={step} onSelect={setStep} />
+          <ToggleItems items={steps} active={step} onSelect={handleSetStep} />
 
           <Space>
             <button
@@ -330,6 +360,7 @@ export const CreateProject = ({ onClose }) => {
           onSampleDatasetSelect={setSample}
           openLabelingConfig={() => setStep("config")}
           onDicomDetected={setHasDicom}
+          onTypeDetected={setDetectedFileType}
           {...pageProps}
         />
         <ConfigPage
@@ -341,6 +372,7 @@ export const CreateProject = ({ onClose }) => {
           columns={columns}
           disableSaveButton={true}
           hasDicom={hasDicom}
+          detectedFileType={detectedFileType}
         />
         <SecurityDeposit
           project={project}

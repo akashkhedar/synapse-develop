@@ -162,7 +162,9 @@ export const Preview = ({ config, data, error, loading, project }) => {
         </div>
       )}
       {!data && loading && (
-        <Spinner style={{ width: "100%", height: "50vh" }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "50vh", width: "100%" }}>
+          <Spinner size={40} />
+        </div>
       )}
       <div
         id="synapse"

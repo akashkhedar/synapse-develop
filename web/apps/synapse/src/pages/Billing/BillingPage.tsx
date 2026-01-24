@@ -74,6 +74,7 @@ export const BillingPage: React.FC = () => {
           onSuccess={handlePaymentSuccess}
           itemId={selectedItem.id}
           itemType={selectedItem.type}
+          key={`${selectedItem.type}-${selectedItem.id}`}
         />
       )}
     </div>

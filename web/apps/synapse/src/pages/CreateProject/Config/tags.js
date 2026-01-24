@@ -62,6 +62,21 @@ const OBJECTS = {
   Video: {
     type: "Video",
   },
+  Dicom: {
+    type: "Dicom",
+    settings: {
+      zoom: {
+        title: "Allow image zoom (ctrl+wheel)",
+        type: Boolean,
+        param: "zoom",
+      },
+      pan: {
+        title: "Allow image pan (ctrl+drag)",
+        type: Boolean,
+        param: "pan",
+      },
+    },
+  },
 };
 
 const Labels = {
@@ -147,6 +162,11 @@ const Labels = {
 const CONTROLS = {
   Labels,
   RectangleLabels: Labels,
+  BrushLabels: Labels,
+  PolygonLabels: Labels,
+  KeyPointLabels: Labels,
+  EllipseLabels: Labels,
+  BitmaskLabels: Labels,
 };
 
 const TAGS = { ...OBJECTS, ...CONTROLS };

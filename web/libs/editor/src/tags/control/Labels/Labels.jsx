@@ -146,7 +146,7 @@ const LabelsModel = types.compose(
 
 const HtxLabels = observer(({ item }) => {
   return (
-    <div className={cn("labels").mod({ hidden: !item.visible, inline: item.showinline }).toClassName()} style={{ border: '5px solid red', zIndex: 1000, position: 'relative', background: 'rgba(255,255,255,0.2)', minHeight: '50px' }}>
+    <div className={cn("labels").mod({ hidden: !item.visible, inline: item.showinline }).toClassName()}>
       {Tree.renderChildren(item, item.annotation)}
     </div>
   );

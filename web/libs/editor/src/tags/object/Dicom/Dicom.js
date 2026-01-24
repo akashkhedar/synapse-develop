@@ -55,6 +55,15 @@ const Model = types
             batchDraw: () => {},
         };
     },
+
+    states() {
+      return self.annotation.toNames.get(self.name);
+    },
+
+    activeStates() {
+      const states = self.states();
+      return states && states.filter((s) => s.isSelected && s.type.includes("labels"));
+    },
   }));
 
 const DicomModel = types.compose(
@@ -66,4 +75,5 @@ const DicomModel = types.compose(
   Model
 );
 
+console.log("DicomModel file evaluated");
 export default DicomModel;

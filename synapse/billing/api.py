@@ -145,6 +145,7 @@ class BillingViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["post"])
     def create_order(self, request):
         """Create Razorpay order for payment"""
+        logger.info(f"Create order request data: {request.data}")
         serializer = CreatePaymentOrderSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

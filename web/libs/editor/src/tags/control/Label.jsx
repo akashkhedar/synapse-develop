@@ -300,7 +300,6 @@ const LabelModel = types.compose("LabelModel", TagParentMixin, TagAttrs, Process
 
 const HtxLabelView = inject("store")(
   observer(({ item, store }) => {
-    console.log("Rendering Label:", item.value);
     const hotkey =
       (store.settings.enableTooltips || store.settings.enableLabelTooltips) &&
       store.settings.enableHotkeys &&

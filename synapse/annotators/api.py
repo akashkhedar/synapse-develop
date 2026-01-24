@@ -392,21 +392,29 @@ class AnnotatorTestSubmitAPI(APIView):
             
             # Update status if we found the user
             if user:
-                try:
-                    profile = user.annotator_profile
-                    # Only update if status is changing to avoid unnecessary db writes
-                    if profile.status != status_value:
-                        profile.status = status_value
-                        profile.save(update_fields=["status"])
+                # Get or create profile
+                profile, created = AnnotatorProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        "email_verified": True, # Assume verified if they are taking test
+                        "status": "pending_test"
+                    }
+                )
+                
+                if created:
+                    logger.info(f"Created new AnnotatorProfile for user {user.email}")
+
+                # Only update if status is changing to avoid unnecessary db writes
+                if profile.status != status_value:
+                    profile.status = status_value
+                    profile.save(update_fields=["status"])
+                    
+                    # If approved, set approved_at timestamp
+                    if status_value == "approved" and not profile.approved_at:
+                        profile.approved_at = timezone.now()
+                        profile.save(update_fields=["approved_at"])
                         
-                        # If approved, set approved_at timestamp
-                        if status_value == "approved" and not profile.approved_at:
-                            profile.approved_at = timezone.now()
-                            profile.save(update_fields=["approved_at"])
-                            
-                        logger.info(f"SUCCESS: Updated annotator_profile status to '{status_value}' for user {user.email}")
-                except AnnotatorProfile.DoesNotExist:
-                    logger.warning(f"Test submit: User {user.email} has no annotator profile")
+                    logger.info(f"SUCCESS: Updated annotator_profile status to '{status_value}' for user {user.email}")
             else:
                 logger.warning(f"Test submit: Could not update status - no valid user found")
 
@@ -469,19 +477,27 @@ class AnnotatorTestSubmitAPI(APIView):
         # UPDATE USER STATUS IN DATABASE
         if request.user.is_authenticated:
             user = request.user
-            try:
-                profile = user.annotator_profile
-                if profile.status != status_value:
-                    profile.status = status_value
-                    profile.save(update_fields=["status"])
+            # Get or create profile
+            profile, created = AnnotatorProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    "email_verified": True,
+                    "status": "pending_test"
+                }
+            )
+            
+            if created:
+                logger.info(f"Created new AnnotatorProfile for user {user.email}")
+
+            if profile.status != status_value:
+                profile.status = status_value
+                profile.save(update_fields=["status"])
+                
+                if status_value == "approved" and not profile.approved_at:
+                    profile.approved_at = timezone.now()
+                    profile.save(update_fields=["approved_at"])
                     
-                    if status_value == "approved" and not profile.approved_at:
-                        profile.approved_at = timezone.now()
-                        profile.save(update_fields=["approved_at"])
-                        
-                    logger.info(f"Updated annotator_profile status to '{status_value}' for user {user.email}")
-            except AnnotatorProfile.DoesNotExist:
-                logger.warning(f"Test submit: User {user.email} has no annotator profile")
+                logger.info(f"Updated annotator_profile status to '{status_value}' for user {user.email}")
 
         results.update(
             {

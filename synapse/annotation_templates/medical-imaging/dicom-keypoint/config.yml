@@ -1,0 +1,15 @@
+title: DICOM Keypoints
+type: community
+group: Medical Imaging
+image: /static/images/dicom-segmentation.png
+config: |
+  <View>
+    <Header value="Medical Image Landmarks" />
+    <KeyPointLabels name="tag" toName="dicom">
+      <Label value="Cervical Spine" background="#ef4444" />
+      <Label value="Thoracic Spine" background="#eab308" />
+      <Label value="Lumbar Spine" background="#3b82f6" />
+      <Label value="Sacrum" background="#22c55e" />
+    </KeyPointLabels>
+    <Dicom name="dicom" value="$image" zoom="true" pan="true" />
+  </View>

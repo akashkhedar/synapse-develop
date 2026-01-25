@@ -69,22 +69,26 @@ class DicomView extends Component {
     const { item } = this.props;
     // Assuming item.value is a URL to the DICOM file
     // WADO Image Loader expects 'wadouri:' prefix for HTTP GET
-    let imageId = item.parsedValue;
+    // WADO Image Loader expects 'wadouri:' prefix for HTTP GET
+    let values = item.parsedValue;
+    if (!Array.isArray(values)) values = [values];
     
-    // Add wadouri prefix if missing and it looks like a url
-    if (imageId) {
+    const imageIds = values.map(val => {
+        let url = val;
         // Resolve relative paths
-        if (imageId.startsWith('/')) {
-            imageId = window.location.origin + imageId;
+        if (url && url.startsWith('/')) {
+            url = window.location.origin + url;
         }
 
-        if (!imageId.startsWith('wadouri:') && !imageId.startsWith('dicomweb:')) {
-            imageId = 'wadouri:' + imageId;
+        if (url && !url.startsWith('wadouri:') && !url.startsWith('dicomweb:')) {
+            url = 'wadouri:' + url;
         }
-    }
+        return url;
+    }).filter(Boolean);
 
-    if (imageId) {
-      cornerstone.loadImage(imageId).then(image => {
+    if (imageIds.length > 0) {
+      // Load the FIRST image to initialize the element
+      cornerstone.loadImage(imageIds[0]).then(image => {
         const element = this.element.current;
         // Check if component is still mounted and element exists
         if (!element) return;
@@ -103,7 +107,7 @@ class DicomView extends Component {
             // Define Stack for Segmentation (Required by Cornerstone Tools)
             const stack = {
                 currentImageIdIndex: 0,
-                imageIds: [imageId]
+                imageIds: imageIds
             };
             cornerstoneTools.addToolState(element, 'stack', stack);
             
@@ -116,6 +120,9 @@ class DicomView extends Component {
             const StackScrollTool = cornerstoneTools.StackScrollTool;
             const BrushTool = cornerstoneTools.BrushTool;
             const FreehandRoiTool = cornerstoneTools.FreehandRoiTool;
+            const RectangleRoiTool = cornerstoneTools.RectangleRoiTool;
+            const ProbeTool = cornerstoneTools.ProbeTool;
+            const StackScrollMouseWheelTool = cornerstoneTools.StackScrollMouseWheelTool;
 
             cornerstoneTools.addToolForElement(element, WwwcTool);
             cornerstoneTools.addToolForElement(element, PanTool);
@@ -124,11 +131,19 @@ class DicomView extends Component {
             cornerstoneTools.addToolForElement(element, StackScrollTool);
             cornerstoneTools.addToolForElement(element, BrushTool);
             cornerstoneTools.addToolForElement(element, FreehandRoiTool);
+            cornerstoneTools.addToolForElement(element, RectangleRoiTool);
+            cornerstoneTools.addToolForElement(element, ProbeTool);
+            cornerstoneTools.addToolForElement(element, StackScrollMouseWheelTool);
 
             // ACTIVATION HELPER: Ensures Base Navigation Tools are ALWAYS active
             const activateBaseTools = () => {
                 cornerstoneTools.setToolActiveForElement(element, 'Pan', { mouseButtonMask: 2 }); // Right Click
-                cornerstoneTools.setToolActiveForElement(element, 'ZoomMouseWheel', { }); // Mouse Wheel
+                
+                if (imageIds.length > 1) {
+                    cornerstoneTools.setToolActiveForElement(element, 'StackScrollMouseWheel', { });
+                } else {
+                    cornerstoneTools.setToolActiveForElement(element, 'ZoomMouseWheel', { });
+                }
             };
 
             // INITIAL STATE
@@ -204,7 +219,9 @@ class DicomView extends Component {
                                               name: label.value,
                                               color: label.background, 
                                               index: currentSegmentIndex,
-                                              type: tag.type.includes('brush') ? 'brush' : 'polygon'
+                                              index: currentSegmentIndex,
+                                              index: currentSegmentIndex,
+                                              type: tag.type.includes('brush') ? 'brush' : (tag.type.includes('rectangle') ? 'rectangle' : (tag.type.includes('keypoint') ? 'keypoint' : 'polygon'))
                                           };
                                       }
                                   });
@@ -221,6 +238,8 @@ class DicomView extends Component {
                         cornerstoneTools.setToolPassiveForElement(element, 'Wwwc');
                         cornerstoneTools.setToolPassiveForElement(element, 'Brush');
                         cornerstoneTools.setToolPassiveForElement(element, 'FreehandRoi');
+                        cornerstoneTools.setToolPassiveForElement(element, 'RectangleRoi');
+                        cornerstoneTools.setToolPassiveForElement(element, 'Probe');
                     } catch(e) {}
 
                     if (activeLabel) {
@@ -249,6 +268,61 @@ class DicomView extends Component {
                                     }
                                 }
                                 
+                            } else if (activeLabel.type === 'rectangle') {
+                                cornerstoneTools.setToolActiveForElement(element, 'RectangleRoi', { mouseButtonMask: 1 });
+                                cornerstoneTools.toolColors.setToolColor(activeLabel.color);
+                                
+                                // Custom Text Callback to include Label Name
+                                const rectangleTool = cornerstoneTools.getToolForElement(element, 'RectangleRoi');
+                                if (rectangleTool) {
+                                    rectangleTool.configuration.renderFill = true;
+                                    rectangleTool.configuration.fillOpacity = 0.2;
+                                    
+                                    // Override getTextCallback to include label name
+                                    // This assumes Cornerstone Tools supports this config or we intercept it
+                                    // Standard RectangleRoiTool might not offer easy getTextCallback override for the main text box
+                                    // But we can update measurementData.text or similar.
+                                }
+
+                                const handleRectEvent = (evt) => {
+                                    if (evt.detail.toolName === 'RectangleRoi') {
+                                        const measurementData = evt.detail.measurementData;
+                                        measurementData.color = activeLabel.color;
+                                        measurementData.label = activeLabel.name; // Store label name
+                                        
+                                        // Attempt to update text buffer if tool supports it (some versions do)
+                                        // Or we rely on tool rendering logic checking measurementData.label
+                                        // RectangleRoiTool in v4 usually shows Area, Mean, StdDev.
+                                        // We might need to manually append label if not supported directly.
+                                        // However, `cachedStats` are what usually gets displayed. 
+                                        // Let's rely on persisting color first.
+                                        
+                                        cornerstone.updateImage(element);
+                                    }
+                                };
+                                element.removeEventListener(cornerstoneTools.EVENTS.MEASUREMENT_ADDED, handleRectEvent);
+                                element.addEventListener(cornerstoneTools.EVENTS.MEASUREMENT_ADDED, handleRectEvent);
+
+
+                                element.removeEventListener(cornerstoneTools.EVENTS.MEASUREMENT_ADDED, handleRectEvent);
+                                element.addEventListener(cornerstoneTools.EVENTS.MEASUREMENT_ADDED, handleRectEvent);
+
+
+                            } else if (activeLabel.type === 'keypoint') {
+                                cornerstoneTools.setToolActiveForElement(element, 'Probe', { mouseButtonMask: 1 });
+                                cornerstoneTools.toolColors.setToolColor(activeLabel.color);
+                                
+                                const handleProbeEvent = (evt) => {
+                                    if (evt.detail.toolName === 'Probe') {
+                                        const measurementData = evt.detail.measurementData;
+                                        measurementData.color = activeLabel.color;
+                                        measurementData.label = activeLabel.name;
+                                        cornerstone.updateImage(element);
+                                    }
+                                };
+                                element.removeEventListener(cornerstoneTools.EVENTS.MEASUREMENT_ADDED, handleProbeEvent);
+                                element.addEventListener(cornerstoneTools.EVENTS.MEASUREMENT_ADDED, handleProbeEvent);
+
                             } else if (activeLabel.type === 'polygon') {
                                 cornerstoneTools.setToolActiveForElement(element, 'FreehandRoi', { mouseButtonMask: 1 });
                                 cornerstoneTools.toolColors.setToolColor(activeLabel.color);

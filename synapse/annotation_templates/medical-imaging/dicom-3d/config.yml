@@ -1,0 +1,13 @@
+title: DICOM 3D Series (CT/MRI)
+type: community
+group: Medical Imaging
+image: /static/images/dicom-segmentation.png
+config: |
+  <View>
+    <Header value="3D Volumetric Annotation" />
+    <BrushLabels name="tag" toName="dicom">
+      <Label value="Structure" background="#ef4444" />
+      <Label value="Lesion" background="#eab308" />
+    </BrushLabels>
+    <Dicom name="dicom" value="$image" zoom="true" pan="true" />
+  </View>

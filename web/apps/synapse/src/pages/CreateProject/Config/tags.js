@@ -166,7 +166,23 @@ const CONTROLS = {
   PolygonLabels: Labels,
   KeyPointLabels: Labels,
   EllipseLabels: Labels,
+  EllipseLabels: Labels,
   BitmaskLabels: Labels,
+  Choices: {
+    type: "Choices",
+    settings: {
+      choice: {
+        title: "Selection mode",
+        type: ["single", "multiple"],
+        param: "choice",
+      },
+      showInLine: {
+        title: "Show inline (horizontal)",
+        type: Boolean,
+        param: "showInLine",
+      },
+    },
+  },
 };
 
 const TAGS = { ...OBJECTS, ...CONTROLS };

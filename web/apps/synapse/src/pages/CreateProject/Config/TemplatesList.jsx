@@ -92,6 +92,14 @@ export const TemplatesList = ({ selectedGroup, selectedRecipe, onCustomTemplate,
       const { templates, groups } = res;
 
       setTemplates(templates);
+      setTemplates(templates);
+      
+      // Ensure "Medical Imaging" group exists if we have templates for it
+      // This handles cases where backend doesn't explicitly return the group in the list
+      if (!groups.includes("Medical Imaging") && templates.some(t => t.group === "Medical Imaging")) {
+        groups.push("Medical Imaging");
+      }
+      
       setGroups(groups);
     };
     fetchData();

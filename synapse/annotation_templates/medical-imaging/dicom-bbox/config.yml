@@ -1,0 +1,14 @@
+title: DICOM Object Detection
+type: community
+group: Medical Imaging
+image: /static/images/dicom-segmentation.png
+config: |
+  <View>
+    <Header value="Medical Image Object Detection" />
+    <RectangleLabels name="tag" toName="dicom">
+      <Label value="Nodule" background="#ef4444" />
+      <Label value="Fracture" background="#eab308" />
+      <Label value="Implant" background="#3b82f6" />
+    </RectangleLabels>
+    <Dicom name="dicom" value="$image" zoom="true" pan="true" />
+  </View>

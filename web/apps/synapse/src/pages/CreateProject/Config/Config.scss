@@ -715,15 +715,7 @@ $scroll-width: 6px;
     transition: all 200ms ease;
     overflow: hidden;
 
-    &_choice {
-      label {
-        display: none;
-      }
 
-      span {
-        background: rgba(31, 41, 55, 0.5);
-      }
-    }
 
     label {
       width: 0;

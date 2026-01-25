@@ -107,26 +107,34 @@ class DicomView extends Component {
             };
             cornerstoneTools.addToolState(element, 'stack', stack);
             
-            // Enable default tools
+            // --- TOOL SETUP ---
+            // Register Tools
             const WwwcTool = cornerstoneTools.WwwcTool;
             const PanTool = cornerstoneTools.PanTool;
             const ZoomTool = cornerstoneTools.ZoomTool;
             const ZoomMouseWheelTool = cornerstoneTools.ZoomMouseWheelTool;
-
-            // Clear previous tool state to avoid duplicates if re-rendering
-            cornerstoneTools.clearToolState(element, 'Wwwc');
-            cornerstoneTools.clearToolState(element, 'Pan');
-            cornerstoneTools.clearToolState(element, 'Zoom');
+            const StackScrollTool = cornerstoneTools.StackScrollTool;
+            const BrushTool = cornerstoneTools.BrushTool;
+            const FreehandRoiTool = cornerstoneTools.FreehandRoiTool;
 
             cornerstoneTools.addToolForElement(element, WwwcTool);
             cornerstoneTools.addToolForElement(element, PanTool);
             cornerstoneTools.addToolForElement(element, ZoomTool);
             cornerstoneTools.addToolForElement(element, ZoomMouseWheelTool);
+            cornerstoneTools.addToolForElement(element, StackScrollTool);
+            cornerstoneTools.addToolForElement(element, BrushTool);
+            cornerstoneTools.addToolForElement(element, FreehandRoiTool);
 
-            cornerstoneTools.setToolActiveForElement(element, 'Wwwc', { mouseButtonMask: 1 }); // Left click
-            cornerstoneTools.setToolActiveForElement(element, 'Pan', { mouseButtonMask: 2 }); // Middle click
-            cornerstoneTools.setToolActiveForElement(element, 'Zoom', { mouseButtonMask: 4 }); // Right click
-            cornerstoneTools.setToolActiveForElement(element, 'ZoomMouseWheel', { });
+            // ACTIVATION HELPER: Ensures Base Navigation Tools are ALWAYS active
+            const activateBaseTools = () => {
+                cornerstoneTools.setToolActiveForElement(element, 'Pan', { mouseButtonMask: 2 }); // Right Click
+                cornerstoneTools.setToolActiveForElement(element, 'ZoomMouseWheel', { }); // Mouse Wheel
+            };
+
+            // INITIAL STATE
+            activateBaseTools();
+            // Default Left Click -> Wwwc (Window/Level)
+            cornerstoneTools.setToolActiveForElement(element, 'Wwwc', { mouseButtonMask: 1 });
             
             // --- SEGMENTATION SUPPORT ---
             const segmentationModule = cornerstoneTools.getModule('segmentation');
@@ -139,7 +147,6 @@ class DicomView extends Component {
             
             // Ensure state exists
             const { state } = segmentationModule;
-            // This is safer:
              if (!state.series[0]) {
                  state.series[0] = {
                      labelmaps: []
@@ -158,8 +165,8 @@ class DicomView extends Component {
                 // Commented out to avoid crash on init. Let BrushTool handle it.
              } catch(e) { console.warn("Could not set active labelmap index", e); }
 
-            const BrushTool = cornerstoneTools.BrushTool;
-            cornerstoneTools.addToolForElement(element, BrushTool);
+            // BrushTool already declared/added above
+            // cornerstoneTools.addToolForElement(element, BrushTool); // Removed duplicate
 
             // Sync with Label Studio state
             // When a label is selected, LS activates the Brush tool (internal).
@@ -209,6 +216,7 @@ class DicomView extends Component {
                 (activeLabel) => {
                     console.log(`[Dicom] Tool switch. Active Label:`, activeLabel);
                     
+                    // Deactivate Left-Click Tools (avoid conflicts)
                     try {
                         cornerstoneTools.setToolPassiveForElement(element, 'Wwwc');
                         cornerstoneTools.setToolPassiveForElement(element, 'Brush');
@@ -223,20 +231,15 @@ class DicomView extends Component {
                                 const { setters, state } = cornerstoneTools.getModule('segmentation');
                                 setters.activeSegmentIndex(element, activeLabel.index);
                                 
-                                // Fix for colorForSegment error: Use colorLutTables directly
+                                // Set Color
                                 const hex = activeLabel.color;
                                 const r = parseInt(hex.slice(1, 3), 16);
                                 const g = parseInt(hex.slice(3, 5), 16);
                                 const b = parseInt(hex.slice(5, 7), 16);
                                 
-                                // Ensure active labelmap exists
                                 let activeLabelmapIndex = state.series[0] ? state.series[0].activeLabelmapIndex : 0;
-                                if (!state.series[0]) {
-                                     // Init series state if missing (should be handled by stack/BrushTool but just in case)
-                                     state.series[0] = { labelmaps: [] };
-                                }
+                                if (!state.series[0]) state.series[0] = { labelmaps: [] };
                                 
-                                // Find or create colorLut
                                 if (state.series[0].labelmaps[activeLabelmapIndex]) {
                                     const colorLutIndex = state.series[0].labelmaps[activeLabelmapIndex].colorLUTIndex;
                                     const colorLut = state.colorLutTables[colorLutIndex];
@@ -248,71 +251,60 @@ class DicomView extends Component {
                                 
                             } else if (activeLabel.type === 'polygon') {
                                 cornerstoneTools.setToolActiveForElement(element, 'FreehandRoi', { mouseButtonMask: 1 });
-                                
-                                // Sync active color
                                 cornerstoneTools.toolColors.setToolColor(activeLabel.color);
                                 
-                                // Customize Tool Configuration
+                                // Freehand Config
                                 const freehandTool = cornerstoneTools.getToolForElement(element, 'FreehandRoi');
                                 if (freehandTool) {
-                                    // Configuration to hide stats and enable fill
                                     freehandTool.configuration.alwaysShowStats = false; 
                                     freehandTool.configuration.showScanStats = false; 
                                     freehandTool.configuration.renderFill = true;
                                     freehandTool.configuration.fillOpacity = 0.5;
-                                    
-                                    // Override text generator to return empty array -> No text displayed
                                     freehandTool.configuration.getTextCallback = () => [];
                                 }
 
-                                // Add listener to freeze color (Text hiding handled by config above now)
                                 const handleMeasurementEvent = (evt) => {
                                     if (evt.detail.toolName === 'FreehandRoi') {
                                         const measurementData = evt.detail.measurementData;
                                         measurementData.color = activeLabel.color;
-                                        
-                                        // Aggressively hide stats
+                                        // Hide text
                                         if (measurementData.textBox) {
                                             measurementData.textBox.visible = false;
-                                            measurementData.textBox.hasBoundingBox = false;
-                                            // Hack: Move off-screen in case visible flag is ignored
                                             measurementData.textBox.x = -5000;
                                             measurementData.textBox.y = -5000;
                                         }
                                         cornerstone.updateImage(element);
                                     }
                                 };
-                                
-                                // Remove previous to avoid duplicates
-                                element.removeEventListener(cornerstoneTools.EVENTS.MEASUREMENT_COMPLETED, handleMeasurementEvent);
-                                element.removeEventListener(cornerstoneTools.EVENTS.MEASUREMENT_MODIFIED, handleMeasurementEvent);
                                 element.removeEventListener(cornerstoneTools.EVENTS.MEASUREMENT_ADDED, handleMeasurementEvent);
-                                
-                                element.addEventListener(cornerstoneTools.EVENTS.MEASUREMENT_COMPLETED, handleMeasurementEvent);
-                                element.addEventListener(cornerstoneTools.EVENTS.MEASUREMENT_MODIFIED, handleMeasurementEvent);
                                 element.addEventListener(cornerstoneTools.EVENTS.MEASUREMENT_ADDED, handleMeasurementEvent);
                             }
-                            
-                            cornerstone.updateImage(element);
                         } catch (e) {
-                             console.error("Error activating tool:", e);
+                             console.error("Error activating segmentation tool:", e);
                         }
                     } else {
-                        // Activate Wwwc
+                        // Revert to Wwwc if no label selected
                         try {
                             cornerstoneTools.setToolActiveForElement(element, 'Wwwc', { mouseButtonMask: 1 });
-                            cornerstone.updateImage(element);
-                        } catch (e) {
-                             console.error("Error activating Wwwc:", e);
-                        }
+                        } catch (e) {}
                     }
+                    
+                    // ALWAYS restore Base Tools (Right Click Pan, Wheel Zoom)
+                    activateBaseTools();
+                    
+                    cornerstone.updateImage(element);
                 },
                 { fireImmediately: true }
             );
 
-            // Freehand Tool for PolygonLabels
-            const FreehandRoiTool = cornerstoneTools.FreehandRoiTool;
-            cornerstoneTools.addToolForElement(element, FreehandRoiTool);
+            // Force Cursor Style
+            // Cornerstone often resets cursor, so we force it on mousemove
+            this.onMouseMove = () => {
+                if (element.style.cursor !== 'crosshair') {
+                    element.style.setProperty('cursor', 'crosshair', 'important');
+                }
+            };
+            element.addEventListener('mousemove', this.onMouseMove);
 
             // Brush Size Shortcuts
             this.onKeyDown = (e) => {
@@ -362,7 +354,7 @@ class DicomView extends Component {
         <div 
           ref={this.element} 
           className="cornerstone-element" 
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "100%", cursor: "crosshair" }}
           onContextMenu={(e) => e.preventDefault()}
         />
       </div>

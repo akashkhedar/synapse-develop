@@ -52,8 +52,16 @@ const TagAttrs = types.model({
   style: types.maybeNull(types.string),
   html: types.maybeNull(types.string),
   color: types.maybeNull(types.string),
+  background: types.maybeNull(types.string),
   hint: types.maybeNull(types.string),
 });
+
+const hexToRgba = (hex, alpha) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 const Model = types
   .model({
@@ -179,6 +187,18 @@ const HtxNewChoiceView = ({ item, store }) => {
   let style = {};
 
   if (item.style) style = Tree.cssConverter(item.style);
+
+  if (item.background) {
+    style = {
+      ...style,
+      background: hexToRgba(item.background, 0.15),
+      borderLeft: `5px solid ${item.background}`,
+      color: "white",
+      padding: "5px 10px",
+      margin: "0 5px",
+      borderRadius: "2px",
+    };
+  }
 
   const showHotkey =
     (store.settings.enableTooltips || store.settings.enableLabelTooltips) &&

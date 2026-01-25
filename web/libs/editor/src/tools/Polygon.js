@@ -122,8 +122,10 @@ const _Tool = types
 
       _finishDrawing() {
         const { currentArea, control } = self;
+        
+        if (!currentArea) return;
 
-        self.currentArea.notifyDrawingFinished();
+        currentArea.notifyDrawingFinished();
         self.setDrawing(false);
         self.currentArea = null;
         self.mode = "viewing";
@@ -135,6 +137,51 @@ const _Tool = types
         self.annotation.setIsDrawing(drawing);
       },
 
+      mousemoveEv(ev, [x, y]) {
+        if (!self.currentArea) return;
+
+        if (!self.isDrawing) return;
+
+        // Check if left button is pressed (1)
+        if (ev.buttons !== 1) return;
+
+        const lastPoint = self.currentArea.points[self.currentArea.points.length - 1];
+        if (!lastPoint) return;
+
+        const dist = Math.sqrt(Math.pow(x - lastPoint.x, 2) + Math.pow(y - lastPoint.y, 2));
+        const threshold = 2 / self.obj.stageScale; // Threshold to add new point (High detail)
+
+        if (dist > threshold) {
+             self.currentArea.addPoint(x, y);
+        }
+      },
+      
+      mousedownEv(ev, [x, y]) {
+        self.isDragging = true;
+        
+        // Immediate start for Freehand if no area exists
+        if (!self.currentArea) {
+            self.startDrawing(x, y);
+            // We actively set isDrawing to true to ensure mousemove picks it up immediately
+            self.setDrawing(true);
+        }
+      },
+      
+      mouseupEv(ev, [x,y]) {
+          if (self.isDragging && self.currentArea && self.currentArea.points.length > 2) {
+              // Check if we released near the start point
+              const startPoint = self.currentArea.points[0];
+              const distToStart = Math.sqrt(Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2));
+              const closeThreshold = 20 / self.obj.stageScale; // Generous closing threshold (20px)
+
+              if (distToStart < closeThreshold) {
+                  self.currentArea.closePoly();
+                  self._finishDrawing();
+              }
+          }
+          self.isDragging = false;
+      },
+      
       deleteRegion() {
         const { currentArea } = self;
 

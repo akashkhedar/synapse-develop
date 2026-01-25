@@ -716,18 +716,10 @@ export const ConfigPage = ({
       setTemplate(initialConfig);
       setMode("view");
     } else if (hasDicom) {
-       const dicomConfig = `<View>
-  <Header value="Medical Image Segmentation" />
-  <PolygonLabels name="tag" toName="dicom">
-    <Label value="Tumor" background="#ef4444" />
-    <Label value="Tissue" background="#22c55e" />
-    <Label value="Organ" background="#3b82f6" />
-    <Label value="Bone" background="#eab308" />
-  </PolygonLabels>
-  <Dicom name="dicom" value="$image" zoom="true" pan="true" />
-</View>`;
-      setTemplate(dicomConfig);
-      setMode("view");
+       // Auto-select the Medical Imaging group but let user choose the template
+       setSelectedGroup("Medical Imaging");
+       setMode("list");
+       __lsa("labeling_setup.list.medical_imaging");
     }
   }, [hasDicom]);
 

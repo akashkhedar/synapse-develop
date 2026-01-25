@@ -1,0 +1,16 @@
+title: DICOM Classification
+type: community
+group: Medical Imaging
+image: /static/images/dicom-classification.png
+config: |
+  <View>
+    <Header value="Medical Image Classification" />
+    <Dicom name="dicom" value="$image" zoom="true" pan="true" />
+    <View style="display: flex; justify-content: center; margin-top: 1em;">
+      <Choices name="classification" toName="dicom" choice="single" showInLine="true">
+        <Choice value="Normal" background="#22c55e" />
+        <Choice value="Benign" background="#eab308" />
+        <Choice value="Malignant" background="#ef4444" />
+      </Choices>
+    </View>
+  </View>

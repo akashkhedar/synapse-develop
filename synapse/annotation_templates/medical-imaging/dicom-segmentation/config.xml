@@ -1,7 +1,0 @@
-<View>
-  <Dicom name="dicom" value="$image" zoom="true" pan="true" />
-  <BrushLabels name="tag" toName="dicom">
-    <Label value="Tumor" background="#FF0000" />
-    <Label value="Tissue" background="#00FF00" />
-  </BrushLabels>
-</View>

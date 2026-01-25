@@ -6,6 +6,7 @@ import "./Config.scss";
 import { IconInfo } from "@synapse/icons";
 import { Button, EnterpriseBadge } from "@synapse/ui";
 
+
 const listClass = cn("templates-list");
 
 const Arrow = () => (
@@ -15,43 +16,46 @@ const Arrow = () => (
   </svg>
 );
 
+const isCompatible = (recipe, detectedFileType) => {
+    if (!detectedFileType) return true;
+    
+    // Simple verification maps
+    const config = recipe.config;
+    let valid = true;
+    
+    // If we have a file type, we must find a corresponding tag in the config
+    if (["image", "bmp", "png", "jpg", "jpeg"].includes(detectedFileType)) {
+        if (!config.includes("<Image") && !config.includes("<Img")) valid = false;
+    } else if (["audio", "wav", "mp3"].includes(detectedFileType)) {
+        if (!config.includes("<Audio")) valid = false;
+    } else if (["video", "mp4"].includes(detectedFileType)) {
+        if (!config.includes("<Video")) valid = false;
+    } else if (["text", "txt"].includes(detectedFileType)) {
+        if (!config.includes("<Text") && !config.includes("<HyperText")) valid = false;
+    } else if (["medical", "dicom", "dcm"].includes(detectedFileType)) {
+         if (!config.includes("<Dicom")) valid = false;
+    }
+    
+    return valid;
+};
+
 const TemplatesInGroup = ({ templates, group, onSelectRecipe, isEdition, detectedFileType }) => {
   const picked = templates
     .filter((recipe) => recipe.group === group)
-    // templates without `order` go to the end of the list
+    // Filter compatible templates ONLY
+    .filter((recipe) => isCompatible(recipe, detectedFileType))
     .sort((a, b) => (a.order ?? Number.POSITIVE_INFINITY) - (b.order ?? Number.POSITIVE_INFINITY));
 
   const isCommunityEdition = isEdition === "Community";
+
+  if (picked.length === 0) return null;
 
   return (
     <ul>
       {picked.map((recipe) => {
         const isEnterpriseTemplate = recipe.type === "enterprise";
-        let isDisabled = isCommunityEdition && isEnterpriseTemplate;
-        let title = isDisabled ? "Enterprise feature - Available in Synapse Enterprise" : "";
-
-        if (detectedFileType && !isDisabled) {
-            // Simple validation logic based on tags
-            const config = recipe.config;
-            let isCompatible = true;
-            
-            if (["image", "bmp", "png", "jpg", "jpeg"].includes(detectedFileType)) {
-                if (!config.includes("<Image") && !config.includes("<Img")) isCompatible = false;
-            } else if (["audio", "wav", "mp3"].includes(detectedFileType)) {
-                if (!config.includes("<Audio")) isCompatible = false;
-            } else if (["video", "mp4"].includes(detectedFileType)) {
-                if (!config.includes("<Video")) isCompatible = false;
-            } else if (["text", "txt"].includes(detectedFileType)) {
-                if (!config.includes("<Text") && !config.includes("<HyperText")) isCompatible = false;
-            } else if (["medical", "dicom", "dcm"].includes(detectedFileType)) {
-                 if (!config.includes("<Dicom")) isCompatible = false;
-            }
-
-            if (!isCompatible) {
-                isDisabled = true;
-                title = `Incompatible with uploaded data (${detectedFileType})`;
-            }
-        }
+        const isDisabled = isCommunityEdition && isEnterpriseTemplate;
+        const title = isDisabled ? "Enterprise feature - Available in Synapse Enterprise" : "";
 
         return (
           <li
@@ -87,39 +91,27 @@ export const TemplatesList = ({ selectedGroup, selectedRecipe, onCustomTemplate,
       if (!res) return;
       const { templates, groups } = res;
 
-      // Inject DICOM Template
-      if (!groups.includes("Medical Imaging")) {
-        groups.push("Medical Imaging");
-      }
-      templates.push({
-        title: "DICOM Segmentation",
-        group: "Medical Imaging",
-        image: "https://raw.githubusercontent.com/HumanSignal/label-studio/master/web/libs/editor/src/assets/icons/logo.svg", // Fallback or placeholder
-    config: `<View>
-  <Header value="Medical Image Segmentation" />
-    <PolygonLabels name="tag" toName="dicom">
-      <Label value="Tumor" background="#ef4444" />
-      <Label value="Tissue" background="#22c55e" />
-      <Label value="Organ" background="#3b82f6" />
-      <Label value="Bone" background="#eab308" />
-    </PolygonLabels>
-    <Dicom name="dicom" value="$image" zoom="true" pan="true" />
-  </View>`
-      });
-
       setTemplates(templates);
       setGroups(groups);
     };
     fetchData();
   }, []);
 
-  const selected = selectedGroup || groups[0];
+  // Filter groups to only those that have at least one compatible template
+  const filteredGroups = React.useMemo(() => {
+      if (!groups || !templates) return [];
+      return groups.filter(group => {
+          return templates.some(t => t.group === group && isCompatible(t, detectedFileType));
+      });
+  }, [groups, templates, detectedFileType]);
+
+  const selected = selectedGroup || filteredGroups[0];
 
   return (
     <div className={listClass}>
       <aside className={listClass.elem("sidebar")}>
         <ul>
-          {groups.map((group) => (
+          {filteredGroups.map((group) => (
             <li
               key={group}
               onClick={() => onSelectGroup(group)}

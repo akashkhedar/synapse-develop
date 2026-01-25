@@ -638,6 +638,19 @@ export default observer(
       const isPanTool = item.getToolsManager().findSelectedTool()?.fullName === "ZoomPanTool";
       const isMoveTool = item.getToolsManager().findSelectedTool()?.fullName === "MoveTool";
 
+      // --- RIGHT CLICK PANNING START ---
+      if (e.evt.button === 2) {
+        this.isRightPanning = true;
+        this.lastPanX = e.evt.clientX;
+        this.lastPanY = e.evt.clientY;
+        
+        // Explicitly attach global listeners for smooth dragging outside canvas
+        window.addEventListener("mousemove", this.handleGlobalMouseMove);
+        window.addEventListener("mouseup", this.handleGlobalMouseUp);
+        return; 
+      }
+      // --- END RIGHT CLICK PANNING START ---
+
       this.skipNextMouseDown = this.skipNextMouseUp = this.skipNextClick = false;
       if (isFF(FF_LSDV_4930)) {
         this.mouseDownPoint = { x: e.evt.offsetX, y: e.evt.offsetY };
@@ -742,6 +755,15 @@ export default observer(
      * Mouse up outside the canvas
      */
     handleGlobalMouseUp = (e) => {
+      // --- RIGHT CLICK PANNING END ---
+      if (this.isRightPanning) {
+        this.isRightPanning = false;
+        window.removeEventListener("mousemove", this.handleGlobalMouseMove);
+        window.removeEventListener("mouseup", this.handleGlobalMouseUp);
+        return;
+      }
+      // --- END RIGHT CLICK PANNING END ---
+
       window.removeEventListener("mousemove", this.handleGlobalMouseMove);
       window.removeEventListener("mouseup", this.handleGlobalMouseUp);
 
@@ -756,9 +778,21 @@ export default observer(
     };
 
     handleGlobalMouseMove = (e) => {
-      if (e.target && e.target.tagName === "CANVAS") return;
-
       const { item } = this.props;
+
+      // --- RIGHT CLICK PANNING LOGIC ---
+      if (this.isRightPanning) {
+         const dx = e.clientX - this.lastPanX;
+         const dy = e.clientY - this.lastPanY;
+         this.lastPanX = e.clientX;
+         this.lastPanY = e.clientY;
+
+         item.setZoomPosition(item.zoomingPositionX + dx, item.zoomingPositionY + dy);
+         return;
+      }
+      // --- END RIGHT CLICK PANNING LOGIC ---
+
+      if (e.target && e.target.tagName === "CANVAS") return;
       const { clientX: x, clientY: y } = e;
 
       return item.event("mousemove", e, x - this.canvasX, y - this.canvasY);
@@ -792,6 +826,19 @@ export default observer(
 
     handleMouseMove = (e) => {
       const { item } = this.props;
+
+      // --- RIGHT CLICK PANNING LOGIC (ON CANVAS) ---
+      if (this.isRightPanning) {
+         const dx = e.evt.clientX - this.lastPanX;
+         const dy = e.evt.clientY - this.lastPanY;
+         this.lastPanX = e.evt.clientX;
+         this.lastPanY = e.evt.clientY;
+
+         item.setZoomPosition(item.zoomingPositionX + dx, item.zoomingPositionY + dy);
+         // Don't return, let cursor update happen? 
+         // But prevent other tools?
+      }
+      // --- END RIGHT CLICK PANNING LOGIC ---
 
       item.freezeHistory();
 
@@ -888,38 +935,15 @@ export default observer(
      * - Two-finger scroll: Pan the image when zoomed in
      */
     handleZoom = (e) => {
-      if (e.evt?.ctrlKey || e.evt?.metaKey) {
+      // Always Zoom on Wheel (Universal)
+      if (e.evt) {
         e.evt.preventDefault();
 
         const { item } = this.props;
         const stage = item.stageRef;
 
-        // Unified smooth zoom behavior for both trackpad and mouse wheel
-        item.handleZoom(e.evt.deltaY, stage.getPointerPosition(), e.evt.ctrlKey);
-      } else if (e.evt) {
-        // Two fingers scroll (panning) - only when zoomed in
-        const { item } = this.props;
-
-        const maxScrollX = Math.round(item.stageWidth * item.zoomScale) - item.stageWidth;
-        const maxScrollY = Math.round(item.stageHeight * item.zoomScale) - item.stageHeight;
-
-        const newPos = {
-          x: Math.min(0, Math.ceil(item.zoomingPositionX - e.evt.deltaX)),
-          y: Math.min(0, Math.ceil(item.zoomingPositionY - e.evt.deltaY)),
-        };
-
-        // Calculate scroll boundaries to allow scrolling the page when reaching stage edges
-        const withinX = newPos.x !== 0 && newPos.x > -maxScrollX && item.zoomScale !== 1;
-        const withinY = newPos.y !== 0 && newPos.y > -maxScrollY && item.zoomScale !== 1;
-
-        // Detect scroll direction
-        const scrollingX = Math.abs(e.evt.deltaX) > Math.abs(e.evt.deltaY);
-        const scrollingY = Math.abs(e.evt.deltaY) > Math.abs(e.evt.deltaX);
-
-        if (withinX && scrollingX) e.evt.preventDefault();
-        if (withinY && scrollingY) e.evt.preventDefault();
-
-        item.setZoomPosition(newPos.x, newPos.y);
+        // Unified smooth zoom behavior
+        item.handleZoom(e.evt.deltaY, stage.getPointerPosition(), true);
       }
     };
 
@@ -1096,14 +1120,15 @@ export default observer(
             </div>
           ) : null}
 
-          <div
-            ref={(node) => {
-              item.setContainerRef(node);
-              this.attachObserver(node);
-            }}
-            className={containerClassName}
-            style={containerStyle}
-          >
+            <div
+              ref={(node) => {
+                item.setContainerRef(node);
+                this.attachObserver(node);
+              }}
+              className={containerClassName}
+              style={containerStyle}
+              onContextMenu={(e) => e.preventDefault()}
+            >
             <div
               ref={(node) => {
                 this.filler = node;
@@ -1273,7 +1298,9 @@ const EntireStage = observer(
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
+        onMouseUp={onMouseUp}
         onWheel={onWheel}
+        onContextMenu={(e) => e.evt.preventDefault()}
       >
         <StageContent item={item} store={store} state={state} crosshairRef={crosshairRef} />
       </Stage>
@@ -1455,13 +1482,11 @@ const StageContent = observer(({ item, store, state, crosshairRef }) => {
       <DrawingRegion item={item} />
       {item.smoothingEnabled === false && <PixelGridLayer item={item} />}
 
-      {item.crosshair && (
-        <Crosshair
+      <Crosshair
           ref={crosshairRef}
           width={isFF(FF_ZOOM_OPTIM) ? item.containerWidth : item.stageWidth}
           height={isFF(FF_ZOOM_OPTIM) ? item.containerHeight : item.stageHeight}
         />
-      )}
 
       {tool && tool.toolName.match(/bitmask/i) && <CursorLayer item={item} tool={tool} />}
     </>

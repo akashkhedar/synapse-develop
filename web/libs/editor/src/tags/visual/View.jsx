@@ -111,6 +111,7 @@ const Model = types
       "audio",
       "image",
       "dicom",
+      "dicom3d",
       "hypertext",
       "richtext",
       "timeseries",

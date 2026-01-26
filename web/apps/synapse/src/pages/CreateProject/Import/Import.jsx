@@ -37,7 +37,7 @@ const supportedExtensions = {
   html: ["html", "htm", "xml"],
   pdf: ["pdf"],
   structuredData: ["csv", "tsv", "json"],
-  medical: ["dcm", "dicom"],
+  medical: ["dcm", "dicom", "zip"],
 };
 const allSupportedExtensions = flatten(Object.values(supportedExtensions));
 
@@ -226,7 +226,7 @@ export const ImportPage = ({
     // if (files.uploaded.some((f) => /\.(dcm|dicom)$/i.test(f.file))) { onDicomDetected?.(true); }
     
     // We keep existing dcm check but also add general type detection
-    if (files.uploaded.some((f) => /\.(dcm|dicom)$/i.test(f.file))) {
+    if (files.uploaded.some((f) => /\.(dcm|dicom|zip)$/i.test(f.file))) {
         onDicomDetected?.(true);
         // Medical overrides others for our specific use case?
         // Let's rely on dominantType but prefer medical if present?

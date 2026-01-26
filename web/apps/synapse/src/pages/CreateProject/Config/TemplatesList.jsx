@@ -32,8 +32,8 @@ const isCompatible = (recipe, detectedFileType) => {
         if (!config.includes("<Video")) valid = false;
     } else if (["text", "txt"].includes(detectedFileType)) {
         if (!config.includes("<Text") && !config.includes("<HyperText")) valid = false;
-    } else if (["medical", "dicom", "dcm"].includes(detectedFileType)) {
-         if (!config.includes("<Dicom")) valid = false;
+    } else if (["medical", "dicom", "dcm", "zip"].includes(detectedFileType)) {
+         if (!config.includes("<Dicom") && !config.includes("<Dicom3D")) valid = false;
     }
     
     return valid;
@@ -93,6 +93,15 @@ export const TemplatesList = ({ selectedGroup, selectedRecipe, onCustomTemplate,
 
       setTemplates(templates);
       setTemplates(templates);
+
+      // Inject Medical 3D Template
+      templates.push({
+          title: "3D Medical Volume",
+          group: "Medical Imaging",
+          config: '<View>\n  <Dicom3D name="volume" value="$volume" />\n</View>',
+          image: "https://ls-assets.s3.amazonaws.com/templates/medical.png",
+          type: "community"
+      });
       
       // Ensure "Medical Imaging" group exists if we have templates for it
       // This handles cases where backend doesn't explicitly return the group in the list

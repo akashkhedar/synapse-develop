@@ -10,6 +10,7 @@ import cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
 import dicomParser from "dicom-parser";
 import cornerstoneMath from "cornerstone-math";
 import Hammer from "hammerjs";
+import { HtxDicom3DView } from "../Dicom3D";
 import "./Dicom.scss";
 
 console.log("Dicom.jsx file evaluated");
@@ -423,6 +424,15 @@ class DicomView extends Component {
 
   render() {
     const { item } = this.props;
+
+    // Smart Fallback for ZIP files (Volume Mode)
+    let values = item.parsedValue;
+    if (!Array.isArray(values)) values = [values];
+    if (values.length === 1 && typeof values[0] === 'string' && values[0].toLowerCase().endsWith('.zip')) {
+        console.log("DicomView detected ZIP file, switching to Dicom3D/VolumeViewport");
+        return <HtxDicom3DView {...this.props} />;
+    }
+
     return (
       <div className="dicom-viewer-container" style={{ width: item.width || "100%", height: item.height || "512px", position: "relative", color: "white" }}>
         <div 

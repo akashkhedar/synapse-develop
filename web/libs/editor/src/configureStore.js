@@ -1,3 +1,4 @@
+import "./tags/object";
 import AppStore from "./stores/AppStore";
 
 // Get environment settings

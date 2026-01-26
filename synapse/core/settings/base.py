@@ -369,6 +369,19 @@ CORS_ALLOW_METHODS = [
 ]
 ALLOWED_HOSTS = get_env_list("ALLOWED_HOSTS", default=["*"])
 
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8080",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:8010",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:8010",
+]
+
 # Auth modules
 AUTH_USER_MODEL = "users.User"
 AUTHENTICATION_BACKENDS = [
@@ -593,6 +606,7 @@ SUPPORTED_EXTENSIONS = set(
         ".pdf",
         ".dcm",
         ".dicom",
+        ".zip",
     ]
 )
 

@@ -1,16 +1,25 @@
 .dicom-3d-container {
   width: 100%;
   height: 100%;
+  min-height: 500px;
   background-color: #000;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr; // Force row to fill height
+  grid-gap: 4px;
+  background-color: #000;
+  overflow: hidden; // clipped content
+  position: relative; // Ensure overlay is contained
 
   .viewport-element {
-    flex: 1;
+    min-width: 0; // Prevent flex/grid item overflow
+    min-height: 0;
     width: 100%;
     height: 100%;
     outline: none; // Remove focus outline
+    background: #000;
+    position: relative;
+    border: 1px solid #333; // Subtle separator
   }
 
   .loading-overlay {

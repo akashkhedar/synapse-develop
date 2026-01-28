@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # The Synapse Platform
+  app:
+    build: .
+    container_name: synapse-platform
+    ports:
+      - "8080:8080"
+    environment:
+      - DJANGO_SETTINGS_MODULE=synapse.core.settings.synapse
+      - DEBUG=False
+      # Database Connection
+      - POSTGRE_HOST=db
+      - POSTGRE_PORT=5432
+      - POSTGRE_NAME=synapse
+      - POSTGRE_USER=synapse
+      - POSTGRE_PASSWORD=synapse_password
+      # Redis Connection
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # General
+      - HOST=http://localhost:8080
+      - SECRET_KEY=local_docker_secret_key_change_me
+    depends_on:
+      - db
+      - redis
+    command: >
+      sh -c "python synapse/manage.py migrate &&
+             gunicorn --bind 0.0.0.0:8080 --workers 2 synapse.core.wsgi:application"
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: synapse-db
+    environment:
+      POSTGRES_DB: synapse
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: synapse_password
+    volumes:
+      - synapse_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: synapse-redis
+    volumes:
+      - synapse_redis_data:/data
+
+volumes:
+  synapse_db_data:
+  synapse_redis_data:

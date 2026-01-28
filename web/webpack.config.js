@@ -34,7 +34,7 @@ const FRONTEND_HMR = process.env.FRONTEND_HMR === "true";
 const FRONTEND_HOSTNAME = FRONTEND_HMR
   ? process.env.FRONTEND_HOSTNAME || "http://localhost:8010"
   : "";
-const DJANGO_HOSTNAME = process.env.DJANGO_HOSTNAME || "http://localhost:8080";
+const DJANGO_HOSTNAME = process.env.DJANGO_HOSTNAME || "http://127.0.0.1:8080";
 const HMR_PORT = FRONTEND_HMR ? +new URL(FRONTEND_HOSTNAME).port : 8010;
 
 const LOCAL_ENV = {
@@ -47,8 +47,13 @@ const BUILD = {
   NO_MINIMIZE: isDevelopment || !!process.env.BUILD_NO_MINIMIZATION,
 };
 
+const CopyPlugin = require("copy-webpack-plugin");
+
 const plugins = [
   new MiniCssExtractPlugin(),
+  // new CopyPlugin({
+  //   patterns: [],
+  // }),
   new DefinePlugin({
     "process.env.CSS_PREFIX": JSON.stringify(css_prefix),
   }),
@@ -314,8 +319,12 @@ module.exports = composePlugins(
             port: HMR_PORT,
             // Enable HMR
             hot: true,
-            // Allow cross-origin requests from Django
-            headers: { "Access-Control-Allow-Origin": "*" },
+            headers: { 
+              "Access-Control-Allow-Origin": "*",
+              "Cross-Origin-Opener-Policy": "same-origin",
+              "Cross-Origin-Embedder-Policy": "require-corp",
+              "Cross-Origin-Resource-Policy": "cross-origin",
+            },
             static: {
               directory: path.resolve(__dirname, "../synapse/core/static/"),
               publicPath: "/static/",
@@ -326,7 +335,7 @@ module.exports = composePlugins(
             allowedHosts: "all", // Allow access from Django's server
             proxy: [
               {
-                context: ["/api", "/user", "/admin", "/django-rq", "/static", "/data", "/media"],
+                context: ["/api", "/user", "/admin", "/django-rq", "/static", "/data", "/media", "/storage-data"],
                 target: `${DJANGO_HOSTNAME}`,
                 changeOrigin: true,
                 secure: false,

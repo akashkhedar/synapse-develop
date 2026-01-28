@@ -352,12 +352,12 @@ INTERNAL_IPS = [  # django debug toolbar for django==2.2 requirement
 ]
 
 # Typical secure configuration is simply set CORS_ALLOW_ALL_ORIGINS = False in the env
-if allowed_origins := get_env_list("CORS_ALLOWED_ORIGINS"):
-    CORS_ALLOWED_ORIGINS = allowed_origins
-elif allowed_origin_regexes := get_env_list("CORS_ALLOWED_ORIGIN_REGEXES"):
-    CORS_ALLOWED_ORIGIN_REGEXES = allowed_origin_regexes
-else:
-    CORS_ALLOW_ALL_ORIGINS = get_bool_env("CORS_ALLOW_ALL_ORIGINS", True)
+# if allowed_origins := get_env_list("CORS_ALLOWED_ORIGINS"):
+#     CORS_ALLOWED_ORIGINS = allowed_origins
+# elif allowed_origin_regexes := get_env_list("CORS_ALLOWED_ORIGIN_REGEXES"):
+#     CORS_ALLOWED_ORIGIN_REGEXES = allowed_origin_regexes
+# else:
+#     CORS_ALLOW_ALL_ORIGINS = get_bool_env("CORS_ALLOW_ALL_ORIGINS", True)
 
 CORS_ALLOW_METHODS = [
     "DELETE",
@@ -371,6 +371,7 @@ ALLOWED_HOSTS = get_env_list("ALLOWED_HOSTS", default=["*"])
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
+CORS_ORIGIN_ALLOW_ALL = False # Fallback for older versions
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://localhost:3000",

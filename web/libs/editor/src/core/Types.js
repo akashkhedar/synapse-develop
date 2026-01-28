@@ -54,7 +54,6 @@ function allModelsTypes() {
           if (Registry.tags.includes(sn.type) || Registry.models[sn.type]) {
             return Registry.getModelByTag(sn.type);
           }
-          console.error(`Unknown tag: ${sn.type}. Available tags:`, Registry.tags);
           throw new ConfigurationError(`Not expecting tag: ${sn.type}`);
         },
       },

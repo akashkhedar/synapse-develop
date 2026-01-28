@@ -24,4 +24,5 @@ synapse/**/*.pyc
 !LICENSE
 !pyproject.toml
 !poetry.lock
+!synapse-sdk/**
 

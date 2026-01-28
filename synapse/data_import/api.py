@@ -1433,6 +1433,7 @@ class DownloadStorageData(APIView):
             )
             response["X-Accel-Redirect"] = redirect
             response["Content-Disposition"] = f'inline; filename="{filepath}"'
+            response["Cross-Origin-Resource-Policy"] = "cross-origin"
             return response
 
         # No NGINX: standard way for direct file serving
@@ -1444,4 +1445,149 @@ class DownloadStorageData(APIView):
             )
             response["Content-Disposition"] = f'inline; filename="{filepath}"'
             response["filename"] = filepath
+            response["Cross-Origin-Resource-Policy"] = "cross-origin"
             return response
+
+
+class DicomImportAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        from urllib.parse import parse_qs, urlparse, unquote
+        import hashlib
+        import zipfile
+        import os
+        import glob
+        import shutil
+        import tempfile
+        from django.core.files.storage import default_storage
+        from django.conf import settings
+        
+        url = request.GET.get("url")
+        if not url:
+            return Response({"error": "url parameter is required"}, status=400)
+
+        # Resolve file path from URL
+        file_path = None
+        if "filepath=" in url:
+            parsed = urlparse(url)
+            query = parse_qs(parsed.query)
+            file_path = query.get("filepath", [None])[0]
+        elif url.startswith(settings.MEDIA_URL):
+            # Remove MEDIA_URL prefix to get relative path
+            file_path = url[len(settings.MEDIA_URL):]
+        
+        if not file_path:
+             return Response({"error": "Could not resolve file path from URL"}, status=400)
+             
+        # Normalize file path (remove leading slashes if necessary)
+        if file_path.startswith('/'):
+            file_path = file_path[1:]
+            
+        # Check if file exists (S3 or Local)
+        # Note: default_storage.exists works for both
+        if not default_storage.exists(file_path):
+             # Try unquoted
+             file_path = unquote(file_path)
+             if not default_storage.exists(file_path):
+                return Response({"error": f"File not found: {file_path}"}, status=404)
+
+        # Create cache directory
+        file_hash = hashlib.md5(file_path.encode('utf-8')).hexdigest()
+        cache_dir = os.path.join(settings.MEDIA_ROOT, "dicom_cache", file_hash)
+        
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir, exist_ok=True)
+            
+            try:
+                # Download/Open file and extract
+                # We use a temp file to ensure zipfile can handle it (S3 streams might not be seekable)
+                # On Windows, we must close the file before opening with ZipFile, so delete=False
+                tmp_path = None
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                        tmp_path = tmp.name
+                        with default_storage.open(file_path, 'rb') as f:
+                            shutil.copyfileobj(f, tmp)
+                    
+                    # File is closed now, safe to open with ZipFile
+                    with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
+                        zip_ref.extractall(cache_dir)
+                finally:
+                    if tmp_path and os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
+                        
+            except zipfile.BadZipFile:
+                # Clean up empty dir
+                shutil.rmtree(cache_dir, ignore_errors=True)
+                return Response({"error": "Invalid ZIP file"}, status=400)
+            except Exception as e:
+                shutil.rmtree(cache_dir, ignore_errors=True)
+                return Response({"error": f"Error processing file: {str(e)}"}, status=500)
+
+        # List all extracted files
+        image_urls = []
+        # Recursively find files
+        for root, dirs, files in os.walk(cache_dir):
+            for file in files:
+                if file.lower().endswith('.dcm') or file.lower().endswith('.ima') or '.' not in file:
+                     # Construct Relative Path from cache_dir
+                     # root is absolute, cache_dir is absolute
+                     rel_dir = os.path.relpath(root, cache_dir)
+                     if rel_dir == '.':
+                         rel_path = file
+                     else:
+                         rel_path = os.path.join(rel_dir, file)
+                     
+                     # Ensure forward slashes for URL
+                     rel_path = rel_path.replace(os.sep, '/')
+                     
+                     # Use the Serving API
+                     serve_url = f"/api/import/dicom-serve/{file_hash}/{rel_path}"
+                     image_urls.append(serve_url)
+    
+        # Sort URLs
+        try:
+            image_urls.sort(key=lambda x: int(''.join(filter(str.isdigit, x)) or 0))
+        except:
+            image_urls.sort()
+
+        return Response({"imageIds": image_urls})
+
+
+class DicomServeAPI(APIView):
+    """
+    Serves extracted DICOM files from the local cache.
+    """
+    permission_classes = (IsAuthenticated,)
+    
+    @override_report_only_csp
+    @csp(SANDBOX=[])
+    def get(self, request, file_hash, filename):
+        import os
+        from django.conf import settings
+        from django.http import HttpResponse, FileResponse, Http404
+        
+        # Security check: Ensure we are only reading from the dedicated cache directory
+        cache_root = os.path.join(settings.MEDIA_ROOT, "dicom_cache", file_hash)
+        file_path = os.path.join(cache_root, filename)
+        
+        # Normalize and check for traversal
+        try:
+            full_path = os.path.realpath(file_path)
+            cache_root_real = os.path.realpath(cache_root)
+        except ValueError:
+             raise Http404("Invalid path")
+
+        if not full_path.startswith(cache_root_real):
+            return Response(status=403) # Forbidden
+            
+        if not os.path.exists(full_path):
+            raise Http404("File not found")
+            
+        # Serve the file
+        # Check content type? DICOM is application/dicom usually
+        response = FileResponse(open(full_path, 'rb'), content_type="application/dicom")
+        # Necessary for SharedArrayBuffer when COOP/COEP are enabled
+        response["Cross-Origin-Resource-Policy"] = "cross-origin"
+        return response

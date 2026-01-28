@@ -6,7 +6,11 @@ from . import api
 
 app_name = 'data_import'
 
-_api_urlpatterns = [path('file-upload/<int:pk>', api.FileUploadAPI.as_view(), name='file-upload-detail')]
+_api_urlpatterns = [
+    path('file-upload/<int:pk>', api.FileUploadAPI.as_view(), name='file-upload-detail'),
+    path('dicom-process/', api.DicomImportAPI.as_view(), name='dicom-process'),
+    path('dicom-serve/<str:file_hash>/<path:filename>', api.DicomServeAPI.as_view(), name='dicom-serve'),
+]
 
 _api_projects_urlpatterns = [
     # import api

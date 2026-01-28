@@ -308,6 +308,7 @@ class SecurityHeadersMiddleware:
         "X-XSS-Protection": "1; mode=block",
         "Referrer-Policy": "strict-origin-when-cross-origin",
         "Permissions-Policy": "camera=(), microphone=(), geolocation=(), screen-wake-lock=()",
+        "Cross-Origin-Resource-Policy": "cross-origin",
     }
 
     # Additional headers for API/data responses

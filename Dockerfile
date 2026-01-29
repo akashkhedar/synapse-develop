@@ -1,5 +1,5 @@
 # Base Image for Frontend Build
-FROM node:18 AS frontend-builder
+FROM node:20 AS frontend-builder
 
 # Set working directory for frontend
 WORKDIR /app/web
@@ -36,7 +36,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
-ENV POETRY_VERSION=1.7.1
+ENV POETRY_VERSION=2.0.1
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
 
@@ -47,6 +47,11 @@ COPY pyproject.toml poetry.lock ./
 COPY synapse-sdk/ ./synapse-sdk/
 
 # Install Python dependencies globally (no virtualenv)
+# Fix relative path for Poetry 2.0 compatibility in Docker
+# and regenerate lock file because the hash changed
+RUN sed -i 's|file:./synapse-sdk|file:///app/synapse-sdk|' pyproject.toml \
+    && poetry lock
+
 RUN poetry config virtualenvs.create false \
     && poetry install --only main --no-interaction --no-ansi \
     && pip install gunicorn

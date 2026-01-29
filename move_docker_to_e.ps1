@@ -1,0 +1,6 @@
+Write-Error "This script is not compatible with your Docker version."
+Write-Host "Please use the Docker Desktop UI to move your Disk Image Location."
+Write-Host "1. Open Docker Desktop Settings > Resources > Disk image location"
+Write-Host "2. Select your destination folder (e.g., F:\DockerData)"
+Write-Host "3. Click Apply & Restart"
+Write-Host "See docker_storage_guide.md for details."

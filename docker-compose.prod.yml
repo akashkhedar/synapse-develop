@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  app:
+    # We use the image built and pushed to Artifact Registry
+    # The deploy script will replace ${IMAGE_URI} with the actual value
+    image: ${IMAGE_URI}
+    container_name: synapse-platform
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - production.env
+    depends_on:
+      - db
+      - redis
+    command: >
+      sh -c "python synapse/manage.py migrate &&
+             python synapse/manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8080 --workers 2 --timeout 120 synapse.core.wsgi:application"
+
+  db:
+    image: postgres:15-alpine
+    container_name: synapse-db
+    restart: always
+    volumes:
+      - synapse_db_data:/var/lib/postgresql/data
+    env_file:
+      - production.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: synapse-redis
+    restart: always
+    volumes:
+      - synapse_redis_data:/data
+
+volumes:
+  synapse_db_data:
+  synapse_redis_data:

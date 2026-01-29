@@ -1562,7 +1562,7 @@ class DicomServeAPI(APIView):
     permission_classes = (IsAuthenticated,)
     
     @override_report_only_csp
-    @csp(SANDBOX=[])
+    @csp(SANDBOX=[], IMG_SRC=["'self'", "data:", "blob:"])
     def get(self, request, file_hash, filename):
         import os
         from django.conf import settings

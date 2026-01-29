@@ -10,7 +10,8 @@ import {
   metaData,
   imageLoader,
   eventTarget,
-  EVENTS as CS_EVENTS
+  EVENTS as CS_EVENTS,
+  cache
 } from "@cornerstonejs/core";
 import {
   init as initCornerstoneTools,
@@ -49,7 +50,8 @@ async function initCornerstone() {
   try {
     // 1. Initialize Core & Tools
     await initCornerstoneCore();
-    setUseCPURendering(false); // FORCE GPU
+    // setUseCPURendering(true); // Allow CPU fallback if needed
+    cache.setMaxCacheSize(2 * 1024 * 1024 * 1024); // 2GB Limit
     await initCornerstoneTools();
     
     // 2. Inject Cornerstone into Image Loader (CRITICAL FIX)
@@ -66,7 +68,8 @@ async function initCornerstone() {
 
     // 3. Initialize DICOM Image Loader
     const config = { 
-        maxWebWorkers: navigator.hardwareConcurrency || 1,
+        // Limit workers to 2 to prevent GPU saturation/Context Loss on integrated graphics
+        maxWebWorkers: 2, 
         startWebWorkersOnDemand: true,
         taskConfiguration: {
             decodeTask: {
@@ -211,7 +214,7 @@ class Dicom3DView extends Component {
         if (this.unmounted) return;
         
         // Safety Check
-        if (!this.elementAxial.current || !this.element3D.current) {
+        if (!this.elementAxial.current || !this.elementSagittal.current || !this.elementCoronal.current) {
             console.warn("Viewports not ready in DOM. Retrying...");
             setTimeout(() => this.processData(), 100);
             return;
@@ -238,6 +241,9 @@ class Dicom3DView extends Component {
             this.renderingEngine = null;
         }
         
+        // Purge cache AFTER destroying engine to release resources
+        cache.purgeCache();
+        
         this.setState({ status: 'Setting up Viewports...' });
         this.renderingEngine = new RenderingEngine(this.renderingEngineId);
 
@@ -259,12 +265,6 @@ class Dicom3DView extends Component {
                 type: Enums.ViewportType.ORTHOGRAPHIC,
                 element: this.elementCoronal.current,
                 defaultOptions: { orientation: Enums.OrientationAxis.CORONAL }
-            },
-            {
-                viewportId: "VOLUME_3D",
-                type: Enums.ViewportType.VOLUME_3D,
-                element: this.element3D.current,
-                defaultOptions: { orientation: Enums.OrientationAxis.AXIAL } 
             }
         ];
 
@@ -275,7 +275,7 @@ class Dicom3DView extends Component {
         
         this.setState({ status: 'Creating Volume...' });
         
-        // Define volume with progressive rendering
+        // Define volume
         const volume = await volumeLoader.createAndCacheVolume(this.volumeId, {
             imageIds: imageIds
         });
@@ -286,35 +286,26 @@ class Dicom3DView extends Component {
         this.setupTools();
         this.setupSynchronizers();
 
-        // 5. Load Volume Data
-        // This triggers the streaming
-        volume.load();
+        // 5. Set Volume to Viewports
+        await setVolumesForViewports(
+            this.renderingEngine, 
+            [{ volumeId: this.volumeId }], 
+            ["AXIAL", "SAGITTAL", "CORONAL"]
+        );
 
-        // 6. Set Volume to Viewports
-        // Render Axial first for better UX
-        await setVolumesForViewports(
-            this.renderingEngine, 
-            [{ volumeId: this.volumeId }], 
-            ["AXIAL"]
-        );
-        this.renderingEngine.render();
+        // 6. Load Data & Render
+        // Trigger load AFTER setting viewports
+        volume.load();
         
-        // Then add others
-        await setVolumesForViewports(
-            this.renderingEngine, 
-            [{ volumeId: this.volumeId }], 
-            ["SAGITTAL", "CORONAL", "VOLUME_3D"]
-        );
+        this.renderingEngine.render();
         
         if (this.unmounted) return;
 
-        // 7. Render All
-        this.renderingEngine.render();
         this.setState({ isLoading: false, status: 'Ready' });
+        
+        if (this.unmounted) return;
 
-        // Apply visual presets to 3D volume
-        const viewport3D = this.renderingEngine.getViewport("VOLUME_3D");
-        // viewport3D.setProperties({ preset: 'CT-Bone' }); // Example if available
+        this.setState({ isLoading: false, status: 'Ready' });
 
     } catch (err) {
         console.error("Dicom3D Error:", err);
@@ -341,18 +332,14 @@ class Dicom3DView extends Component {
           cameraSynchronizer.add({ renderingEngineId: this.renderingEngineId, viewportId });
           voiSynchronizer.add({ renderingEngineId: this.renderingEngineId, viewportId });
       });
-      // Do NOT sync camera of 3D view with 2D views usually, but VOI is okay
-      voiSynchronizer.add({ renderingEngineId: this.renderingEngineId, viewportId: "VOLUME_3D" });
       
       this.synchronizers = [cameraSynchronizer, voiSynchronizer];
   }
 
   setupTools() {
       ToolGroupManager.destroyToolGroup(this.toolGroupId);
-      ToolGroupManager.destroyToolGroup(this.toolGroup3DId);
       
       const toolGroup = ToolGroupManager.createToolGroup(this.toolGroupId);
-      const toolGroup3D = ToolGroupManager.createToolGroup(this.toolGroup3DId);
       
       // MPR Tools
       toolGroup.addTool(WindowLevelTool.toolName);
@@ -360,47 +347,56 @@ class Dicom3DView extends Component {
       toolGroup.addTool(ZoomTool.toolName);
       toolGroup.addTool(StackScrollMouseWheelTool.toolName);
 
-      // 3D Tools
-      toolGroup3D.addTool(TrackballRotateTool.toolName);
-      toolGroup3D.addTool(ZoomTool.toolName);
-      toolGroup3D.addTool(PanTool.toolName);
-      toolGroup3D.addTool(WindowLevelTool.toolName);
-
       // Configure MPR Bindings
       toolGroup.setToolActive(WindowLevelTool.toolName, { bindings: [{ mouseButton: ToolsEnums.MouseBindings.Primary }] });
       toolGroup.setToolActive(PanTool.toolName, { bindings: [{ mouseButton: ToolsEnums.MouseBindings.Auxiliary }] });
       toolGroup.setToolActive(ZoomTool.toolName, { bindings: [{ mouseButton: ToolsEnums.MouseBindings.Secondary }] });
       toolGroup.setToolActive(StackScrollMouseWheelTool.toolName);
 
-      // Configure 3D Bindings
-      toolGroup3D.setToolActive(TrackballRotateTool.toolName, { bindings: [{ mouseButton: ToolsEnums.MouseBindings.Primary }] });
-      toolGroup3D.setToolActive(PanTool.toolName, { bindings: [{ mouseButton: ToolsEnums.MouseBindings.Auxiliary }] });
-      toolGroup3D.setToolActive(ZoomTool.toolName, { bindings: [{ mouseButton: ToolsEnums.MouseBindings.Secondary }] });
-
       // Apply to Viewports
       toolGroup.addViewport("AXIAL", this.renderingEngineId);
       toolGroup.addViewport("SAGITTAL", this.renderingEngineId);
       toolGroup.addViewport("CORONAL", this.renderingEngineId);
-      
-      toolGroup3D.addViewport("VOLUME_3D", this.renderingEngineId);
   }
 
   render() {
     const { isLoading, error, status } = this.state;
-    // 2x2 Grid Layout
-    const gridStyle = { width: '50%', height: '50%', display: 'inline-block', position: 'relative', border: '1px solid #333', boxSizing: 'border-box' };
+    
+    // Flex Layout: 2 Top, 1 Bottom Center
+    const containerStyle = { 
+        width: '100%', 
+        height: '100%', 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        justifyContent: 'center',
+        alignContent: 'flex-start'
+    };
+    
+    const itemStyle = { 
+        width: '50%', 
+        height: '50%', 
+        position: 'relative', 
+        border: '1px solid #333', 
+        boxSizing: 'border-box' 
+    };
     
     return (
       <div className="dicom-3d-wrapper" style={{width: '100%', height: '600px', background: 'black', color: 'white'}}>
           {error ? <div style={{padding:20, color:'red', zIndex:10, position:'absolute'}}>Error: {error}</div> :
            isLoading ? <div style={{padding:20, zIndex:10, position:'absolute'}}>{status}</div> : null}
           
-          <div style={{width:'100%', height: '100%'}}>
-              <div ref={this.elementAxial} style={gridStyle} onContextMenu={e=>e.preventDefault()}/>
-              <div ref={this.elementSagittal} style={gridStyle} onContextMenu={e=>e.preventDefault()}/>
-              <div ref={this.elementCoronal} style={gridStyle} onContextMenu={e=>e.preventDefault()}/>
-              <div ref={this.element3D} style={gridStyle} onContextMenu={e=>e.preventDefault()}>
-                   <div style={{position:'absolute', top:5, right:5, color:'lime', fontSize:12, pointerEvents:'none'}}>3D VOLUME</div>
+          <div style={containerStyle}>
+              {/* Top Left */}
+              <div ref={this.elementAxial} style={itemStyle} onContextMenu={e=>e.preventDefault()}>
+                   <div style={{position:'absolute', top:5, left:5, color:'orange', pointerEvents:'none'}}>AXIAL</div>
+              </div>
+              {/* Top Right */}
+              <div ref={this.elementSagittal} style={itemStyle} onContextMenu={e=>e.preventDefault()}>
+                   <div style={{position:'absolute', top:5, left:5, color:'orange', pointerEvents:'none'}}>SAGITTAL</div>
+              </div>
+              {/* Bottom Center (Flex justifyContent:center handles this) */}
+              <div ref={this.elementCoronal} style={itemStyle} onContextMenu={e=>e.preventDefault()}>
+                   <div style={{position:'absolute', top:5, left:5, color:'orange', pointerEvents:'none'}}>CORONAL</div>
               </div>
           </div>
       </div>

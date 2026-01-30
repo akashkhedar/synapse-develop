@@ -8,7 +8,7 @@ import { TimeSeriesModel } from "./TimeSeries";
 import { PagedViewModel } from "./PagedView";
 import { VideoModel } from "./Video";
 import { ListModel } from "./List";
-import DicomModel from "./Dicom/Dicom"; 
+import { DicomModel } from "./Dicom"; 
 import { Dicom3DModel } from "./Dicom3D"; 
 
 export {

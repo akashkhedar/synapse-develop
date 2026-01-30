@@ -143,6 +143,7 @@ urlpatterns = [
     re_path(r"^", include("labels_manager.urls")),
     re_path(r"^", include("fsm.urls")),
     re_path(r"^api/billing/", include("billing.urls")),
+    re_path(r"^api/blogs/", include("blogs.urls")),
     re_path(r"^api/annotators/", include("annotators.urls")),
     # re_path(r"^", include("telemetry.urls")),  # DISABLED - Behavioral telemetry
     re_path(r"version/", views.version_page, name="version"),  # html page

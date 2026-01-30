@@ -371,6 +371,43 @@ export const CreditDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'payments'>('overview');
 
+  // Payments Pagination State
+  const [paymentsList, setPaymentsList] = useState<Payment[]>([]);
+  const [paymentsOffset, setPaymentsOffset] = useState(0);
+  const [hasMorePayments, setHasMorePayments] = useState(true);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const PAYMENTS_LIMIT = 15;
+
+  useEffect(() => {
+    if (activeTab === 'payments' && paymentsList.length === 0) {
+      loadMorePayments();
+    }
+  }, [activeTab]);
+
+  const loadMorePayments = async () => {
+    if (loadingPayments || !hasMorePayments) return;
+
+    try {
+      setLoadingPayments(true);
+      const data = await billingApi.getPayments(undefined, PAYMENTS_LIMIT, paymentsOffset);
+      
+      setPaymentsList(prev => [...prev, ...data.results]);
+      setPaymentsOffset(prev => prev + PAYMENTS_LIMIT);
+      setHasMorePayments(data.has_more);
+    } catch (error) {
+      console.error("Failed to load payments", error);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  const handlePaymentsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+      loadMorePayments();
+    }
+  };
+
   // Process data for chart
   const chartData = useMemo(() => {
     if (!dashboard) return [];
@@ -766,23 +803,27 @@ export const CreditDashboard: React.FC = () => {
           <div className="payments-section">
             <div className="section-card">
               <h3>Payment History</h3>
-              {recent_payments.length === 0 ? (
+              {paymentsList.length === 0 && !loadingPayments ? (
                 <p className="empty-state">No payments found</p>
               ) : (
-                <div className="payments-table">
+                <div 
+                  className="payments-table" 
+                  style={{ maxHeight: '600px', overflowY: 'auto' }}
+                  onScroll={handlePaymentsScroll}
+                >
                   <table>
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th>Order ID</th>
-                        <th>Method</th>
-                        <th>Amount</th>
-                        <th>Status</th>
+                        <th style={{ position: 'sticky', top: 0, background: 'var(--color-neutral-surface)', zIndex: 1 }}>Date</th>
+                        <th style={{ position: 'sticky', top: 0, background: 'var(--color-neutral-surface)', zIndex: 1 }}>Description</th>
+                        <th style={{ position: 'sticky', top: 0, background: 'var(--color-neutral-surface)', zIndex: 1 }}>Order ID</th>
+                        <th style={{ position: 'sticky', top: 0, background: 'var(--color-neutral-surface)', zIndex: 1 }}>Method</th>
+                        <th style={{ position: 'sticky', top: 0, background: 'var(--color-neutral-surface)', zIndex: 1 }}>Amount</th>
+                        <th style={{ position: 'sticky', top: 0, background: 'var(--color-neutral-surface)', zIndex: 1 }}>Status</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {recent_payments.map((payment) => (
+                      {paymentsList.map((payment) => (
                         <tr key={payment.id}>
                           <td>{formatDate(payment.created_at)}</td>
                           <td>
@@ -796,6 +837,13 @@ export const CreditDashboard: React.FC = () => {
                           <td>{getStatusBadge(payment.status)}</td>
                         </tr>
                       ))}
+                      {loadingPayments && (
+                         <tr>
+                           <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
+                             <Spinner size={24} />
+                           </td>
+                         </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

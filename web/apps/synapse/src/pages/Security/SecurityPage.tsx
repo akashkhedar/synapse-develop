@@ -23,25 +23,29 @@ const SmoothSection: React.FC<{
 const commitments = [
   {
     number: "01",
-    title: "Protect Our Customers' Data",
-    description: "We are dedicated to safeguarding the data and integrity of our customers' critical work. Our security program is designed to protect customer assets and proactively reduce the frequency of negative security events."
+    title: "Protect Patient Privacy (PHI)",
+    description: "We are dedicated to safeguarding Protected Health Information (PHI). Our security program exceeds HIPAA requirements to ensure patient data remains confidential and secure."
   },
   {
     number: "02",
-    title: "Secure Our Foundation",
-    description: "We treat security as foundational, integrating it deeply into our company culture and product development lifecycle."
+    title: "Secure Clinical Foundation",
+    description: "We treat security as a patient safety issue, integrating strict controls into our annotation workflows and infrastructure."
   },
   {
     number: "03",
-    title: "Protect Our Shared Future",
-    description: "As leaders in AI data infrastructure, we actively partner with government, industry, and the research community to define and elevate standards for secure and responsible AI."
+    title: "Enable Responsible Medical AI",
+    description: "As partners in your clinical trials and research, we uphold the highest ethical standards for data handling in healthcare."
   }
 ];
 
 const certifications = [
   {
+    name: "HIPAA Compliant",
+    description: "Fully compliant with Health Insurance Portability and Accountability Act standards for handling PHI."
+  },
+  {
     name: "SOC 2 Type II",
-    description: "Demonstrating commitment to protecting customer data through security, availability, and confidentiality controls that align with AICPA Trust Services Criteria."
+    description: "Demonstrating commitment to protecting customer data through security, availability, and confidentiality controls."
   },
   {
     name: "ISO 27001",
@@ -50,10 +54,6 @@ const certifications = [
   {
     name: "GDPR Compliant",
     description: "Full compliance with European data protection regulations, ensuring privacy and data protection for EU citizens."
-  },
-  {
-    name: "HIPAA Ready",
-    description: "Healthcare data security and privacy compliance for handling protected health information."
   }
 ];
 
@@ -62,25 +62,25 @@ const securityPractices = [
     category: "Data Protection",
     items: [
       "End-to-end encryption using TLS 1.3 in transit and AES-256 at rest",
-      "Automatic daily backups with point-in-time recovery",
-      "Data anonymization and pseudonymization options",
+      "Automatic PHI redaction and de-identification pipelines",
+      "Strict data isolation between tenants and projects",
       "Secure data deletion and right to be forgotten"
     ]
   },
   {
     category: "Access Control",
     items: [
-      "Role-based access control (RBAC) with granular permissions",
+      "Role-based access control (RBAC) with clinical roles",
       "Single sign-on (SSO) with SAML 2.0 and OAuth 2.0",
-      "Multi-factor authentication (MFA) for all accounts",
-      "Comprehensive audit logging of all user actions"
+      "Multi-factor authentication (MFA) mandatory for all staff",
+      "Comprehensive audit logging of all data access"
     ]
   },
   {
     category: "Infrastructure Security",
     items: [
       "Network segmentation and firewall protection",
-      "DDoS protection and rate limiting",
+      "VPC Peering options for enterprise healthcare partners",
       "24/7 security monitoring and incident response",
       "Regular penetration testing by third-party firms"
     ]
@@ -88,9 +88,9 @@ const securityPractices = [
   {
     category: "Compliance & Auditing",
     items: [
-      "Quarterly security audits and assessments",
-      "Annual compliance certifications",
-      "Bug bounty program with responsible disclosure",
+      "Quarterly HIPAA risk assessments",
+      "Annual SOC 2 and ISO compliance audits",
+      "BAA (Business Associate Agreement) availability",
       "Privacy by design in all product features"
     ]
   }
@@ -134,10 +134,10 @@ export const SecurityPage: Page = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight"
           >
-            Trust through
+            HIPAA-Grade Security
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">
-              security and compliance
+              for Patient Data
             </span>
           </motion.h1>
 
@@ -147,9 +147,8 @@ export const SecurityPage: Page = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-xl text-gray-400 max-w-3xl mx-auto font-mono"
           >
-            At Synapse, our customers trust us to develop reliable systems for their most
-            important applications. We take the security of their data seriously, embedding
-            it into our platform at every level.
+            We handle sensitive Protected Health Information (PHI) with the highest standards.
+            Trust, compliance, and patient privacy are embedded into our platform at every level.
           </motion.p>
         </div>
       </section>
@@ -279,35 +278,6 @@ export const SecurityPage: Page = () => {
           </div>
         </div>
       </SmoothSection>
-
-      {/* Vulnerability Disclosure Section */}
-      <SmoothSection className="py-32 bg-black border-t border-gray-900">
-        <div className="max-w-4xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-              Need to report a vulnerability?
-            </h2>
-            <p className="text-gray-400 font-mono text-lg mb-8">
-              Get in touch with our vulnerability disclosure team
-            </p>
-            <motion.a
-              href="mailto:security@synapse.ai"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="inline-block bg-white text-black px-10 py-4 text-base font-semibold transition-all"
-            >
-              security@synapse.ai →
-            </motion.a>
-          </motion.div>
-        </div>
-      </SmoothSection>
-
       <Footer />
     </div>
   );

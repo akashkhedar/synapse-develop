@@ -1,6 +1,10 @@
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import { SmoothSection } from "./shared";
+import image1 from "../../../assets/images/1.jpeg";
+import image2 from "../../../assets/images/2.jpeg";
+import image3 from "../../../assets/images/3.jpg";
+import image4 from "../../../assets/images/4.jpeg";
 
 interface FeatureAccordionProps {
   number: string;
@@ -74,32 +78,31 @@ export const FeaturesSection = () => {
   const features = [
     {
       number: "01",
-      title: "You bring data. We bring expert annotators.",
+      title: "You bring scans. We bring expert radiologists.",
       description:
-        "Connect your S3, GCS, or Azure storage. Our trained annotators handle images, text, audio, and video with domain-specific expertise and quality guarantees.",
-      image: "https://wallpapers.com/images/hd/4k-tech-105e3a4x7aw7coqd.jpg",
+        "Connect your DICOM data from PACS or cloud storage. Our board-certified radiologists handle MRI, CT, X-ray, and pathology slides with domain-specific expertise.",
+      image: image1,
     },
     {
       number: "02",
-      title: "Your labels. Your quality standards.",
+      title: "Clinical-grade precision.",
       description:
-        "Define custom annotation schemas with our visual editor. Set consensus requirements, review workflows, and accuracy thresholds that match your ML pipeline needs.",
-      image: "https://cdn.wallpapersafari.com/64/96/9m8BVu.jpg",
+        "Define custom annotation schemas for tumor detection, organ segmentation, and anomaly classification. Multi-stage doctor review ensures FDA-ready label quality.",
+      image: image2,
     },
     {
       number: "03",
-      title: "SDK-first automation.",
+      title: "HIPAA-compliant automation.",
       description:
-        "Integrate directly with your ML pipeline using our Python SDK. Create projects, import from cloud storage, monitor progress, and export COCO, YOLO, or custom formats programmatically.",
-      image:
-        "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aW5mb3JtYXRpb24lMjB0ZWNobm9sb2d5fGVufDB8fDB8fHww",
+        "Integrate directly with your secure ML pipeline. Create projects, import de-identified data, and export segmentation masks or structured reports via our Python SDK.",
+      image: image3,
     },
     {
       number: "04",
-      title: "Quality built into every label.",
+      title: "Compliance built into every pixel.",
       description:
-        "Multi-annotator consensus, automated agreement scoring, expert reviews, and continuous accuracy monitoring ensure your training data meets production standards.",
-      image: "https://wallpapers.com/images/hd/4k-tech-2k2jzc0qemh7y38n.jpg",
+        "PHI redaction, audit logs, and SOC 2 Type II security come standard. Ensure your training data meets the strictest healthcare compliance requirements.",
+      image: image4,
     },
   ];
 
@@ -140,7 +143,7 @@ export const FeaturesSection = () => {
       <div className="min-h-[20vh] flex items-center">
         <div className="max-w-7xl mx-auto px-6 w-full">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight max-w-2xl">
-            Built for ML teams.
+            Built for Healthcare AI.
             <br />
             Scales with your data.
           </h2>

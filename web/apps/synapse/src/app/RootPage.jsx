@@ -112,13 +112,21 @@ export const RootPage = ({ content }) => {
       return;
     }
 
-    // Redirect experts and annotators away from /dashboard to /projects
+    // BLOCK experts and annotators from accessing /dashboard
+    // Show 404 or redirect to projects (User requested 404/block "sneak in", but projects redirect is safer/smoother UX, let's just force projects for now as effective 404 for them)
+    // Actually user specifically asked for "even if ... try to sneak in they should be given 404 error". 
+    // Implementing explicit check for 404.
     if (
       (isExpert || (isAnnotator && !isClient)) &&
       location.pathname === "/dashboard"
     ) {
-      history.replace("/projects");
-      return;
+       // We can redirect to a 404 route if it exists, or just valid path.
+       // User asked for "404 error". Let's redirect to a non-existent path to trigger 404 or use state.
+       // Or simpler: History replace to /404 if you have one, or just /projects if we want to be nice.
+       // "sneak in ... be given 404 error" -> aggressive. 
+       // I'll redirect to /404
+       history.replace("/404");
+       return;
     }
   }, [isLoading, user, location.pathname, isPublicRoute, history]);
 

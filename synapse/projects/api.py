@@ -232,8 +232,8 @@ class ProjectListAPI(generics.ListCreateAPIView):
         elif user.is_annotator:
             projects = (
                 Project.objects.filter(
-                    members__user=user,
-                    members__enabled=True,
+                    tasks__annotator_assignments__annotator__user=user,
+                    tasks__annotator_assignments__status__in=["assigned", "in_progress", "completed", "rejected", "skipped"]
                 )
                 .order_by(F("pinned_at").desc(nulls_last=True), "-created_at")
                 .distinct()
@@ -488,8 +488,8 @@ class ProjectAPI(generics.RetrieveUpdateDestroyAPIView):
             projects = (
                 Project.objects.with_counts(fields=fields)
                 .filter(
-                    members__user=self.request.user,
-                    members__enabled=True,
+                    tasks__annotator_assignments__annotator__user=self.request.user,
+                    tasks__annotator_assignments__status__in=["assigned", "in_progress", "completed", "rejected", "skipped"]
                 )
                 .order_by(F("pinned_at").desc(nulls_last=True), "-created_at")
                 .distinct()

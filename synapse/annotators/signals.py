@@ -638,3 +638,47 @@ def ensure_expert_project_assignment(sender, instance, created, **kwargs):
 
 
 
+
+@receiver(
+    post_save,
+    sender="annotators.TaskAssignment",
+    dispatch_uid="ensure_annotator_not_in_organization_unique",
+)
+def ensure_annotator_not_in_organization(sender, instance, created, **kwargs):
+    """
+    Safeguard: Ensure annotators are NOT members of the client organization.
+
+    When a task is assigned, check if the annotator is an organization member.
+    If so, remove them. This prevents annotators from gaining implicit organization access.
+    """
+    if not created:
+        return
+
+    try:
+        from organizations.models import OrganizationMember
+
+        annotator = instance.annotator
+        user = annotator.user
+        project = instance.task.project
+        # We need to handle cases where project might be None (though unlikely for a Task)
+        if not project or not project.organization:
+            return
+
+        organization = project.organization
+
+        # Check if user is a member of this organization
+        # We use filter().delete() for efficiency and to avoid exceptions if not found
+        deleted_count, _ = OrganizationMember.objects.filter(
+            user=user, organization=organization
+        ).delete()
+
+        if deleted_count > 0:
+            logger.info(
+                f"🛡️ Safeguard: Removed annotator {user.email} from organization {organization.title} "
+                f"after task assignment (Project: {project.id})"
+            )
+
+    except Exception as e:
+        logger.error(
+            f"Error in ensure_annotator_not_in_organization: {e}", exc_info=True
+        )

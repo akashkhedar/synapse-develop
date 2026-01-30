@@ -239,11 +239,27 @@ export const billingApi = {
   },
 
   /**
-   * Get payment history
+   * Get payment history with pagination
    */
-  getPayments: async (organizationId?: number): Promise<Payment[]> => {
-    const params = organizationId ? `?organization=${organizationId}` : "";
-    return fetchApi<Payment[]>(`/api/billing/payments/${params}`);
+  getPayments: async (
+    organizationId?: number,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<{
+    results: Payment[];
+    count: number;
+    has_more: boolean;
+  }> => {
+    const params = new URLSearchParams();
+    if (organizationId) params.append("organization", organizationId.toString());
+    params.append("limit", limit.toString());
+    params.append("offset", offset.toString());
+
+    return fetchApi<{
+      results: Payment[];
+      count: number;
+      has_more: boolean;
+    }>(`/api/billing/payments/?${params.toString()}`);
   },
 
   /**

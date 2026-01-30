@@ -77,7 +77,7 @@ export const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-gray-300 text-base md:text-lg tracking-normal mb-8 font-medium"
         >
-          Enterprise data annotation for AI training at scale
+          From raw data to life-saving models, Synapse connects your entire AI lifecycle.
         </motion.p>
 
         {/* Main heading - matching Lambda size with hover glitch effect */}
@@ -89,7 +89,7 @@ export const HeroSection = () => {
           style={{ fontFamily: "'Space Grotesk', sans-serif" }}
         >
           <GlitchTextBlock
-            lines={["Transform Data Into", "Intelligence"]}
+            lines={["Accelerate Your", "Medical AI"]}
             className="text-white"
           />
         </motion.h1>
@@ -107,7 +107,7 @@ export const HeroSection = () => {
             className="bg-[#e8e4d9] text-black px-10 py-5 text-[13px] font-semibold tracking-[0.2em] transition-colors uppercase hover:bg-[#d8d4c9]"
             style={{ willChange: "transform" }}
           >
-            Start Annotating Free
+            Start Labeling
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -119,7 +119,7 @@ export const HeroSection = () => {
           </motion.button>
         </motion.div>
       </div>
-
+    
       {/* Right side vertical text */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -130,7 +130,7 @@ export const HeroSection = () => {
         <div className="flex flex-col items-center gap-4">
           <div className="w-px h-20 bg-gradient-to-b from-transparent via-gray-600 to-transparent" />
           <span className="text-gray-500 text-[10px] tracking-[0.3em] [writing-mode:vertical-lr] rotate-180">
-            // Human-in-the-loop AI //
+            // Expert Medical Review //
           </span>
           <div className="w-px h-20 bg-gradient-to-b from-transparent via-gray-600 to-transparent" />
         </div>

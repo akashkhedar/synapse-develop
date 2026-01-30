@@ -30,7 +30,7 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 # CONSTANTS
-REQUIRED_OVERLAP = 3  # Hard-coded: Always 3 annotators per task
+# REQUIRED_OVERLAP removed - use dynamic project settings
 MAX_ASSIGNMENT_ATTEMPTS = 100  # Prevent infinite loops
 MAX_TASKS_IN_PROGRESS = getattr(settings, "ANNOTATOR_MAX_ACTIVE_TASKS", 10)
 
@@ -147,11 +147,22 @@ class EnhancedAssignmentEngine:
 
         logger.info(f"📦 Found {len(all_tasks)} tasks to assign")
 
-        # Set target assignment count = 3 for ALL tasks
+        # Dynamic Overlap Calculation
+        # Cap is user-defined (project.required_overlap, usually 3)
+        # But lowered if fewer annotators are available (to minimum 1)
+        project_cap = getattr(project, "required_overlap", 3)
+        dynamic_overlap = min(project_cap, num_annotators)
+        dynamic_overlap = max(1, dynamic_overlap)  # Ensure at least 1
+
+        logger.info(
+            f"🎯 Dynamic Overlap: {dynamic_overlap} (Project Cap: {project_cap}, Available: {num_annotators})"
+        )
+
+        # Update target count for all tasks to reflect current reality
         from tasks.models import Task
 
         Task.objects.filter(project=project).update(
-            target_assignment_count=REQUIRED_OVERLAP
+            target_assignment_count=dynamic_overlap
         )
 
         # Pre-calculate annotator capacities
@@ -175,135 +186,30 @@ class EnhancedAssignmentEngine:
         tasks_waiting = 0
         annotators_used = set()
 
-        if num_annotators < REQUIRED_OVERLAP:
-            # PARTIAL ASSIGNMENT MODE: Not enough annotators
-            logger.warning(
-                f"⚠️ PARTIAL ASSIGNMENT MODE: Only {num_annotators} annotators, need {REQUIRED_OVERLAP}. "
-                f"Assigning ALL tasks to ALL available annotators."
-            )
-
-            result = EnhancedAssignmentEngine._assign_all_to_all(
-                project, all_tasks, annotators, annotator_capacities
-            )
-
-            return result
-
-        else:
-            # ROTATING ASSIGNMENT MODE: Enough annotators for full coverage
-            logger.info(
-                f"🔄 ROTATING ASSIGNMENT MODE: {num_annotators} annotators, overlap={REQUIRED_OVERLAP}"
-            )
-
-            result = EnhancedAssignmentEngine._assign_with_rotation(
-                project, all_tasks, annotators, annotator_capacities
-            )
-
-            return result
-
-    @staticmethod
-    def _assign_all_to_all(project, all_tasks, annotators, annotator_capacities):
-        """
-        Assign ALL tasks to ALL available annotators (when annotators < 3).
-        Example: 50 tasks, 2 annotators → Each annotator gets all 50 tasks.
-        """
-        total_assignments = 0
-        tasks_fully_assigned = 0
-        tasks_partially_assigned = 0
-        tasks_waiting = 0
-        annotators_used = set()
-
-        with transaction.atomic():
-            for task in all_tasks:
-                # Check existing assignments
-                already_assigned = set(
-                    TaskAssignment.objects.filter(task=task).values_list(
-                        "annotator_id", flat=True
-                    )
-                )
-
-                assigned_to_task = len(already_assigned)
-
-                # Try to assign to ALL annotators
-                for annotator in annotators:
-                    if annotator.id in already_assigned:
-                        continue
-
-                    capacity = annotator_capacities[annotator.id]
-                    if capacity["available"] <= 0:
-                        # Refresh capacity
-                        capacity_info = EnhancedAssignmentEngine._check_capacity(
-                            annotator
-                        )
-                        capacity["available"] = capacity_info["available"]
-                        if capacity["available"] <= 0:
-                            continue
-
-                    # Create assignment
-                    try:
-                        assignment = EnhancedAssignmentEngine._create_assignment(
-                            annotator, task, project
-                        )
-                        if assignment:
-                            total_assignments += 1
-                            assigned_to_task += 1
-                            annotators_used.add(annotator.id)
-                            capacity["available"] -= 1
-                            capacity["current"] += 1
-                            already_assigned.add(annotator.id)
-                    except Exception as e:
-                        logger.error(f"Error assigning task {task.id}: {e}")
-
-                # Categorize task status
-                if assigned_to_task >= REQUIRED_OVERLAP:
-                    tasks_fully_assigned += 1
-                    EnhancedAssignmentEngine._trigger_consolidation_check(task)
-                elif assigned_to_task > 0:
-                    tasks_partially_assigned += 1
-                else:
-                    tasks_waiting += 1
-
+        # Check if we have enough annotators for determining strategy
+        # If we have fewer annotators than the PROJECT CAP, we are in "constrained" mode
+        # But we use dynamic_overlap as the strict target
+        
+        # Strategy: Use rotation if we have multiple people, or all-to-all if small group?
+        # Actually, "All to all" and "Rotation" converge when dynamic_overlap == num_annotators.
+        # "Rotation" is safer/cleaner generally.
+        
         logger.info(
-            f"📈 All-to-all assignment complete:\n"
-            f"  - Total tasks: {len(all_tasks)}\n"
-            f"  - Assignments created: {total_assignments}\n"
-            f"  - Annotators used: {len(annotators_used)}\n"
-            f"  - Fully assigned ({REQUIRED_OVERLAP}/{REQUIRED_OVERLAP}): {tasks_fully_assigned}\n"
-            f"  - Partially assigned (<{REQUIRED_OVERLAP}): {tasks_partially_assigned}\n"
-            f"  - Waiting (0): {tasks_waiting}"
+            f"🔄 Distributing with Target Overlap = {dynamic_overlap}"
         )
 
-        incomplete = tasks_partially_assigned + tasks_waiting
-        if incomplete > 0:
-            logger.warning(
-                f"🔔 {incomplete} tasks incomplete. Will auto-assign when more annotators available."
-            )
+        result = EnhancedAssignmentEngine._assign_with_rotation(
+            project, all_tasks, annotators, annotator_capacities, dynamic_overlap
+        )
 
-        return {
-            "success": True,
-            "strategy": "all_to_all",
-            "assigned_tasks": len(all_tasks),
-            "total_assignments": total_assignments,
-            "annotators_used": len(annotators_used),
-            "tasks_fully_assigned": tasks_fully_assigned,
-            "tasks_partially_assigned": tasks_partially_assigned,
-            "tasks_waiting": tasks_waiting,
-            "incomplete_tasks": incomplete,
-        }
+        return result
+
 
     @staticmethod
-    def _assign_with_rotation(project, all_tasks, annotators, annotator_capacities):
+    def _assign_with_rotation(project, all_tasks, annotators, annotator_capacities, target_overlap):
         """
-        Assign tasks using rotating distribution (when annotators >= 3).
-
-        Example with 5 annotators, 50 tasks, overlap=3:
-        Task 1 → A1, A2, A3
-        Task 2 → A2, A3, A4
-        Task 3 → A3, A4, A5
-        Task 4 → A4, A5, A1
-        Task 5 → A5, A1, A2
-        ...and so on
-
-        Skips annotators at capacity and holds incomplete tasks.
+        Assign tasks using rotating distribution.
+        Respects target_overlap.
         """
         num_annotators = len(annotators)
         total_assignments = 0
@@ -324,17 +230,17 @@ class EnhancedAssignmentEngine:
                 )
 
                 assigned_to_task = len(already_assigned)
-                needed = REQUIRED_OVERLAP - assigned_to_task
+                needed = target_overlap - assigned_to_task
 
                 if needed <= 0:
                     tasks_fully_assigned += 1
                     continue
 
-                # Try to assign REQUIRED_OVERLAP annotators using rotation
+                # Try to assign 'needed' annotators using rotation
                 attempts = 0
 
                 while (
-                    assigned_to_task < REQUIRED_OVERLAP
+                    assigned_to_task < target_overlap
                     and attempts < MAX_ASSIGNMENT_ATTEMPTS
                 ):
                     # Get next annotator in rotation
@@ -372,44 +278,34 @@ class EnhancedAssignmentEngine:
 
                             logger.debug(
                                 f"Task {task.id}: Assigned to {annotator.user.email} "
-                                f"({assigned_to_task}/{REQUIRED_OVERLAP})"
+                                f"({assigned_to_task}/{target_overlap})"
                             )
                     except Exception as e:
                         logger.error(f"Error assigning task {task.id}: {e}")
 
                 # Categorize task status
-                if assigned_to_task >= REQUIRED_OVERLAP:
+                if assigned_to_task >= target_overlap:
                     tasks_fully_assigned += 1
                     EnhancedAssignmentEngine._trigger_consolidation_check(task)
-                    logger.debug(
-                        f"✅ Task {task.id} FULLY assigned ({assigned_to_task}/{REQUIRED_OVERLAP})"
-                    )
                 elif assigned_to_task > 0:
                     tasks_partially_assigned += 1
-                    logger.warning(
-                        f"⚠️ Task {task.id} PARTIALLY assigned ({assigned_to_task}/{REQUIRED_OVERLAP}) - "
-                        f"waiting for capacity or more annotators"
-                    )
                 else:
                     tasks_waiting += 1
-                    logger.warning(
-                        f"⏸️ Task {task.id} NOT assigned - all annotators at capacity"
-                    )
 
         logger.info(
             f"📈 Rotating assignment complete:\n"
             f"  - Total tasks: {len(all_tasks)}\n"
             f"  - Assignments created: {total_assignments}\n"
             f"  - Annotators used: {len(annotators_used)}\n"
-            f"  - Fully assigned ({REQUIRED_OVERLAP}/{REQUIRED_OVERLAP}): {tasks_fully_assigned}\n"
-            f"  - Partially assigned (<{REQUIRED_OVERLAP}): {tasks_partially_assigned}\n"
-            f"  - Waiting (0): {tasks_waiting}"
+            f"  - Fully assigned ({tasks_fully_assigned}): {tasks_fully_assigned}\n"
+            f"  - Partially assigned: {tasks_partially_assigned}\n"
+            f"  - Waiting: {tasks_waiting}"
         )
 
         incomplete = tasks_partially_assigned + tasks_waiting
         if incomplete > 0:
             logger.warning(
-                f"🔔 {incomplete} tasks incomplete. Will auto-assign when capacity available."
+                f"🔔 {incomplete} tasks incomplete. Will auto-assign when capacity/annotators available."
             )
 
         return {
@@ -442,7 +338,7 @@ class EnhancedAssignmentEngine:
         incomplete_tasks = (
             Task.objects.filter(project=project)
             .annotate(assignment_count_actual=Count("annotator_assignments"))
-            .filter(assignment_count_actual__lt=REQUIRED_OVERLAP)
+            .filter(assignment_count_actual__lt=F("target_assignment_count"))
             .order_by("id")
         )
 
@@ -551,9 +447,9 @@ class EnhancedAssignmentEngine:
             task=task, was_cancelled=False
         ).count()
 
-        if completed_count >= REQUIRED_OVERLAP:
+        if completed_count >= task.target_assignment_count:
             logger.info(
-                f"🎯 Task {task.id} has {completed_count} annotations - triggering consolidation"
+                f"🎯 Task {task.id} has {completed_count} annotations (target {task.target_assignment_count}) - triggering consolidation"
             )
 
             # Trigger consolidation
@@ -568,8 +464,8 @@ class EnhancedAssignmentEngine:
                 logger.error(f"Error triggering consolidation for task {task.id}: {e}")
         else:
             logger.debug(
-                f"Task {task.id} assigned to 3 annotators, waiting for completion "
-                f"({completed_count}/{REQUIRED_OVERLAP} done)"
+                f"Task {task.id} Waiting for completion "
+                f"({completed_count}/{task.target_assignment_count} done)"
             )
 
 

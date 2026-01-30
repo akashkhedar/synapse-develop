@@ -176,6 +176,7 @@ export const ProjectsPage = () => {
             <EmptyProjectsList
               openModal={isClient ? openModal : null}
               isAnnotator={isAnnotator}
+              isExpert={isExpert}
             />
           )}
           {modal && isClient && <CreateProject onClose={closeModal} />}

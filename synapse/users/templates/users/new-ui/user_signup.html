@@ -7,7 +7,7 @@
   gaClientIdTrackingIframe('users.signup.view');
   setTimeout(() => {
     const synapse_gaclient_id = sessionStorage.getItem('synapse_gaclient_id');
-    __synapse('users.signup.view', { synapse_gaclient_id });
+    if (window.__lsa) __lsa('users.signup.view', { synapse_gaclient_id });
   }, 2000);
 </script>
 {% endblock %}

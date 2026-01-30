@@ -5,8 +5,6 @@ export { SynapseLanding } from "./SynapseLanding";
 export { Navigation } from "./Navigation";
 export { HeroSection } from "./HeroSection";
 export { FeaturesSection } from "./FeaturesSection";
-export { ProductsSection } from "./ProductsSection";
-export { StatsSection } from "./StatsSection";
 export { TrustSection } from "./TrustSection";
 export { CTASection } from "./CTASection";
 export { Footer } from "./Footer";

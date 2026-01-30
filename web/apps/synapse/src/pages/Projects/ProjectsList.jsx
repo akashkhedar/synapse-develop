@@ -225,7 +225,9 @@ export const ProjectsList = ({
   );
 };
 
-export const EmptyProjectsList = ({ openModal, isAnnotator }) => {
+export const EmptyProjectsList = ({ openModal, isAnnotator, isExpert }) => {
+  const isWorker = isAnnotator || isExpert;
+
   return (
     <div className={cn("empty-projects-page").toClassName()}>
       <div className={cn("empty-projects-page").elem("icon").toClassName()}>
@@ -234,7 +236,7 @@ export const EmptyProjectsList = ({ openModal, isAnnotator }) => {
       <div className={cn("empty-projects-page").elem("step-indicator").toClassName()}>
         01/
       </div>
-      {isAnnotator ? (
+      {isWorker ? (
         <>
           <h1
             className={cn("empty-projects-page").elem("header").toClassName()}
@@ -242,8 +244,7 @@ export const EmptyProjectsList = ({ openModal, isAnnotator }) => {
             No projects assigned
           </h1>
           <p>
-            You don't have any projects assigned yet. Contact your project
-            manager to get started.
+            You don't have any projects assigned yet. 
           </p>
         </>
       ) : (

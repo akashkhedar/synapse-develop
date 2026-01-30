@@ -30,6 +30,9 @@ export const ContactPage: Page = () => {
     message: "",
   });
 
+  const [isSending, setIsSending] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -41,10 +44,24 @@ export const ContactPage: Page = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement form submission
-    alert("Thank you for contacting us! We'll get back to you soon.");
+    setIsSending(true);
+
+    // Simulate sending delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Construct mailto link
+    const subject = encodeURIComponent(`[${formData.subject}] ${formData.company ? `from ${formData.company}` : ''}`);
+    const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\nCompany: ${formData.company}\n\nMessage:\n${formData.message}`);
+    
+    // Open email client
+    window.location.href = `mailto:noreply.synapse.ai@gmail.com?subject=${subject}&body=${body}`;
+
+    setIsSending(false);
+    setIsSent(true);
+
+    // Reset form
     setFormData({
       name: "",
       email: "",
@@ -52,6 +69,9 @@ export const ContactPage: Page = () => {
       subject: "",
       message: "",
     });
+
+    // Reset success state after 5 seconds
+    setTimeout(() => setIsSent(false), 5000);
   };
 
   return (
@@ -91,10 +111,10 @@ export const ContactPage: Page = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight"
           >
-            Let's start a
+            Accelerate your
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">
-              conversation
+              Medical AI
             </span>
           </motion.h1>
 
@@ -104,8 +124,8 @@ export const ContactPage: Page = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-xl text-gray-400 max-w-3xl mx-auto font-mono"
           >
-            Whether you're ready to start a project or just want to learn more,
-            we're here to help.
+            Ready to scale your clinical data labeling with board-certified radiologists?
+            Get a consultation today.
           </motion.p>
         </div>
       </section>
@@ -114,25 +134,11 @@ export const ContactPage: Page = () => {
       <SmoothSection className="py-20 bg-black border-t border-gray-900">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-12 mb-20">
-            <div className="border-l-2 border-gray-800 pl-6 hover:border-purple-500 transition-colors">
+            <div className="md:col-span-3 border-l-2 border-gray-800 pl-6 hover:border-purple-500 transition-colors flex flex-col items-center text-center">
               <div className="text-gray-500 font-mono text-sm mb-2">Email</div>
-              <a href="mailto:hello@synapse.ai" className="text-white text-lg hover:text-purple-400 transition-colors">
-                hello@synapse.ai
+              <a href="mailto:noreply.synapse.ai@gmail.com" className="text-white text-2xl hover:text-purple-400 transition-colors">
+                noreply.synapse.ai@gmail.com
               </a>
-            </div>
-
-            <div className="border-l-2 border-gray-800 pl-6 hover:border-purple-500 transition-colors">
-              <div className="text-gray-500 font-mono text-sm mb-2">Phone</div>
-              <a href="tel:+15551234567" className="text-white text-lg hover:text-purple-400 transition-colors">
-                +1 (555) 123-4567
-              </a>
-            </div>
-
-            <div className="border-l-2 border-gray-800 pl-6 hover:border-purple-500 transition-colors">
-              <div className="text-gray-500 font-mono text-sm mb-2">Location</div>
-              <div className="text-white text-lg">
-                San Francisco, CA
-              </div>
             </div>
           </div>
         </div>
@@ -141,9 +147,9 @@ export const ContactPage: Page = () => {
       {/* Main Content Section */}
       <SmoothSection className="py-32 bg-black border-t border-gray-900">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid lg:grid-cols-3 gap-16">
+          <div className="max-w-3xl mx-auto">
             {/* Contact Form */}
-            <div className="lg:col-span-2">
+            <div>
               <div className="flex items-start gap-4 mb-8">
                 <div className="flex flex-col items-start">
                   <div className="w-6 h-[2px] bg-gray-600" />
@@ -165,7 +171,8 @@ export const ContactPage: Page = () => {
                       value={formData.name}
                       onChange={handleChange}
                       required
-                      className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors"
+                      disabled={isSent}
+                      className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors disabled:opacity-50"
                       placeholder="John Doe"
                     />
                   </div>
@@ -180,7 +187,8 @@ export const ContactPage: Page = () => {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors"
+                      disabled={isSent}
+                      className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors disabled:opacity-50"
                       placeholder="john@company.com"
                     />
                   </div>
@@ -196,7 +204,8 @@ export const ContactPage: Page = () => {
                     name="company"
                     value={formData.company}
                     onChange={handleChange}
-                    className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors"
+                    disabled={isSent}
+                    className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors disabled:opacity-50"
                     placeholder="Your Company"
                   />
                 </div>
@@ -211,7 +220,8 @@ export const ContactPage: Page = () => {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors"
+                    disabled={isSent}
+                    className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors disabled:opacity-50"
                   >
                     <option value="" className="bg-black">Select...</option>
                     <option value="sales" className="bg-black">Sales Inquiry</option>
@@ -232,66 +242,40 @@ export const ContactPage: Page = () => {
                     onChange={handleChange}
                     required
                     rows={6}
-                    className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors resize-none"
+                    disabled={isSent}
+                    className="w-full px-0 py-3 bg-transparent border-b border-gray-800 text-white font-mono focus:outline-none focus:border-gray-600 transition-colors resize-none disabled:opacity-50"
                     placeholder="Tell us about your project..."
                   />
                 </div>
 
                 <motion.button
                   type="submit"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="bg-white text-black px-10 py-4 text-base font-semibold transition-all mt-4"
+                  disabled={isSending || isSent}
+                  whileHover={!isSending && !isSent ? { scale: 1.02 } : {}}
+                  whileTap={!isSending && !isSent ? { scale: 0.98 } : {}}
+                  className={`
+                    px-10 py-4 text-base font-semibold transition-all mt-4 w-full sm:w-auto
+                    ${isSent 
+                      ? "bg-green-500 text-white cursor-default" 
+                      : "bg-white text-black hover:bg-gray-100"
+                    }
+                    ${isSending ? "opacity-75 cursor-wait" : ""}
+                  `}
                 >
-                  Send Message →
+                  {isSending ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                      Sending...
+                    </span>
+                  ) : isSent ? (
+                    <span className="flex items-center justify-center gap-2">
+                      Message Sent
+                    </span>
+                  ) : (
+                    "Send Message →"
+                  )}
                 </motion.button>
               </form>
-            </div>
-
-            {/* Contact Details Sidebar */}
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-8">Departments</h3>
-              
-              <div className="space-y-8">
-                <div className="border-l-2 border-gray-800 pl-6 hover:border-purple-500 transition-colors">
-                  <div className="text-gray-500 font-mono text-sm mb-2">Sales</div>
-                  <a href="mailto:sales@synapse.ai" className="text-white text-sm hover:text-purple-400 transition-colors block mb-2">
-                    sales@synapse.ai
-                  </a>
-                  <p className="text-gray-500 font-mono text-xs">
-                    Product demos and pricing
-                  </p>
-                </div>
-
-                <div className="border-l-2 border-gray-800 pl-6 hover:border-purple-500 transition-colors">
-                  <div className="text-gray-500 font-mono text-sm mb-2">Support</div>
-                  <a href="mailto:support@synapse.ai" className="text-white text-sm hover:text-purple-400 transition-colors block mb-2">
-                    support@synapse.ai
-                  </a>
-                  <p className="text-gray-500 font-mono text-xs">
-                    Technical assistance
-                  </p>
-                </div>
-
-                <div className="border-l-2 border-gray-800 pl-6 hover:border-purple-500 transition-colors">
-                  <div className="text-gray-500 font-mono text-sm mb-2">Partnerships</div>
-                  <a href="mailto:partnerships@synapse.ai" className="text-white text-sm hover:text-purple-400 transition-colors block mb-2">
-                    partnerships@synapse.ai
-                  </a>
-                  <p className="text-gray-500 font-mono text-xs">
-                    Integration opportunities
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-12 pt-12 border-t border-gray-900">
-                <div className="text-gray-500 font-mono text-sm mb-4">Office</div>
-                <p className="text-gray-400 font-mono text-sm leading-relaxed">
-                  123 Innovation Drive<br />
-                  San Francisco, CA 94105<br />
-                  United States
-                </p>
-              </div>
             </div>
           </div>
         </div>

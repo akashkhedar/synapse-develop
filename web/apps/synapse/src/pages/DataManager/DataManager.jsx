@@ -53,8 +53,24 @@ const initializeDataManager = async (root, props, params) => {
       export: true,
       settings: true,
       backButton: false,
-      labelingHeader: false,
+      labelingHeader: true,
       autoAnnotation: params.autoAnnotation,
+      
+      // Annotator Controls (Submit, Update, Skip)
+      // Use canAnnotate to ensure they appear for any authorized worker
+      submit: params.canAnnotate, 
+      update: params.canAnnotate,
+      skip: params.canAnnotate,
+      
+      // Expert Controls (Accept, Reject)
+      "annotations:approve": params.isExpert,
+      "annotations:reject": params.isExpert,
+      
+      // Shared Permissions
+      "annotations:create": params.canAnnotate,
+      "annotations:delete": params.canAnnotate,
+      "annotations:view": true,
+      "annotations:tabs": true,
     },
     Synapse: {
       keymap: window.APP_SETTINGS.editor_keymap,

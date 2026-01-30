@@ -62,9 +62,9 @@ export const TrustSection = () => {
     },
     {
       number: "02",
-      title: "Elastic Annotation Capacity",
+      title: "Elastic Clinical Workforce",
       description:
-        "From 100 to 1M+ tasks, scale annotation capacity on-demand. Trained domain experts for medical, autonomous vehicles, retail, and more.",
+        "From 100 to 1M+ tasks, scale annotation capacity on-demand. Trained domain experts for radiology, pathology, dermatology, and more.",
     },
     {
       number: "03",
@@ -82,9 +82,9 @@ export const TrustSection = () => {
         {/* Header */}
         <div className="mb-20">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-            Enterprise-grade
+            Secure. Scalable.
             <br />
-            from day one
+            Specialized.
           </h2>
           
           {/* Corner bracket with subtitle */}
@@ -94,7 +94,7 @@ export const TrustSection = () => {
               <div className="w-[2px] h-6 bg-gray-600" />
             </div>
             <p className="text-gray-400 font-mono text-sm max-w-md">
-              Security, compliance, and scale built into every annotation workflow.
+              Security, compliance, and scale built into every clinical workflow.
             </p>
           </div>
         </div>

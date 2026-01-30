@@ -17,8 +17,7 @@ import {
   IconPin,
   IconTerminal,
   IconDoor,
-  IconSpark,
-  IconMastercard,
+  IconBilling,
 } from "@synapse/icons";
 import { LSLogo } from "../../assets/images";
 import { Button, Userpic, ThemeToggle } from "@synapse/ui";
@@ -297,7 +296,7 @@ export const Menubar = ({
                   <Menu.Item
                     label="Billing & Credits"
                     to="/billing"
-                    icon={<IconMastercard />}
+                    icon={<IconBilling />}
                     data-external
                     exact
                   />
@@ -309,7 +308,7 @@ export const Menubar = ({
                         // Only pure experts go to expert earnings; annotators (even with expert flag) go to annotator earnings
                         isExpert && !isAnnotator ? "/expert/earnings" : "/annotators/earnings"
                       }
-                      icon={<IconSpark />}
+                      icon={<IconBilling />}
                       data-external
                       exact
                     />

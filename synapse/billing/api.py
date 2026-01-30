@@ -181,8 +181,15 @@ class BillingViewSet(viewsets.ViewSet):
 
             # Create Razorpay customer if not exists
             if not billing.razorpay_customer_id:
+                # Safely get the email: billing_email > org.created_by.email > request.user.email
+                customer_email = billing.billing_email
+                if not customer_email and org.created_by:
+                    customer_email = org.created_by.email
+                if not customer_email:
+                    customer_email = request.user.email
+                    
                 customer = create_razorpay_customer(
-                    email=billing.billing_email or org.created_by.email, name=org.title
+                    email=customer_email, name=org.title
                 )
                 billing.razorpay_customer_id = customer["id"]
                 billing.save()
@@ -239,6 +246,14 @@ class BillingViewSet(viewsets.ViewSet):
 
             # Verify signature
             if not verify_payment_signature(order_id, payment_id, signature):
+                # Mark as failed
+                try:
+                    payment = Payment.objects.get(razorpay_order_id=order_id)
+                    payment.status = "failed"
+                    payment.save()
+                except Payment.DoesNotExist:
+                    pass
+
                 return Response(
                     {"error": "Invalid payment signature"},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -347,13 +362,26 @@ class BillingViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"])
     def payments(self, request):
-        """Get payment history"""
+        """Get payment history with pagination"""
         try:
             org = self.get_organization()
+            limit = int(request.query_params.get("limit", 20))
+            offset = int(request.query_params.get("offset", 0))
+
             payments = Payment.objects.filter(organization=org)
+            total_count = payments.count()
+            
+            # Apply slicing
+            payments = payments[offset : offset + limit]
 
             serializer = PaymentSerializer(payments, many=True)
-            return Response(serializer.data)
+            return Response({
+                "results": serializer.data,
+                "count": total_count,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + limit < total_count
+            })
 
         except Exception as e:
             logger.error(f"Error fetching payments: {str(e)}")

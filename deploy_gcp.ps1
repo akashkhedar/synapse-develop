@@ -62,17 +62,6 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "Repository exists."
 }
 
-# Build Docker Image
-$IMAGE_URI = "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${APP_NAME}:latest"
-Write-Green "Building Docker Image..."
-docker build --platform linux/amd64 -t $IMAGE_URI .
-if ($LASTEXITCODE -ne 0) { Write-Error "Docker build failed"; exit 1 }
-
-# Push Docker Image
-Write-Green "Pushing Docker Image to Registry..."
-docker push $IMAGE_URI
-if ($LASTEXITCODE -ne 0) { Write-Error "Docker push failed"; exit 1 }
-
 $VM_NAME = "synapse-vm"
 $ZONE = "${REGION}-a"
 
@@ -86,8 +75,8 @@ if ($LASTEXITCODE -ne 0) {
         --machine-type=e2-medium `
         --image-family=ubuntu-2204-lts `
         --image-project=ubuntu-os-cloud `
-        --tags=http-server,https-server,synapse-app `
-        --boot-disk-size=20GB
+        --tags="http-server,https-server,synapse-app" `
+        --boot-disk-size=30GB
 } else {
     Write-Host "VM exists."
 }
@@ -105,46 +94,45 @@ if ($LASTEXITCODE -ne 0) {
 
 # Wait for VM to be ready
 Write-Host "Waiting for VM to be ready..."
-Start-Sleep -Seconds 20
-
-# Get VM IP
+Start-Sleep -Seconds 10
 $VM_IP = gcloud compute instances describe $VM_NAME --zone=$ZONE --format="value(networkInterfaces[0].accessConfigs[0].natIP)"
 Write-Green "VM Public IP: $VM_IP"
 
-# Create env file locally if needed (already done by user, hopefully)
-if (-not (Test-Path "production.env")) {
-    Write-Error "production.env NOT FOUND! Please create it first."
-    exit 1
-}
+# Create Source Archive using Robocopy for safe exclusion
+Write-Green "Creating Source Archive (source.zip)..."
+$tempDir = "temp_deploy_msg"
+if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue }
+New-Item -ItemType Directory -Path $tempDir | Out-Null
 
-# Update IMAGE_URI in docker-compose.prod.yml dynamically?
-# Better: export IMAGE_URI in the VM env.
+Write-Host "Staging files (excluding node_modules, cache, etc)..."
+# Robocopy is robust: /MIR (mirror), /XD (exclude dirs), /XF (exclude files)
+$excludeDirs = @("node_modules", ".git", ".idea", ".vscode", "build", "__pycache__", ".venv", ".nx", "site-packages")
+$excludeFiles = @("*.pyc", "*.vhdx", "source.zip")
+# Removing strict logging flags to avoid parameter errors
+robocopy . $tempDir /MIR /XD $excludeDirs /XF $excludeFiles /R:0 /W:0
 
-Write-Green "Deploying headers to VM..."
-# We use gcloud compute ssh/scp
-# Protocol: 
-# 1. Install Docker (if not exists)
-# 2. Copy files
-# 3. Run compose
+Write-Host "Zipping staged files..."
+Compress-Archive -Path "$tempDir\*" -DestinationPath "source.zip" -Force
+Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+Write-Host "Source archive created."
+
+Write-Green "Deploying to VM..."
 
 Write-Host "Installing Docker on VM (if needed)..."
-gcloud compute ssh $VM_NAME --zone=$ZONE --command="
-    if ! command -v docker &> /dev/null; then
-        echo 'Installing Docker...'
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh
-        sudo usermod -aG docker `$USER
-    fi
-"
+# Using semicolons to avoid CRLF issues on Linux execution
+$installCmd = "export DEBIAN_FRONTEND=noninteractive; sudo apt-get update; if ! command -v docker &> /dev/null; then echo 'Installing Docker...'; curl -fsSL https://get.docker.com -o get-docker.sh; sudo sh get-docker.sh; sudo usermod -aG docker `$USER; fi"
+gcloud compute ssh $VM_NAME --zone=$ZONE --command=$installCmd
 
-Write-Host "Copying configuration files..."
-gcloud compute scp production.env docker-compose.prod.yml "${VM_NAME}:~/" --zone=$ZONE
+Write-Host "Uploading source code..."
+gcloud compute scp source.zip "${VM_NAME}:." --zone=$ZONE
 
-Write-Host "Starting Application on VM..."
-gcloud compute ssh $VM_NAME --zone=$ZONE --command="
-    export IMAGE_URI='${IMAGE_URI}'
-    docker compose -f docker-compose.prod.yml up -d
-"
+Write-Host "Building and Starting Application on VM..."
+# Using semicolons to avoid CRLF issues
+$deployCmd = "export DEBIAN_FRONTEND=noninteractive; sudo apt-get update; sudo apt-get install -y unzip; rm -rf synapse-deploy; mkdir synapse-deploy; unzip -o source.zip -d synapse-deploy; cd synapse-deploy; echo 'Building Docker containers on VM...'; docker compose -f docker-compose.prod.yml up -d --build"
+gcloud compute ssh $VM_NAME --zone=$ZONE --command=$deployCmd
+
+# Cleanup local zip
+Remove-Item "source.zip" -ErrorAction SilentlyContinue
 
 Write-Green "Deployment Complete!"
 Write-Green "Access your app at: http://${VM_IP}:8080"

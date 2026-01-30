@@ -30,6 +30,7 @@ export { ReactComponent as IconBan } from "./ban.svg";
 export { ReactComponent as IconBanSquare } from "./ban.svg";
 export { ReactComponent as IconBanner } from "./banner-icon.svg";
 export { ReactComponent as IconBell } from "./bell.svg";
+export { ReactComponent as IconBilling } from "./billing.svg";
 export { ReactComponent as IconBlueCheckmark } from "./blue-checkmark.svg";
 export { ReactComponent as IconBlog } from "./blog.svg";
 export { ReactComponent as IconBook } from "./book.svg";

@@ -265,7 +265,8 @@ INSTALLED_APPS = [
     "billing",
     "annotators",  # Annotator management system
     "telemetry",  # Behavioral surveillance system
-    # "ml", # Machine Learning Pipeline (Deferred)
+    "blogs",
+    "ml", # Machine Learning Pipeline (Deferred)
 ]
 
 MIDDLEWARE = [
@@ -647,7 +648,7 @@ TASK_API_PAGE_SIZE_MAX = int(get_env("TASK_API_PAGE_SIZE_MAX", 0)) or None
 EMAIL_BACKEND = get_env("EMAIL_BACKEND", "django.core.mail.smtp.EmailBackend")
 
 # Email settings
-DEFAULT_FROM_EMAIL = get_env("DEFAULT_FROM_EMAIL", "Synapse <akashkhedar262@gmail.com>")
+DEFAULT_FROM_EMAIL = get_env("DEFAULT_FROM_EMAIL", "Synapse <noreply.synapse.ai@gmail.com>")
 FROM_EMAIL = DEFAULT_FROM_EMAIL  # Backward compatibility
 
 # SMTP Configuration (only used when EMAIL_BACKEND is smtp)
@@ -981,7 +982,16 @@ if ENABLE_CSP := get_bool_env("ENABLE_CSP", True):
         "'self'",
         "'report-sample'",
     )
-    CSP_STYLE_SRC = ("'self'", "'report-sample'", "'unsafe-inline'")
+    CSP_STYLE_SRC = (
+        "'self'",
+        "'report-sample'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com",
+    )
+    CSP_FONT_SRC = (
+        "'self'",
+        "https://fonts.gstatic.com",
+    )
     CSP_SCRIPT_SRC = (
         "'self'",
         "'report-sample'",
@@ -1017,6 +1027,10 @@ if ENABLE_CSP := get_bool_env("ENABLE_CSP", True):
         "'self'",
         "https://api.razorpay.com",
         "https://*.razorpay.com",
+        "https://razorpay.com",
+    )
+    CSP_FRAME_ANCESTORS = (
+        "'self'",
     )
     # Note that this will be overridden to real CSP for views that use the override_report_only_csp decorator
     CSP_REPORT_ONLY = get_bool_env("LS_CSP_REPORT_ONLY", True)

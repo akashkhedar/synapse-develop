@@ -321,8 +321,10 @@ module.exports = composePlugins(
             hot: true,
             headers: { 
               "Access-Control-Allow-Origin": "*",
-              "Cross-Origin-Opener-Policy": "same-origin",
-              "Cross-Origin-Embedder-Policy": "require-corp",
+              // COOP/COEP headers removed - they block third-party iframes like Razorpay
+              // Re-enable only when using SharedArrayBuffer features (DICOM 3D viewer)
+              // "Cross-Origin-Opener-Policy": "same-origin",
+              // "Cross-Origin-Embedder-Policy": "credentialless",
               "Cross-Origin-Resource-Policy": "cross-origin",
             },
             static: {

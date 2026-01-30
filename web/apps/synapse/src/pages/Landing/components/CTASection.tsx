@@ -43,10 +43,10 @@ export const CTASection = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 leading-tight"
           >
-            Start labeling
+            This is Synapse.
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">
-              in minutes, not months
+              Accelerate your Medical AI
             </span>
           </motion.h2>
 
@@ -94,9 +94,9 @@ export const CTASection = () => {
           className="flex flex-wrap justify-center gap-12 pt-12 border-t border-gray-800"
         >
           {[
-            { value: "50M+", label: "Annotations delivered" },
-            { value: "15+", label: "Export formats" },
-            { value: "99.2%", label: "Avg. accuracy rate" },
+            { value: "DICOM", label: "Native Support" },
+            { value: "HIPAA", label: "Secure Infrastructure" },
+            { value: "SOC 2", label: "Type II Ready" },
           ].map((stat, index) => (
             <div key={index} className="text-center">
               <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>

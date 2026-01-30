@@ -171,9 +171,18 @@ def user_login(request):
 
             # Check if annotator has passed the test (skip for experts)
             if user.is_annotator and not user.is_expert:
-                if user.annotator_status != "approved":
+                # Use source of truth from profile if available (fixes desync issues)
+                current_status = user.annotator_status
+                if hasattr(user, "annotator_profile"):
+                    profile_status = user.annotator_profile.status
+                    if current_status != profile_status:
+                        user.annotator_status = profile_status
+                        user.save(update_fields=["annotator_status"])
+                        current_status = profile_status
+
+                if current_status != "approved":
                     # Allow pending_test annotators to log in - they need to take the test
-                    if user.annotator_status == "pending_test":
+                    if current_status == "pending_test":
                         # Log them in and redirect to test page
                         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
                         if form.cleaned_data["persist_session"] is not True:
@@ -181,16 +190,16 @@ def user_login(request):
                             request.session.set_expiry(0)
                         messages.info(request, "Please complete the test to activate your account.")
                         return redirect("/annotators/skill-test/")
-                    elif user.annotator_status == "pending_verification":
+                    elif current_status == "pending_verification":
                         error_msg = "Please verify your email first."
                         annotator_action = "resend_verification"
-                    elif user.annotator_status in ["test_submitted", "under_review"]:
+                    elif current_status in ["test_submitted", "under_review"]:
                         error_msg = "Your test is under review. You will be notified once it's approved."
                         annotator_action = None
-                    elif user.annotator_status == "rejected":
+                    elif current_status == "rejected":
                         error_msg = "Your application has been rejected. Please contact support for more information."
                         annotator_action = None
-                    elif user.annotator_status == "suspended":
+                    elif current_status == "suspended":
                         error_msg = "Your account has been suspended. Please contact support."
                         annotator_action = None
                     else:
@@ -253,6 +262,10 @@ def user_login(request):
                     },
                     status=200,
                 )
+
+            # Force redirect to projects for annotators/experts
+            if user.is_annotator or user.is_expert:
+                next_page = reverse("projects:project-index")
 
             return redirect(next_page)
 

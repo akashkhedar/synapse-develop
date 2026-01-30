@@ -415,6 +415,12 @@ class AnnotatorTestSubmitAPI(APIView):
                         profile.save(update_fields=["approved_at"])
                         
                     logger.info(f"SUCCESS: Updated annotator_profile status to '{status_value}' for user {user.email}")
+
+                    # Sync User model status (prevent desync)
+                    if user.annotator_status != status_value:
+                        user.annotator_status = status_value
+                        user.save(update_fields=["annotator_status"])
+                        logger.info(f"Synced User.annotator_status to '{status_value}'")
             else:
                 logger.warning(f"Test submit: Could not update status - no valid user found")
 
@@ -498,6 +504,12 @@ class AnnotatorTestSubmitAPI(APIView):
                     profile.save(update_fields=["approved_at"])
                     
                 logger.info(f"Updated annotator_profile status to '{status_value}' for user {user.email}")
+
+                # Sync User model status (prevent desync)
+                if user.annotator_status != status_value:
+                    user.annotator_status = status_value
+                    user.save(update_fields=["annotator_status"])
+                    logger.info(f"Synced User.annotator_status to '{status_value}'")
 
         results.update(
             {

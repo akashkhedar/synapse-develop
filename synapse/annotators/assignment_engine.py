@@ -229,7 +229,14 @@ class AssignmentEngine:
     def _calculate_cost_efficiency(annotator):
         """Calculate cost efficiency score (0-100)"""
         try:
-            trust_level = annotator.trust_level
+            # Safely get or create trust level
+            if hasattr(annotator, "trust_level"):
+                trust_level = annotator.trust_level
+            else:
+                from .models import TrustLevel
+
+                trust_level, _ = TrustLevel.objects.get_or_create(annotator=annotator)
+
             multiplier = float(trust_level.multiplier)
             accuracy = float(annotator.accuracy_score or 70)
 
@@ -335,7 +342,7 @@ class AssignmentEngine:
             # Get max annotators from project settings (handle None)
             max_annotators = getattr(project, "max_annotators", None)
             if max_annotators is None:
-                max_annotators = 10  # Default value
+                max_annotators = 1000  # Default value: Allow wide distribution
             num_annotators = min(num_annotators, max_annotators, available_count)
 
         # Ensure at least 1 annotator if any are available
@@ -424,7 +431,7 @@ class AssignmentEngine:
         else:
             # For larger projects, use all available annotators for better distribution
             # The rotating algorithm will distribute tasks intelligently
-            optimal_count = 100  # High limit - will be capped by actual available count
+            optimal_count = 1000  # High limit - will be capped by actual available count
 
         logger.info(
             f"Optimal annotator count for project {project.id}: {optimal_count} "

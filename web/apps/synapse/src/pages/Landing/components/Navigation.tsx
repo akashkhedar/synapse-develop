@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useHistory } from "react-router-dom";
+import { SynapseLogo as Logo } from "../../../components/SynapseLogo/SynapseLogo";
 
 export const Navigation = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -30,8 +31,8 @@ export const Navigation = () => {
             whileHover={{ scale: 1.02 }}
             onClick={() => history.push('/')}
           >
-            <div className="w-8 h-8 border border-white flex items-center justify-center">
-              <span className="text-white font-light text-lg">λ</span>
+            <div className="w-8 h-8 flex items-center justify-center">
+              <Logo className="w-full h-full text-white" />
             </div>
             <span className="text-white font-medium text-3xl tracking-wide">Synapse</span>
           </motion.div>
@@ -39,7 +40,7 @@ export const Navigation = () => {
           {/* Center section - Nav Links */}
           <div className="hidden md:flex items-center gap-14 flex-1 justify-center">
             <span className="text-gray-300 hover:text-white text-[13px] font-medium tracking-[0.2em] cursor-pointer transition-colors" onClick={() => {
-              history.push("/docs/")
+              window.open("/docs/", "_blank");
             }}>
               DOCS
             </span>
@@ -75,6 +76,7 @@ export const Navigation = () => {
                                 if (item === 'ABOUT') history.push('/about');
                                 if (item === 'CONTACT US') history.push('/contact');
                                 if (item === 'BLOG') history.push('/blog');
+                                if (item === 'SECURITY') history.push('/security');
                                 setActiveDropdown(null);
                               }}
                               className="text-white text-xs tracking-wide hover:bg-white hover:text-black cursor-pointer transition-colors font-medium px-2 py-2 -mx-2"

@@ -230,6 +230,9 @@ export const CreateProject = ({ onClose }) => {
 
   const onSaveName = async () => {
     if (error) return;
+    // Guard: don't try to update if project hasn't been created yet
+    if (!project?.id) return;
+    
     const res = await api.callApi("updateProjectRaw", {
       params: {
         pk: project.id,

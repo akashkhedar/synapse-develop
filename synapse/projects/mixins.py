@@ -111,8 +111,7 @@ class ProjectMixin:
                 # Check if user has any active task assignments in this project
                 has_tasks = TaskAssignment.objects.filter(
                     annotator__user=user,
-                    task__project=self,
-                    status__in=["assigned", "in_progress"]
+                    task__project=self
                 ).exists()
                 return has_tasks
             except Exception:

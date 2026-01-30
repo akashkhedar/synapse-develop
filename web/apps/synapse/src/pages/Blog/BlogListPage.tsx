@@ -3,94 +3,8 @@ import { Navigation } from "../Landing/components/Navigation";
 import { Footer } from "../Landing/components/Footer";
 import type { Page } from "../types/Page";
 import { useHistory } from "react-router-dom";
-
-export interface BlogPost {
-  id: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  readTime: string;
-  category: string;
-  author: {
-    name: string;
-    role: string;
-  };
-}
-
-const blogPosts: BlogPost[] = [
-  {
-    id: "scaling-annotation-pipelines",
-    title: "Scaling annotation pipelines to millions of data points",
-    excerpt: "How we built infrastructure to handle 10M+ annotations per month without compromising on quality or speed.",
-    date: "2026-01-08",
-    readTime: "8 min read",
-    category: "Engineering",
-    author: {
-      name: "Michael Rodriguez",
-      role: "CTO",
-    },
-  },
-  {
-    id: "future-of-data-labeling",
-    title: "The future of data labeling in the age of foundation models",
-    excerpt: "Large language models are changing how we think about training data. Here's what it means for annotation.",
-    date: "2026-01-05",
-    readTime: "6 min read",
-    category: "AI/ML",
-    author: {
-      name: "Sarah Chen",
-      role: "CEO",
-    },
-  },
-  {
-    id: "quality-at-scale",
-    title: "Quality at scale: Our approach to annotation validation",
-    excerpt: "A deep dive into our multi-layered quality assurance process that maintains 99.9% accuracy.",
-    date: "2025-12-28",
-    readTime: "10 min read",
-    category: "Product",
-    author: {
-      name: "Emily Watson",
-      role: "Head of Product",
-    },
-  },
-  {
-    id: "autonomous-vehicles-data",
-    title: "Building datasets for autonomous vehicles",
-    excerpt: "What it takes to annotate millions of frames for self-driving car perception systems.",
-    date: "2025-12-20",
-    readTime: "12 min read",
-    category: "Case Study",
-    author: {
-      name: "David Kim",
-      role: "VP Engineering",
-    },
-  },
-  {
-    id: "annotation-tools-2026",
-    title: "The annotation tools we're building in 2026",
-    excerpt: "A preview of upcoming features including AI-assisted labeling, collaborative workflows, and more.",
-    date: "2025-12-15",
-    readTime: "5 min read",
-    category: "Product",
-    author: {
-      name: "Emily Watson",
-      role: "Head of Product",
-    },
-  },
-  {
-    id: "security-compliance",
-    title: "SOC 2 Type II and beyond: Our security journey",
-    excerpt: "How we achieved enterprise-grade security compliance and what it means for our customers.",
-    date: "2025-12-10",
-    readTime: "7 min read",
-    category: "Security",
-    author: {
-      name: "Sarah Chen",
-      role: "CEO",
-    },
-  },
-];
+import { useEffect, useState } from "react";
+import { blogsApi, BlogPost } from "../../services/blogsApi";
 
 const SmoothSection: React.FC<{
   children: React.ReactNode;
@@ -111,6 +25,23 @@ const SmoothSection: React.FC<{
 
 export const BlogListPage: Page = () => {
   const history = useHistory();
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const data = await blogsApi.getBlogPosts();
+        setPosts(data);
+      } catch (error) {
+        console.error("Failed to fetch blog posts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   return (
     <div className="bg-black min-h-screen">
@@ -171,66 +102,82 @@ export const BlogListPage: Page = () => {
       {/* Blog Posts Grid */}
       <SmoothSection className="py-32 bg-black border-t border-gray-900">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="space-y-0">
-            {blogPosts.map((post, index) => (
-              <motion.article
-                key={post.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                onClick={() => history.push(`/blog/${post.id}`)}
-                className="border-t border-gray-900 py-12 cursor-pointer group"
-              >
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-4">
-                      <span className="text-gray-500 font-mono text-xs uppercase tracking-wider">
-                        {post.category}
-                      </span>
-                      <span className="text-gray-700 font-mono text-xs">
-                        {new Date(post.date).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        })}
-                      </span>
-                      <span className="text-gray-700 font-mono text-xs">
-                        {post.readTime}
-                      </span>
+          {loading ? (
+             <div className="text-white text-center font-mono">Loading...</div>
+          ) : (
+            <div className="space-y-0">
+              {posts.map((post, index) => (
+                <motion.article
+                  key={post.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  onClick={() => history.push(`/blog/${post.slug}`)}
+                  className="border-t border-gray-900 py-12 cursor-pointer group"
+                >
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-4 mb-4">
+                        {post.tags.length > 0 && (
+                          <span className="text-gray-500 font-mono text-xs uppercase tracking-wider">
+                            {post.tags[0]}
+                          </span>
+                        )}
+                        <span className="text-gray-700 font-mono text-xs">
+                          {new Date(post.created_at).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric' 
+                          })}
+                        </span>
+                        <span className="text-gray-700 font-mono text-xs">
+                          5 min read
+                        </span>
+                      </div>
+
+                      <div className="flex gap-6">
+                         {/* Optional Image Thumbnail if available, or just keeping text design */}
+                         {post.cover_image && (
+                           <div className="hidden md:block w-32 h-24 bg-gray-900 overflow-hidden flex-shrink-0">
+                             <img src={post.cover_image} alt="" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                           </div>
+                         )}
+                         <div>
+                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 group-hover:text-purple-400 transition-colors">
+                              {post.title}
+                            </h2>
+
+                            <p className="text-gray-400 font-mono text-base leading-relaxed mb-6">
+                              {post.subtitle || "Checking internal consistency..."}
+                            </p>
+                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 border border-gray-700 flex items-center justify-center text-sm text-white">
+                          {post.author_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="text-white text-sm font-medium">{post.author_name}</div>
+                          {/* <div className="text-gray-500 font-mono text-xs">Author</div> */}
+                        </div>
+                      </div>
                     </div>
 
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 group-hover:text-purple-400 transition-colors">
-                      {post.title}
-                    </h2>
-
-                    <p className="text-gray-400 font-mono text-base leading-relaxed mb-6">
-                      {post.excerpt}
-                    </p>
-
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 border border-gray-700 flex items-center justify-center text-sm text-white">
-                        {post.author.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="text-white text-sm font-medium">{post.author.name}</div>
-                        <div className="text-gray-500 font-mono text-xs">{post.author.role}</div>
-                      </div>
+                    <div className="md:w-24 flex md:justify-end">
+                      <motion.div
+                        className="text-gray-600 group-hover:text-white transition-colors font-mono text-sm"
+                        whileHover={{ x: 5 }}
+                      >
+                        Read →
+                      </motion.div>
                     </div>
                   </div>
-
-                  <div className="md:w-24 flex md:justify-end">
-                    <motion.div
-                      className="text-gray-600 group-hover:text-white transition-colors font-mono text-sm"
-                      whileHover={{ x: 5 }}
-                    >
-                      Read →
-                    </motion.div>
-                  </div>
-                </div>
-              </motion.article>
-            ))}
-          </div>
+                </motion.article>
+              ))}
+            </div>
+          )}
         </div>
       </SmoothSection>
 

@@ -1,139 +1,186 @@
 # deploy_gcp.ps1 - Windows Deployment Script for Synapse to GCP
+# Usage: .\deploy_gcp.ps1 [-ProjectId "your-project-id"]
+
+param (
+    [string]$ProjectId = "synapse-485809"
+)
 
 $ErrorActionPreference = "Stop"
 
 # ==========================================
-# Configuration - Edit these values
+# Helper Functions
 # ==========================================
-$PROJECT_ID="synapse-485809"
-$REGION="asia-south1"
-$APP_NAME = "synapse-platform"
-$REPO_NAME = "synapse-repo"
-$DB_INSTANCE_NAME = "synapse-db"
-$REDIS_INSTANCE_NAME = "synapse-redis"
+function Write-Green($text) { Write-Host $text -ForegroundColor Green }
+function Write-Yellow($text) { Write-Host $text -ForegroundColor Yellow }
+function Write-Red($text) { Write-Host $text -ForegroundColor Red }
 
-# Colors (simulated for PowerShell)
-function Write-Green($text) {
-    Write-Host $text -ForegroundColor Green
-}
-function Write-Yellow($text) {
-    Write-Host $text -ForegroundColor Yellow
-}
+# ==========================================
+# Pre-flight Checks
+# ==========================================
+Write-Green "Starting Deployment Verification..."
 
-Write-Green "Starting Deployment for $APP_NAME..."
-
-# Check dependencies
 if (-not (Get-Command "gcloud" -ErrorAction SilentlyContinue)) {
-    Write-Error "gcloud command not found. Please install Google Cloud SDK."
+    Write-Red "Error: Google Cloud SDK (gcloud) is not installed."
     exit 1
 }
 
-if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
-    Write-Error "docker command not found. Please install Docker."
-    exit 1
+# Verify Project ID
+$currentProject = gcloud config get-value project 2>$null
+if ([string]::IsNullOrWhiteSpace($ProjectId)) {
+    if ([string]::IsNullOrWhiteSpace($currentProject)) {
+        Write-Red "Error: No GCP Project ID provided and none set in gcloud config."
+        exit 1
+    }
+    $ProjectId = $currentProject
 }
+Write-Green "Target GCP Project: $ProjectId"
+gcloud config set project $ProjectId
 
-# Set Project
-Write-Green "Setting GCP Project to $PROJECT_ID..."
-gcloud config set project $PROJECT_ID
+# Enable Services
+Write-Green "Enabling required GCP services..."
+gcloud services enable compute.googleapis.com
 
-# Enable APIs
-Write-Green "Enabling required GCP APIs..."
-# Added vpcaccess for networking if needed, though we try direct VPC first
-gcloud services enable `
-    artifactregistry.googleapis.com `
-    run.googleapis.com `
-    sqladmin.googleapis.com `
-    redis.googleapis.com `
-    compute.googleapis.com `
-    servicenetworking.googleapis.com `
-    vpcaccess.googleapis.com
+# ==========================================
+# VM Infrastructure
+# ==========================================
+$VM_NAME = "synapse-monolith"
+$ZONE = "asia-south1-a"
+$MACHINE_TYPE = "e2-medium"
 
-# Create Artifact Registry Repo
-Write-Green "Creating/Verifying Artifact Registry Repository..."
-$repoCheck = gcloud artifacts repositories describe $REPO_NAME --location=$REGION --project=$PROJECT_ID 2>&1
+Write-Green "Checking for existing VM ($VM_NAME)..."
+$vmCheck = gcloud compute instances describe $VM_NAME --zone=$ZONE --format="value(status)" 2>$null
+
 if ($LASTEXITCODE -ne 0) {
-    gcloud artifacts repositories create $REPO_NAME `
-        --repository-format=docker `
-        --location=$REGION `
-        --description="Docker repository for Synapse Platform"
-    Write-Host "Repository created."
-} else {
-    Write-Host "Repository exists."
-}
-
-$VM_NAME = "synapse-vm"
-$ZONE = "${REGION}-a"
-
-# Create/Check VM
-Write-Green "Checking Compute Engine VM..."
-$vmCheck = gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT_ID 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Creating VM ($VM_NAME) - e2-medium (Ubuntu)..."
+    Write-Yellow "VM not found. Creating new VM..."
     gcloud compute instances create $VM_NAME `
         --zone=$ZONE `
-        --machine-type=e2-medium `
+        --machine-type=$MACHINE_TYPE `
         --image-family=ubuntu-2204-lts `
         --image-project=ubuntu-os-cloud `
         --tags="http-server,https-server,synapse-app" `
-        --boot-disk-size=30GB
+        --boot-disk-size=40GB `
+        --boot-disk-type=pd-ssd
 } else {
-    Write-Host "VM exists."
+    Write-Green "VM exists."
+    if ($vmCheck -ne "RUNNING") {
+        Write-Yellow "Starting VM..."
+        gcloud compute instances start $VM_NAME --zone=$ZONE
+    }
 }
 
 # Firewall Rules
-Write-Green "Ensuring Firewall Rules..."
-$fwCheck = gcloud compute firewall-rules describe allow-synapse-8080 --project=$PROJECT_ID 2>&1
+Write-Green "Configuring Firewall..."
+$fwCheck = gcloud compute firewall-rules describe allow-synapse-ports --format="value(name)" 2>$null
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Creating firewall rule for port 8080..."
-    gcloud compute firewall-rules create allow-synapse-8080 `
-        --allow=tcp:8080 `
+    gcloud compute firewall-rules create allow-synapse-ports `
+        --allow="tcp:8080,tcp:9000,tcp:9001" `
         --target-tags=synapse-app `
-        --description="Allow Synapse Traffic"
+        --description="Allow Synapse Application Ports"
 }
 
-# Wait for VM to be ready
-Write-Host "Waiting for VM to be ready..."
-Start-Sleep -Seconds 10
+# Get VM IP
+Write-Yellow "Waiting for VM Public IP..."
+Start-Sleep -Seconds 5
 $VM_IP = gcloud compute instances describe $VM_NAME --zone=$ZONE --format="value(networkInterfaces[0].accessConfigs[0].natIP)"
-Write-Green "VM Public IP: $VM_IP"
+if ([string]::IsNullOrWhiteSpace($VM_IP)) {
+    Write-Red "Error: Could not retrieve VM IP address."
+    exit 1
+}
+Write-Green "VM IP Address: $VM_IP"
 
-# Create Source Archive using Robocopy for safe exclusion
-Write-Green "Creating Source Archive (source.zip)..."
-$tempDir = "temp_deploy_msg"
-if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue }
+# ==========================================
+# Configuration Generation
+# ==========================================
+Write-Green "Generating production environment configuration..."
+
+if (-not (Test-Path ".env")) {
+    Write-Red "Error: .env file not found. Please create one from .env.example"
+    exit 1
+}
+
+$envContent = Get-Content ".env"
+$prodEnvContent = @()
+
+foreach ($line in $envContent) {
+    if ($line -match "^DEBUG=") { $line = "DEBUG=False" }
+    # Database uses internal docker service name
+    if ($line -match "^POSTGRE_HOST=") { $line = "POSTGRE_HOST=db" }
+    if ($line -match "^REDIS_HOST=") { $line = "REDIS_HOST=redis" }
+    # Storage needs public access point
+    if ($line -match "^STORAGE_AWS_ENDPOINT_URL=") { $line = "STORAGE_AWS_ENDPOINT_URL=http://$($VM_IP):9000" }
+    # Allowed hosts
+    if ($line -match "^ALLOWED_HOSTS=") { $line = "ALLOWED_HOSTS=localhost,127.0.0.1,$VM_IP" }
+    if ($line -match "^CORS_ALLOWED_ORIGINS=") { $line = "CORS_ALLOWED_ORIGINS=http://localhost:8080,http://$($VM_IP):8080,http://$($VM_IP):9000" }
+    
+    $prodEnvContent += $line
+}
+
+$prodEnvContent | Set-Content "production.env"
+Write-Green "production.env created."
+
+# ==========================================
+# Packaging & Deployment
+# ==========================================
+Write-Green "Packaging application..."
+$tempDir = "temp_deploy_pkg"
+if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 
-Write-Host "Staging files (excluding node_modules, cache, etc)..."
-# Robocopy is robust: /MIR (mirror), /XD (exclude dirs), /XF (exclude files)
-$excludeDirs = @("node_modules", ".git", ".idea", ".vscode", "build", "__pycache__", ".venv", ".nx", "site-packages")
-$excludeFiles = @("*.pyc", "*.vhdx", "source.zip")
-# Removing strict logging flags to avoid parameter errors
-robocopy . $tempDir /MIR /XD $excludeDirs /XF $excludeFiles /R:0 /W:0
+# Robocopy allow list equivalent (simpler with copy)
+$items = @("synapse", "synapse-sdk", "web", "Dockerfile", "docker-compose.prod.yml", "production.env", "pyproject.toml", "poetry.lock")
+foreach ($item in $items) {
+    if (Test-Path $item) {
+        Copy-Item -Path $item -Destination "$tempDir\$item" -Recurse -Force
+    }
+}
 
-Write-Host "Zipping staged files..."
+# Zip it
+if (Test-Path "source.zip") { Remove-Item "source.zip" -Force }
 Compress-Archive -Path "$tempDir\*" -DestinationPath "source.zip" -Force
-Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-Write-Host "Source archive created."
+Remove-Item $tempDir -Recurse -Force
 
-Write-Green "Deploying to VM..."
+Write-Green "Uploading to VM..."
+# Using scp with strict host checking disabled to avoid prompts
+gcloud compute scp source.zip "${VM_NAME}:~/source.zip" --zone=$ZONE 
 
-Write-Host "Installing Docker on VM (if needed)..."
-# Using semicolons to avoid CRLF issues on Linux execution
-$installCmd = "export DEBIAN_FRONTEND=noninteractive; sudo apt-get update; if ! command -v docker &> /dev/null; then echo 'Installing Docker...'; curl -fsSL https://get.docker.com -o get-docker.sh; sudo sh get-docker.sh; sudo usermod -aG docker `$USER; fi"
-gcloud compute ssh $VM_NAME --zone=$ZONE --command=$installCmd
+Write-Green "Executing Remote Deployment..."
+$deployScript = @"
+set -e
+export DEBIAN_FRONTEND=noninteractive
 
-Write-Host "Uploading source code..."
-gcloud compute scp source.zip "${VM_NAME}:." --zone=$ZONE
+# Install Docker if missing
+if ! command -v docker &> /dev/null; then
+    echo "Installing Docker..."
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    sudo usermod -aG docker `$USER
+fi
 
-Write-Host "Building and Starting Application on VM..."
-# Using semicolons to avoid CRLF issues
-$deployCmd = "export DEBIAN_FRONTEND=noninteractive; sudo apt-get update; sudo apt-get install -y unzip; rm -rf synapse-deploy; mkdir synapse-deploy; unzip -o source.zip -d synapse-deploy; cd synapse-deploy; echo 'Building Docker containers on VM...'; docker compose -f docker-compose.prod.yml up -d --build"
-gcloud compute ssh $VM_NAME --zone=$ZONE --command=$deployCmd
+# Clean previous
+rm -rf deploy_app
+mkdir deploy_app
+unzip -o ~/source.zip -d deploy_app
+cd deploy_app
 
-# Cleanup local zip
-Remove-Item "source.zip" -ErrorAction SilentlyContinue
+# Deploy
+echo "Starting Docker Compose..."
+# Stop existing containers to ensure rebuild
+sudo docker compose -f docker-compose.prod.yml down --remove-orphans
+sudo docker compose -f docker-compose.prod.yml up -d --build
 
+echo "Deployment finished successfully."
+"@
+
+gcloud compute ssh $VM_NAME --zone=$ZONE --command=$deployScript
+
+# Cleanup
+Remove-Item "source.zip" -Force
+Remove-Item "production.env" -Force
+
+Write-Green "=========================================="
 Write-Green "Deployment Complete!"
-Write-Green "Access your app at: http://${VM_IP}:8080"
+Write-Green "App URL: http://$($VM_IP):8080"
+Write-Green "MinIO URL: http://$($VM_IP):9001 (Console)"
+Write-Green "=========================================="
+
 

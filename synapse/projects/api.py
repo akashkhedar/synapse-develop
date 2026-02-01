@@ -212,21 +212,21 @@ class ProjectListAPI(generics.ListCreateAPIView):
         user = self.request.user
 
         # If the current user is an expert, return projects they're assigned to for review
+        # If the current user is an expert, return projects they're assigned to for review
         if user.is_expert:
-            from annotators.models import ExpertProjectAssignment
-
             try:
-                expert_profile = user.expert_profile
+                # Use ProjectAssignment with role='reviewer'
                 projects = (
                     Project.objects.filter(
-                        expert_assignments__expert=expert_profile,
-                        expert_assignments__is_active=True,
+                        annotator_assignments__annotator__user=user,
+                        annotator_assignments__role="reviewer",
+                        annotator_assignments__active=True,
                     )
                     .order_by(F("pinned_at").desc(nulls_last=True), "-created_at")
                     .distinct()
                 )
             except Exception:
-                # No expert profile, return empty
+                # Fallback
                 projects = Project.objects.none()
         # If the current user is an annotator (but not expert), return projects they're a member of
         elif user.is_annotator:
@@ -466,22 +466,22 @@ class ProjectAPI(generics.RetrieveUpdateDestroyAPIView):
         fields = serializer.validated_data.get("include")
 
         # Experts can only access projects they're assigned to for review
+        # Experts can only access projects they're assigned to for review
         if self.request.user.is_expert:
-            from annotators.models import ExpertProjectAssignment
-
             try:
-                expert_profile = self.request.user.expert_profile
+                # Use ProjectAssignment with role='reviewer'
                 projects = (
                     Project.objects.with_counts(fields=fields)
                     .filter(
-                        expert_assignments__expert=expert_profile,
-                        expert_assignments__is_active=True,
+                        annotator_assignments__annotator__user=self.request.user,
+                        annotator_assignments__role="reviewer",
+                        annotator_assignments__active=True,
                     )
                     .order_by(F("pinned_at").desc(nulls_last=True), "-created_at")
                     .distinct()
                 )
             except Exception:
-                # No expert profile, return empty
+                # Fallback return empty
                 projects = Project.objects.none()
         # Annotators can only access projects they are members of
         elif self.request.user.is_annotator:

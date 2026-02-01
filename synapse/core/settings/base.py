@@ -149,7 +149,11 @@ DEBUG_MODAL_EXCEPTIONS = get_bool_env("DEBUG_MODAL_EXCEPTIONS", True)
 # Whether to verify SSL certs when making external requests, eg in the uploader
 # ⚠️ Turning this off means assuming risk. ⚠️
 # Overridable at organization level via Organization#verify_ssl_certs
+# Overridable at organization level via Organization#verify_ssl_certs
 VERIFY_SSL_CERTS = get_bool_env("VERIFY_SSL_CERTS", True)
+
+# Trust the X-Forwarded-Proto header coming from the proxy (Caddy/LB)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # 'sqlite-dll-<arch>-<version>.zip' should be hosted at this prefix
 WINDOWS_SQLITE_BINARY_HOST_PREFIX = get_env(
@@ -272,6 +276,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "core.middleware.DisableCSRF",
@@ -541,7 +546,7 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "core.storage.SkipMissedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
@@ -556,6 +561,7 @@ CSRF_COOKIE_SAMESITE = get_env("CSRF_COOKIE_SAMESITE", "Lax")
 # default value is from django docs: https://docs.djangoproject.com/en/5.1/ref/settings/#csrf-cookie-age
 # approximately 1 year
 CSRF_COOKIE_AGE = int(get_env("CSRF_COOKIE_AGE", 31449600))
+CSRF_TRUSTED_ORIGINS = get_env_list("CSRF_TRUSTED_ORIGINS", default=[])
 
 
 # Inactivity user sessions

@@ -39,31 +39,31 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
-ENV POETRY_VERSION=2.0.1
+ENV POETRY_VERSION=2.1.0
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
 
 # Copy project configuration files
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml poetry.lock README.md ./
 
+# Copy local SDK dependency
 # Copy local SDK dependency
 COPY synapse-sdk/ ./synapse-sdk/
 
-# Install Python dependencies globally (no virtualenv)
-# Fix relative path for Poetry 2.0 compatibility in Docker
-# and regenerate lock file because the hash changed
-RUN sed -i 's|file:./synapse-sdk|file:///app/synapse-sdk|' pyproject.toml \
-    && poetry lock
-
-# Increase timeout and limit workers to avoid network congestion
-ENV POETRY_REQUESTS_TIMEOUT=100
-RUN poetry config virtualenvs.create false \
-    && poetry config installer.max-workers 5 \
-    && poetry install --only main --no-interaction --no-ansi --no-root \
-    && pip install gunicorn
-
-# Copy Backend Source Code
+# Copy Backend Source Code (Required for pip install -e .)
 COPY synapse/ ./synapse/
+
+# Install Python dependencies globally
+# we use poetry export to ensure we get a requirements.txt that pip can handle reliably
+# checking for poetry-plugin-export support
+RUN poetry self add poetry-plugin-export \
+    && sed -i 's|file:./synapse-sdk|file:///app/synapse-sdk|' pyproject.toml \
+    && poetry lock \
+    && poetry export --format requirements.txt --output requirements.txt --without-hashes \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install gunicorn \
+    && pip install --no-deps -e . \
+    && pip list
 # Copy root level scripts if needed, though they seem to be in synapse/
 
 # We will verify location content copy.
@@ -71,7 +71,7 @@ COPY synapse/ ./synapse/
 # Copy Frontend Build Artifacts to where Django expects them
 # Settings expect: ../../web/dist/apps/Synapse (relative to synapse/core)
 # So we need to reconstruct /app/web/dist/apps/Synapse
-COPY --from=frontend-builder /app/web/dist/apps/synapse /app/web/dist/apps/Synapse/
+COPY --from=frontend-builder /app/web/dist/apps/synapse /app/synapse/core/static/react-app/
 # Note: dist/libs is not produced by the build, so we skip it
 
 # Environment Variables
@@ -79,6 +79,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV DJANGO_SETTINGS_MODULE=synapse.core.settings.synapse
 ENV PORT=8080
+ENV PYTHONPATH=/app:/app/synapse
 
 # Create a non-root user for security (Optional but recommended, skipping for simplicity in this guide)
 

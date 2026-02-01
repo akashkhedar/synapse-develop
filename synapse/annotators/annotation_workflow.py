@@ -194,12 +194,23 @@ class AnnotationWorkflowService:
         is_expert_role = getattr(user, "is_expert", False)
         is_admin = user.is_superuser
 
-        # Check if user is actively working as an expert (has ExpertProfile)
-        is_active_expert = hasattr(user, "expert_profile") and is_expert_role
+        # Check if user is actively working as an expert (has ProjectAssignment as reviewer)
+        is_active_expert = False
+        if is_expert_role:
+             try:
+                 from annotators.models import ProjectAssignment 
+                 is_active_expert = ProjectAssignment.objects.filter(
+                     annotator__user=user, 
+                     project=task.project,
+                     role='reviewer',
+                     active=True
+                 ).exists()
+             except Exception:
+                 is_active_expert = False
 
         # Annotators can only see their own annotations
         # Even if user has is_expert flag, they should only see own annotations
-        # unless they have an active ExpertProfile
+        # unless they have an active Expert assignment
         if is_annotator and not is_active_expert and not is_admin:
             if include_own:
                 return Annotation.objects.filter(
@@ -270,21 +281,9 @@ class AnnotationWorkflowService:
             # No consensus needed - show all annotations
             return Annotation.objects.filter(task=task, was_cancelled=False)
 
-        # Consensus required - check if review is complete
-        try:
-            consensus = task.consensus
-            if consensus.status == "finalized":
-                # Show only the ground truth (consolidated) annotation after finalization
-                # Clients should only see the final expert-approved result, not individual submissions
-                return Annotation.objects.filter(
-                    task=task, was_cancelled=False, ground_truth=True
-                )
-            else:
-                # Not finalized - show nothing to client
-                return Annotation.objects.none()
-        except TaskConsensus.DoesNotExist:
-            # No consensus record yet - hide annotations
-            return Annotation.objects.none()
+        # TEMPORARY FIX: Allow clients to see all annotations for review purposes
+        # The original logic hid everything until finalized.
+        return Annotation.objects.filter(task=task, was_cancelled=False)
 
     @staticmethod
     def get_visible_annotators(user, task):

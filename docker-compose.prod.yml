@@ -7,8 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: synapse-platform
     restart: always
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     env_file:
       - production.env
     depends_on:
@@ -54,7 +54,23 @@ services:
     volumes:
       - synapse_minio_data:/data
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: synapse-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
 volumes:
   synapse_db_data:
   synapse_redis_data:
   synapse_minio_data:
+  caddy_data:
+  caddy_config:

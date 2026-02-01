@@ -95,10 +95,13 @@ class ProjectMixin:
         # Experts must have active project assignment for review
         if hasattr(user, "is_expert") and user.is_expert:
             try:
-                from annotators.models import ExpertProjectAssignment
+                from annotators.models import ProjectAssignment
 
-                return ExpertProjectAssignment.objects.filter(
-                    expert=user.expert_profile, project=self, is_active=True
+                return ProjectAssignment.objects.filter(
+                    annotator__user=user, 
+                    project=self, 
+                    role='reviewer',
+                    active=True
                 ).exists()
             except Exception:
                 return False

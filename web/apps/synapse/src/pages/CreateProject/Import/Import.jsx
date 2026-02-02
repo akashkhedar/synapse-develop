@@ -176,11 +176,19 @@ export const ImportPage = ({
         uploading: state.uploading.filter((f) => !action.sent.includes(f)),
       };
     }
-    if (action.uploaded) {
-      return {
-        ...state,
-        uploaded: unique([...state.uploaded, ...action.uploaded], (a, b) => a.id === b.id),
-      };
+    if (action.hasOwnProperty('uploaded')) {
+      // When uploaded is explicitly set, replace the state (used for deletion or initial load)
+      const newState = { ...state, uploaded: action.uploaded };
+      if (action.hasOwnProperty('ids')) {
+        onFileListUpdate?.(action.ids);
+        newState.ids = action.ids;
+      } else if (action.uploaded && action.uploaded.length > 0) {
+        // If uploaded is set but ids is not, derive ids from uploaded
+        const derivedIds = action.uploaded.map(f => f.id);
+        onFileListUpdate?.(derivedIds);
+        newState.ids = derivedIds;
+      }
+      return newState;
     }
     if (action.ids) {
       const ids = unique([...state.ids, ...action.ids]);
@@ -196,6 +204,7 @@ export const ImportPage = ({
     uploading: [],
     ids: [],
   });
+  const [selectedFiles, setSelectedFiles] = useState(new Set());
 
   useEffect(() => {
     if (!files.uploaded.length) return;
@@ -267,6 +276,66 @@ export const ImportPage = ({
     },
     [project?.id],
   );
+
+  const toggleSelectFile = useCallback((fileId) => {
+    setSelectedFiles((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(fileId)) {
+        newSet.delete(fileId);
+      } else {
+        newSet.add(fileId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedFiles.size === files.uploaded.length && files.uploaded.length > 0) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(files.uploaded.map((f) => f.id)));
+    }
+  }, [files.uploaded, selectedFiles.size]);
+
+  const deleteSelectedFiles = useCallback(async () => {
+    if (selectedFiles.size === 0) return;
+
+    try {
+      await api.callApi("deleteFileUploads", {
+        params: { pk: project.id },
+        body: { file_upload_ids: Array.from(selectedFiles) },
+      });
+
+      // Update local state by filtering out deleted files
+      const remainingFiles = files.uploaded.filter(f => !selectedFiles.has(f.id));
+      const remainingIds = files.ids.filter(id => !selectedFiles.has(id));
+      dispatch({ uploaded: remainingFiles, ids: remainingIds });
+      setSelectedFiles(new Set());
+    } catch (err) {
+      console.error("Error deleting files:", err);
+      setError(err);
+    }
+  }, [selectedFiles, project?.id, api, files.uploaded, files.ids]);
+
+  const deleteAllFiles = useCallback(async () => {
+    if (files.uploaded.length === 0) return;
+
+    const allFileIds = files.uploaded.map((f) => f.id);
+
+    try {
+      await api.callApi("deleteFileUploads", {
+        params: { pk: project.id },
+        body: { file_upload_ids: allFileIds },
+      });
+
+      // Clear all files from state
+      dispatch({ uploaded: [], ids: [] });
+      setSelectedFiles(new Set());
+    } catch (err) {
+      console.error("Error deleting files:", err);
+      setError(err);
+    }
+  }, [files.uploaded, project?.id, api]);
 
   const onError = (err) => {
     console.error(err);
@@ -451,6 +520,31 @@ export const ImportPage = ({
         >
           Upload {files.uploaded.length ? "More " : ""}Files
         </Button>
+        {files.uploaded.length > 0 && (
+          <>
+            <Button
+              variant="negative"
+              look="outlined"
+              type="button"
+              onClick={deleteSelectedFiles}
+              disabled={selectedFiles.size === 0}
+              leading={<IconTrash />}
+              aria-label="Delete selected files"
+            >
+              Delete Selected ({selectedFiles.size})
+            </Button>
+            <Button
+              variant="negative"
+              look="outlined"
+              type="button"
+              onClick={deleteAllFiles}
+              leading={<IconTrash />}
+              aria-label="Delete all files"
+            >
+              Delete All
+            </Button>
+          </>
+        )}
         {ff.isActive(ff.FF_SAMPLE_DATASETS) && (
           <SampleDatasetSelect samples={samples} sample={sample} onSampleApplied={onSampleDatasetSelect} />
         )}
@@ -581,6 +675,23 @@ export const ImportPage = ({
                   contentClassName="overflow-y-auto h-[calc(100%-48px)]"
                 >
                   <table className="w-full">
+                    <thead>
+                      <tr>
+                        {files.uploaded.length > 0 && (
+                          <th className="w-12">
+                            <input
+                              type="checkbox"
+                              checked={selectedFiles.size === files.uploaded.length && files.uploaded.length > 0}
+                              onChange={toggleSelectAll}
+                              aria-label="Select all files"
+                            />
+                          </th>
+                        )}
+                        <th className="text-left">File Name</th>
+                        <th className="text-left">Status</th>
+                        <th className="text-right">Size</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {sample && (
                         <tr key={sample.url}>
@@ -612,6 +723,14 @@ export const ImportPage = ({
                             key={file.file}
                             className={newlyUploadedFiles.has(file.id) ? importClass.elem("upload-flash") : ""}
                           >
+                            <td className="w-12">
+                              <input
+                                type="checkbox"
+                                checked={selectedFiles.has(file.id)}
+                                onChange={() => toggleSelectFile(file.id)}
+                                aria-label={`Select ${file.file}`}
+                              />
+                            </td>
                             <td className={importClass.elem("file-name")}>
                               <Tooltip title={file.file}>
                                 <Typography variant="body" size="small" className="truncate">

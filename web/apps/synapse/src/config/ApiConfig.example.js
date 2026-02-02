@@ -31,7 +31,6 @@ export const API_CONFIG = {
           maximum_annotations: 1,
           is_published: false,
           model_version: "model 0",
-          is_draft: false,
           created_by: {
             id: 1,
             first_name: "",

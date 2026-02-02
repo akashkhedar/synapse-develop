@@ -21,7 +21,6 @@ from data_export.models import ConvertedFormat, Export
 from django.apps import apps
 from django.conf import settings
 from django.test import Client
-from ml.models import MLBackend
 from organizations.models import Organization
 from projects.models import Project
 from tasks.serializers import TaskWithAnnotationsSerializer
@@ -349,12 +348,10 @@ def upload_data(client, project, tasks):
     return client.post(f'/api/projects/{project.id}/tasks/bulk', data=data, content_type='application/json')
 
 
-def make_project(config, user, use_ml_backend=True, team_id=None, org=None):
+def make_project(config, user, team_id=None, org=None):
     if org is None:
         org = Organization.objects.filter(created_by=user).first()
     project = Project.objects.create(created_by=user, organization=org, **config)
-    if use_ml_backend:
-        MLBackend.objects.create(project=project, url='http://localhost:8999')
 
     return project
 

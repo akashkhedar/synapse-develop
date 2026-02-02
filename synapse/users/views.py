@@ -10,8 +10,10 @@ from django.conf import settings
 from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.middleware.csrf import get_token
 from django.shortcuts import redirect, render, reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_GET
 from organizations.forms import OrganizationSignupForm
 from organizations.models import Organization
 from rest_framework.authtoken.models import Token
@@ -42,6 +44,10 @@ def public_annotator_signup(request):
 
 @login_required
 def logout(request):
+    # Clear any lingering messages before logout to prevent them from showing on login page
+    storage = messages.get_messages(request)
+    storage.used = True
+    
     auth.logout(request)
 
     if settings.LOGOUT_REDIRECT_URL:
@@ -131,19 +137,28 @@ def user_login(request):
     user = request.user
     next_page = request.GET.get("next")
 
-    # checks if the URL is a safe redirection.
-    if not next_page or not url_has_allowed_host_and_scheme(
+    # Store whether next_page was explicitly provided
+    has_explicit_next = bool(next_page and url_has_allowed_host_and_scheme(
         url=next_page, allowed_hosts=request.get_host()
-    ):
-        if flag_set("fflag_all_feat_dia_1777_ls_homepage_short", user):
-            next_page = reverse("main")
-        else:
-            next_page = reverse("projects:project-index")
+    ))
+
+    # Set default next_page if not explicitly provided
+    if not has_explicit_next:
+        # Default will be determined after authentication based on user role
+        next_page = None
 
     login_form = load_func(settings.USER_LOGIN_FORM)
     form = login_form()
 
     if user.is_authenticated:
+        # Determine redirect for already-authenticated users
+        if not next_page:
+            if user.is_annotator or user.is_expert:
+                next_page = reverse("projects:project-index")
+            elif flag_set("fflag_all_feat_dia_1777_ls_homepage_short", user):
+                next_page = reverse("main")
+            else:
+                next_page = reverse("projects:project-index")
         return redirect(next_page)
 
     if request.method == "POST":
@@ -157,6 +172,8 @@ def user_login(request):
                     None,
                     "Please verify your email address before logging in. Check your inbox for the verification link.",
                 )
+                # Provide a default next_page for the template if None
+                template_next = next_page if next_page else reverse("projects:project-index")
                 return render(
                     request,
                     (
@@ -166,7 +183,7 @@ def user_login(request):
                         )
                         else "users/new-ui/user_login.html"
                     ),
-                    {"form": form, "next": quote(next_page)},
+                    {"form": form, "next": quote(template_next)},
                 )
 
             # Check if annotator has passed the test (skip for experts)
@@ -207,6 +224,8 @@ def user_login(request):
                         annotator_action = None
 
                     form.add_error(None, error_msg)
+                    # Provide a default next_page for the template if None
+                    template_next = next_page if next_page else reverse("projects:project-index")
                     return render(
                         request,
                         (
@@ -218,7 +237,7 @@ def user_login(request):
                         ),
                         {
                             "form": form,
-                            "next": quote(next_page),
+                            "next": quote(template_next),
                             "annotator_action": annotator_action,
                             "annotator_email": email,
                         },
@@ -237,6 +256,7 @@ def user_login(request):
                 org_pk = Organization.find_by_user(user).pk
                 user.active_organization_id = org_pk
                 user.save(update_fields=["active_organization"])
+            
             # If the request expects JSON (AJAX/API), return JSON with role flags
             accept = request.headers.get("Accept", "")
             is_xhr = request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest"
@@ -263,23 +283,34 @@ def user_login(request):
                     status=200,
                 )
 
-            # Force redirect to projects for annotators/experts
-            if user.is_annotator or user.is_expert:
-                next_page = reverse("projects:project-index")
+            # Determine the redirect URL based on user role (if not explicitly provided)
+            if not has_explicit_next:
+                if user.is_annotator or user.is_expert:
+                    # Annotators and experts always go to projects page
+                    next_page = reverse("projects:project-index")
+                elif flag_set("fflag_all_feat_dia_1777_ls_homepage_short", user):
+                    # Clients with the feature flag go to dashboard
+                    next_page = reverse("main")
+                else:
+                    # Default for clients without flag - projects page
+                    next_page = reverse("projects:project-index")
 
             return redirect(next_page)
 
+    # Provide a default next_page for the template if None
+    template_next = next_page if next_page else reverse("projects:project-index")
+    
     if flag_set(
         "fflag_feat_front_lsdv_e_297_increase_oss_to_enterprise_adoption_short"
     ):
         return render(
             request,
             "users/new-ui/user_login.html",
-            {"form": form, "next": quote(next_page)},
+            {"form": form, "next": quote(template_next)},
         )
 
     return render(
-        request, "users/user_login.html", {"form": form, "next": quote(next_page)}
+        request, "users/user_login.html", {"form": form, "next": quote(template_next)}
     )
 
 
@@ -328,6 +359,15 @@ def user_account(request, sub_path=None):
     )
 
 
-
-
+@require_GET
+def refresh_csrf_token(request):
+    """
+    Returns a fresh CSRF token for the current session.
+    
+    This endpoint is used to refresh CSRF tokens when a user returns to a 
+    login/signup page after their session may have changed (e.g., after 
+    clicking an email verification link in a new tab).
+    """
+    csrf_token = get_token(request)
+    return JsonResponse({"csrfToken": csrf_token})
 

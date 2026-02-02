@@ -16,6 +16,8 @@ router.register(r"users", api.UserAPI, basename="user")
 
 urlpatterns = [
     re_path(r"^api/", include(router.urls)),
+    # CSRF token refresh endpoint
+    path("api/csrf-token/", views.refresh_csrf_token, name="csrf-token-refresh"),
     # Authentication
     path("user/login/", views.user_login, name="user-login"),
     path("login/", views.user_login, name="login"),

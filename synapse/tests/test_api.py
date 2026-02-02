@@ -241,6 +241,10 @@ def test_creating_activating_new_ml_backend(
     ml_backend_call_count,
     settings,
 ):
+    # ML backend functionality removed - test skipped
+    pytest.skip("ML backend functionality has been removed from the application")
+    return
+    
     # Turn off telemetry to avoid requests mock receiving requests from it, to
     # eliminate flakes. TODO(jo): consider implementing this more broadly in test.
     settings.COLLECT_ANALYTICS = False

@@ -54,20 +54,13 @@ const ProjectName = ({
   name,
   setName,
   onSaveName,
-  onSubmit,
   error,
   description,
   setDescription,
   show = true,
 }) =>
   !show ? null : (
-    <form
-      className={cn("project-name")}
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
-    >
+    <form className={cn("project-name")}>
       <div className="w-full flex flex-col gap-2">
         <label className="w-full" htmlFor="project_name">
           Project Name
@@ -79,6 +72,7 @@ const ProjectName = ({
           onChange={(e) => setName(e.target.value)}
           onBlur={onSaveName}
           className="project-title w-full"
+          autoFocus
         />
         {error && <span className="-mt-1 text-negative-content">{error}</span>}
       </div>
@@ -94,6 +88,7 @@ const ProjectName = ({
           style={{ minHeight: 100 }}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          onBlur={onSaveName}
           className="project-description w-full"
         />
       </div>
@@ -208,7 +203,7 @@ export const CreateProject = ({ onClose }) => {
       params: {
         pk: project.id,
       },
-      body: { ...projectBody, is_draft: false },
+      body: projectBody,
     });
 
     if (response === null) return;
@@ -230,15 +225,44 @@ export const CreateProject = ({ onClose }) => {
 
   const onSaveName = async () => {
     if (error) return;
-    // Guard: don't try to update if project hasn't been created yet
-    if (!project?.id) return;
     
+    // If project doesn't exist yet, create it
+    if (!project?.id) {
+      if (!name) return;
+      
+      setWaitingStatus(true);
+      const res = await api.callApi("createProject", {
+        body: {
+          title: name,
+          description,
+        },
+      });
+      setWaitingStatus(false);
+
+      if (!res) {
+        setError("Failed to create project");
+        return;
+      }
+
+      if (!res.id) {
+        setError(res.validation_errors?.title || "Failed to create project");
+        return;
+      }
+
+      // Set the newly created project
+      updateProject(res);
+      __lsa("create_project.project_created", { id: res.id });
+      return;
+    }
+    
+    // Otherwise, update existing project
     const res = await api.callApi("updateProjectRaw", {
       params: {
         pk: project.id,
       },
       body: {
         title: name,
+        description,
       },
     });
 
@@ -351,7 +375,6 @@ export const CreateProject = ({ onClose }) => {
           setName={setName}
           error={error}
           onSaveName={onSaveName}
-          onSubmit={onCreate}
           description={description}
           setDescription={setDescription}
           show={step === "name"}

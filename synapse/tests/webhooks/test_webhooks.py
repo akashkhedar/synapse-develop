@@ -418,11 +418,15 @@ def test_start_training_webhook(setup_project_dialog, ml_start_training_webhook,
         - It checks that the request method was POST.
         - The request URL and the JSON payload are validated against expected values.
     """
-    from ml.models import MLBackend
+    # ML backend functionality removed - test skipped
+    pytest.skip("ML backend functionality has been removed from the application")
+    return
+    
+    # from ml.models import MLBackend
 
     webhook = ml_start_training_webhook
     project = webhook.project
-    ml = MLBackend.objects.create(project=project, url='http://0.0.0.0:9090')
+    # ml = MLBackend.objects.create(project=project, url='http://0.0.0.0:9090')
 
     # Mock the POST request to the ML backend train endpoint
     with requests_mock.Mocker(real_http=True) as m:

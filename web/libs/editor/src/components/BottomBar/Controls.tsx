@@ -425,12 +425,11 @@ export const Controls = controlsInjector(
       // Check if user is an expert reviewing a task
       const isExpertReview = store.hasInterface("expert-review");
 
-      // Check User Role
-      const userRole = (window as any).APP_SETTINGS?.user?.role;
-      // Define roles
-      const MANAGER_ROLES = ["OW", "AD", "MA"];
-      const ANNOTATOR_ROLES = ["AN", "RE"]; // RE might be reviewer, but often acts as annotator in some flows
-      const isClient = !MANAGER_ROLES.includes(userRole) && !ANNOTATOR_ROLES.includes(userRole) && !isExpertReview && !isReview;
+      // Check User Role from boolean flags
+      const user = (window as any).APP_SETTINGS?.user;
+      const isAnnotator = user?.is_annotator === true;
+      const isExpert = user?.is_expert === true || isExpertReview;
+      const isClient = !isAnnotator && !isExpert && !isReview;
 
       if (isClient) {
         // Client View: Show Close Button
@@ -440,17 +439,26 @@ export const Controls = controlsInjector(
               aria-label="Close task"
               className="w-[150px] btn_outline"
               look="outlined"
-              onClick={() => {
-                 if (history.length > 1) {
-                    window.history.back();
-                 } else {
-                    // Fallback if no history (e.g. direct link), maybe close window or redirect
-                    // Trying to close the stream/modal logic
-                    const searchParams = new URLSearchParams(window.location.search);
-                    searchParams.set("exitStream", "true");
-                    const newRelativePathQuery = `${window.location.pathname}?${searchParams.toString()}`;
-                    window.location.href = newRelativePathQuery; 
-                 }
+              onClick={async () => {
+                // Pause autosave to prevent saving on navigation
+                const selected = store.annotationStore?.selected;
+                if (selected) {
+                  selected.pauseAutosave();
+                }
+                
+                // Navigate back without saving
+                if (window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  // Fallback - use SDK's exitStream method without saving
+                  const sdk = store.SDK;
+                  if (sdk && sdk.exitStream) {
+                    sdk.exitStream();
+                  } else {
+                    // Last resort - navigate to projects
+                    window.location.href = '/projects';
+                  }
+                }
               }}
             >
               Close
@@ -461,7 +469,7 @@ export const Controls = controlsInjector(
       }
 
 
-      if (isExpertReview) {
+      if (isExpert) {
         // Expert Accept Button
         buttons.push(
           <Button

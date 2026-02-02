@@ -80,6 +80,10 @@ export const ProjectsPage = () => {
       );
     }
 
+    // Use 'fields' parameter for FlexFieldsModelSerializer (what fields to include in response)
+    requestParams.fields = includeFields.join(",");
+    
+    // Also use 'include' for the database-level counts
     requestParams.include = includeFields.join(",");
 
     const data = await api.callApi("projects", {
@@ -97,20 +101,31 @@ export const ProjectsPage = () => {
     }
 
     if (data?.results?.length) {
+      const additionalFields = [
+        "id",
+        "description",
+        "num_tasks_with_annotations",
+        "task_number",
+        "skipped_annotations_number",
+        "total_annotations_number",
+        "total_predictions_number",
+        "ground_truth_number",
+        "finished_task_number",
+      ];
+
+      // Add annotator/expert-specific fields to additional data fetch as well
+      if (isAnnotator || isExpert) {
+        additionalFields.push(
+          "_annotator_assigned_tasks",
+          "_annotator_completed_tasks"
+        );
+      }
+
       const additionalData = await api.callApi("projects", {
         params: {
           ids: data?.results?.map(({ id }) => id).join(","),
-          include: [
-            "id",
-            "description",
-            "num_tasks_with_annotations",
-            "task_number",
-            "skipped_annotations_number",
-            "total_annotations_number",
-            "total_predictions_number",
-            "ground_truth_number",
-            "finished_task_number",
-          ].join(","),
+          fields: additionalFields.join(","),  // For FlexFieldsModelSerializer
+          include: additionalFields.join(","),  // For database annotations
           page_size: pageSize,
         },
         signal: abortController.controller.current.signal,

@@ -3830,6 +3830,21 @@ files = [
 ]
 
 [[package]]
+name = "razorpay"
+version = "2.0.0"
+description = "Razorpay Python Client"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "razorpay-2.0.0-py3-none-any.whl", hash = "sha256:524cf1726f673fc72d448f83fd2ea479526d2dd48641ca75ee9a58e25300784a"},
+    {file = "razorpay-2.0.0.tar.gz", hash = "sha256:929aef2f4aec8190dfe12b79ba09e83c39086f6ea0bffa0586b719c5b9054450"},
+]
+
+[package.dependencies]
+requests = "*"
+
+[[package]]
 name = "readme-renderer"
 version = "42.0"
 description = "readme_renderer is a library for rendering readme descriptions for Warehouse"
@@ -4988,6 +5003,21 @@ files = [
 test = ["pytest (>=6.0.0)"]
 
 [[package]]
+name = "whitenoise"
+version = "6.11.0"
+description = "Radically simplified static file serving for WSGI applications"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "whitenoise-6.11.0-py3-none-any.whl", hash = "sha256:b2aeb45950597236f53b5342b3121c5de69c8da0109362aee506ce88e022d258"},
+    {file = "whitenoise-6.11.0.tar.gz", hash = "sha256:0f5bfce6061ae6611cd9396a8231e088722e4fc67bc13a111be74c738d99375f"},
+]
+
+[package.extras]
+brotli = ["brotli"]
+
+[[package]]
 name = "wrapt"
 version = "1.17.0"
 description = "Module for decorators, wrappers and monkey patching."
@@ -5109,4 +5139,4 @@ uwsgi = ["pyuwsgi", "uwsgitop"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4"
-content-hash = "0845a4beb66aaa5fce01a50727a765826ca907f21cf043a21a2951d296ab19ae"
+content-hash = "ecca8084850aca072c95e4b10c99f35635b903915ac77b5d94dc105598c04b5e"

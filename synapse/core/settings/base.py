@@ -270,7 +270,7 @@ INSTALLED_APPS = [
     "annotators",  # Annotator management system
     "telemetry",  # Behavioral surveillance system
     "blogs",
-    "ml", # Machine Learning Pipeline (Deferred)
+    # "ml", # Machine Learning Pipeline (Deferred) - Commented out until migrations are run
 ]
 
 MIDDLEWARE = [

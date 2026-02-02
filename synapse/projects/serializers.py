@@ -1,9 +1,12 @@
 """This file and its contents are licensed under the Apache License 2.0. Please see the included NOTICE for copyright information and LICENSE for a copy of the license.
 """
+import logging
 import bleach
 from constants import SAFE_HTML_ATTRIBUTES, SAFE_HTML_TAGS
 from django.db.models import Q
 from fsm.serializer_fields import FSMStateField
+
+logger = logging.getLogger(__name__)
 from synapse_sdk.synapse_interface import LabelInterface
 from synapse_sdk.synapse_interface.control_tags import (
     BrushLabelsTag,
@@ -213,7 +216,6 @@ class ProjectSerializer(FlexFieldsModelSerializer):
             'color',
             'maximum_annotations',
             'is_published',
-            'is_draft',
             'created_by',
             'created_at',
             'created_at',
@@ -277,42 +279,97 @@ class ProjectSerializer(FlexFieldsModelSerializer):
 
     def get__annotator_assigned_tasks(self, project) -> int:
         request = self.context.get('request')
+        
+        logger.info(f"[ANNOTATOR TASKS DEBUG] get__annotator_assigned_tasks called for project {project.id}")
+        logger.info(f"[ANNOTATOR TASKS DEBUG] Request exists: {request is not None}")
+        logger.info(f"[ANNOTATOR TASKS DEBUG] User authenticated: {request and request.user.is_authenticated}")
+        logger.info(f"[ANNOTATOR TASKS DEBUG] User is_annotator: {request and request.user.is_annotator if request else 'N/A'}")
+        
         if not request or not request.user.is_authenticated:
+            logger.info(f"[ANNOTATOR TASKS DEBUG] Returning 0 - no request or not authenticated")
             return 0
             
+        # Import here to avoid circular dependencies
+        from annotators.models import TaskAssignment, AnnotatorProfile
+        
+        # Try to get the annotator profile
+        profile = None
         try:
-            # Import here to avoid circular dependencies
-            from annotators.models import TaskAssignment
-            
-            if hasattr(request.user, 'annotator_profile'):
-                return TaskAssignment.objects.filter(
-                    annotator=request.user.annotator_profile,
+            profile = request.user.annotator_profile
+            logger.info(f"[ANNOTATOR TASKS DEBUG] Found existing profile: {profile.id}")
+        except AnnotatorProfile.DoesNotExist:
+            logger.info(f"[ANNOTATOR TASKS DEBUG] Profile does not exist, is_annotator={request.user.is_annotator}")
+            if request.user.is_annotator:
+                try:
+                    profile, created = AnnotatorProfile.objects.get_or_create(user=request.user)
+                    logger.info(f"[ANNOTATOR TASKS DEBUG] Profile {'created' if created else 'retrieved'}: {profile.id}")
+                except Exception as e:
+                    logger.error(f"[ANNOTATOR TASKS DEBUG] Error creating annotator profile for user {request.user.id}: {e}")
+                    return 0
+        except Exception as e:
+            logger.error(f"[ANNOTATOR TASKS DEBUG] Error accessing annotator profile for user {request.user.id}: {e}")
+            return 0
+        
+        if profile:
+            try:
+                count = TaskAssignment.objects.filter(
+                    annotator=profile,
                     task__project=project,
                     status__in=['assigned', 'in_progress']
                 ).count()
-        except Exception:
-            pass
-            
+                logger.info(f"[ANNOTATOR TASKS DEBUG] Found {count} assigned/in_progress tasks for project {project.id}")
+                return count
+            except Exception as e:
+                logger.error(f"[ANNOTATOR TASKS DEBUG] Error counting assigned tasks for project {project.id}: {e}")
+        else:
+            logger.info(f"[ANNOTATOR TASKS DEBUG] No profile found, returning 0")
+                
         return 0
 
     def get__annotator_completed_tasks(self, project) -> int:
         request = self.context.get('request')
+        
+        logger.info(f"[ANNOTATOR COMPLETED DEBUG] get__annotator_completed_tasks called for project {project.id}")
+        
         if not request or not request.user.is_authenticated:
+            logger.info(f"[ANNOTATOR COMPLETED DEBUG] Returning 0 - no request or not authenticated")
             return 0
             
+        # Import here to avoid circular dependencies
+        from annotators.models import TaskAssignment, AnnotatorProfile
+        
+        # Try to get the annotator profile
+        profile = None
         try:
-            # Import here to avoid circular dependencies
-            from annotators.models import TaskAssignment
-            
-            if hasattr(request.user, 'annotator_profile'):
-                return TaskAssignment.objects.filter(
-                    annotator=request.user.annotator_profile,
+            profile = request.user.annotator_profile
+            logger.info(f"[ANNOTATOR COMPLETED DEBUG] Found existing profile: {profile.id}")
+        except AnnotatorProfile.DoesNotExist:
+            logger.info(f"[ANNOTATOR COMPLETED DEBUG] Profile does not exist")
+            if request.user.is_annotator:
+                try:
+                    profile, created = AnnotatorProfile.objects.get_or_create(user=request.user)
+                    logger.info(f"[ANNOTATOR COMPLETED DEBUG] Profile {'created' if created else 'retrieved'}: {profile.id}")
+                except Exception as e:
+                    logger.error(f"[ANNOTATOR COMPLETED DEBUG] Error creating annotator profile for user {request.user.id}: {e}")
+                    return 0
+        except Exception as e:
+            logger.error(f"[ANNOTATOR COMPLETED DEBUG] Error accessing annotator profile for user {request.user.id}: {e}")
+            return 0
+        
+        if profile:
+            try:
+                count = TaskAssignment.objects.filter(
+                    annotator=profile,
                     task__project=project,
                     status='completed'
                 ).count()
-        except Exception:
-            pass
-            
+                logger.info(f"[ANNOTATOR COMPLETED DEBUG] Found {count} completed tasks for project {project.id}")
+                return count
+            except Exception as e:
+                logger.error(f"[ANNOTATOR COMPLETED DEBUG] Error counting completed tasks for project {project.id}: {e}")
+        else:
+            logger.info(f"[ANNOTATOR COMPLETED DEBUG] No profile found, returning 0")
+                
         return 0
 
 

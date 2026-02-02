@@ -37,8 +37,6 @@ declare type APIProject = {
   /** Machine learning model version */
   model_version?: string | null;
 
-  /** Whether or not the project is in the middle of being created */
-  is_draft?: boolean;
   created_by?: APIUserSimple;
 
   /** @format date-time */

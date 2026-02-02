@@ -1137,11 +1137,11 @@ class FileUploadListAPI(
         project = generics.get_object_or_404(
             Project.objects.for_user(self.request.user), pk=self.kwargs.get("pk", 0)
         )
-        if project.is_draft or bool_from_request(
+        if bool_from_request(
             self.request.query_params, "all", False
         ):
-            # If project is in draft state, we return all uploaded files, ignoring queried ids
-            logger.debug(f"Return all uploaded files for draft project {project}")
+            # Return all uploaded files if requested via 'all' parameter
+            logger.debug(f"Return all uploaded files for project {project}")
             return FileUpload.objects.filter(
                 project_id=project.id, user=self.request.user
             )
@@ -1161,6 +1161,7 @@ class FileUploadListAPI(
             Project.objects.for_user(self.request.user), pk=self.kwargs["pk"]
         )
         ids = self.request.data.get("file_upload_ids")
+        # Don't filter by user - allow project members with change permission to delete any files
         if ids is None:
             deleted, _ = FileUpload.objects.filter(project=project).delete()
         elif isinstance(ids, list):

@@ -9,6 +9,55 @@
     const synapse_gaclient_id = sessionStorage.getItem('synapse_gaclient_id');
     if (window.__lsa) __lsa('users.signup.view', { synapse_gaclient_id });
   }, 2000);
+
+  // CSRF Token Refresh: When user returns to this tab after email verification,
+  // the session may have changed, making the original CSRF token invalid.
+  // This refreshes the token when the page becomes visible again.
+  (function() {
+    let lastVisibilityState = document.visibilityState;
+    
+    document.addEventListener('visibilitychange', function() {
+      // Only refresh when page becomes visible (user returns to tab)
+      if (document.visibilityState === 'visible' && lastVisibilityState === 'hidden') {
+        fetch('{% url "csrf-token-refresh" %}', {
+          method: 'GET',
+          credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.csrfToken) {
+            // Update all CSRF token inputs in forms on this page
+            const csrfInputs = document.querySelectorAll('input[name="csrfmiddlewaretoken"]');
+            csrfInputs.forEach(input => {
+              input.value = data.csrfToken;
+            });
+          }
+        })
+        .catch(error => {
+          console.warn('CSRF token refresh failed:', error);
+        });
+      }
+      lastVisibilityState = document.visibilityState;
+    });
+
+    // Also refresh on page focus (backup for browsers with poor visibilitychange support)
+    window.addEventListener('focus', function() {
+      fetch('{% url "csrf-token-refresh" %}', {
+        method: 'GET',
+        credentials: 'same-origin'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.csrfToken) {
+          const csrfInputs = document.querySelectorAll('input[name="csrfmiddlewaretoken"]');
+          csrfInputs.forEach(input => {
+            input.value = data.csrfToken;
+          });
+        }
+      })
+      .catch(() => {}); // Silently fail on focus refresh
+    });
+  })();
 </script>
 {% endblock %}
 

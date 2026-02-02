@@ -322,11 +322,6 @@ class Project(ProjectMixin, FsmHistoryStateModel):
 
     data_types = JSONField(_("data_types"), default=dict, null=True)
 
-    is_draft = models.BooleanField(
-        _("is draft"),
-        default=False,
-        help_text="Whether or not the project is in the middle of being created",
-    )
     is_published = models.BooleanField(
         _("published"),
         default=False,
@@ -1067,11 +1062,7 @@ class Project(ProjectMixin, FsmHistoryStateModel):
             if update_fields is not None:
                 update_fields = {"control_weights"}.union(update_fields)
 
-        # If project is published and is draft, set is_draft to False
-        if self.is_published and self.is_draft:
-            self.is_draft = False
-            if update_fields is not None:
-                update_fields = {"is_published", "is_draft"}.union(update_fields)
+        # Draft project logic removed - projects are only created after payment
 
         super(Project, self).save(*args, update_fields=update_fields, **kwargs)
 
@@ -1317,22 +1308,7 @@ class Project(ProjectMixin, FsmHistoryStateModel):
 
 
 
-    def update_ml_backends_state(self):
-        """
-        Updates the state of all ml_backends associated with this instance.
-
-        :return: List of updated MLBackend instances.
-        """
-        ml_backends = self.get_ml_backends()
-        for mlb in ml_backends:
-            mlb.update_state()
-
-        return ml_backends
-
-    def get_active_ml_backends(self):
-        from ml.models import MLBackendState
-
-        return self.get_ml_backends(state=MLBackendState.CONNECTED)
+    # ML backend methods removed - ml app no longer in use
 
     @cached_property
     def get_all_import_storage_objects(self):

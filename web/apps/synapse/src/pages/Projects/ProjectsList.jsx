@@ -373,11 +373,11 @@ const ProjectCard = ({ project, role }) => {
               <div style={{ flexShrink: 0 }}>
                 <CircularProgress
                   percentage={(() => {
-                    // For annotators/experts: use their assigned/completed counts
+                    // For annotators/experts: use num_tasks_with_annotations (completed) / task_number (total)
                     if (role === "worker") {
-                      const assigned = project._annotator_assigned_tasks ?? 0;
-                      const completed = project._annotator_completed_tasks ?? 0;
-                      return assigned > 0 ? (completed / assigned) * 100 : 0;
+                      const total = project.task_number ?? 0;
+                      const completed = project.num_tasks_with_annotations ?? 0;
+                      return total > 0 ? (completed / total) * 100 : 0;
                     }
                     // For clients: use overall project stats
                     return project.task_number > 0 ? (project.finished_task_number / project.task_number) * 100 : 0;
@@ -394,7 +394,7 @@ const ProjectCard = ({ project, role }) => {
                   color: 'var(--color-neutral-content-subtle)',
                 }}>
                   {role === "worker" 
-                    ? `${project._annotator_completed_tasks ?? 0} / ${project._annotator_assigned_tasks ?? 0}`
+                    ? `${project.num_tasks_with_annotations ?? 0} / ${project.task_number ?? 0}`
                     : `${project.finished_task_number ?? 0} / ${project.task_number ?? 0}`
                   }
                   <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>
@@ -413,7 +413,7 @@ const ProjectCard = ({ project, role }) => {
                 {role === "worker" ? (
                   <StatBadge
                     icon={IconCheck}
-                    value={project._annotator_completed_tasks ?? 0}
+                    value={project.num_tasks_with_annotations ?? 0}
                     label="Completed"
                     color="#10b981"
                   />

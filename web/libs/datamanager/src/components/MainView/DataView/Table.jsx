@@ -220,6 +220,7 @@ export const DataView = injector(
 
     const renderContent = useCallback(
       (content) => {
+        // Show loading spinner during initial data load
         if (isLoading && total === 0 && !isLabeling) {
           return (
             <div className={cn("fill-container").toClassName()}>
@@ -287,19 +288,23 @@ export const DataView = injector(
             </div>
           );
         }
-        // Unified empty state handling - EmptyState now handles all cases internally
         if (total === 0 || !hasData) {
-          // Use unified EmptyState for all cases
+          // For annotators/experts, never show import screen - always show their role-specific empty state
+          // Don't rely on isLoading flag as it can be false before data fully loads
           return (
             <div className={cn("no-results").toClassName()}>
               <EmptyState
-                // Import functionality props
-                canImport={!!store.interfaces.get("import")}
-                onOpenSourceStorageModal={() =>
-                  getRoot(store)?.SDK?.invoke?.("openSourceStorageModal")
+                // Import functionality disabled for annotators/experts to prevent any flash of import screen
+                canImport={false}
+                onOpenSourceStorageModal={
+                  role !== 'ANNOTATOR' && role !== 'REVIEWER'
+                    ? () => getRoot(store)?.SDK?.invoke?.("openSourceStorageModal")
+                    : undefined
                 }
-                onOpenImportModal={() =>
-                  getRoot(store)?.SDK?.invoke?.("importClicked")
+                onOpenImportModal={
+                  role !== 'ANNOTATOR' && role !== 'REVIEWER'
+                    ? () => getRoot(store)?.SDK?.invoke?.("importClicked")
+                    : undefined
                 }
                 // Role-based functionality props
                 userRole={role}

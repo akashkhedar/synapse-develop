@@ -18,6 +18,10 @@ declare global {
   interface Window {
     APP_SETTINGS?: {
       whitelabel_is_active?: boolean;
+      user?: {
+        is_annotator?: boolean;
+        is_expert?: boolean;
+      };
     };
   }
 }
@@ -203,40 +207,15 @@ export const EmptyState: FC<EmptyStateProps> = ({
   const isImportEnabled = Boolean(canImport);
   const { permissions } = useAuth();
 
-  // If user cannot annotate (organization member), show view-only message
-  if (!canAnnotate && _hasData) {
-    return renderEmptyStateLayout({
-      icon: <IconCheck />,
-      iconBackground: "bg-warning-background",
-      iconColor: "text-warning-icon",
-      title: "View Only Mode",
-      description: "You can view annotation results but cannot create or edit annotations. Our annotation team handles the labeling work.",
-      actions: null,
-    });
-  }
-
-  // If filters are applied, show the filter-specific empty state (regardless of user role)
-  if (hasFilters) {
-    return renderEmptyStateLayout({
-      icon: <IconSearch />,
-      iconBackground: "bg-warning-background",
-      iconColor: "text-warning-icon",
-      title: "No tasks found",
-      description: "Try adjusting or clearing the filters to see more results",
-      actions: (
-        <Button variant="primary" look="outlined" onClick={onClearFilters} data-testid="dm-clear-filters-button">
-          Clear Filters
-        </Button>
-      ),
-    });
-  }
-
-  // Role-based empty state logic (from RoleBasedEmptyState)
-  // For service roles (reviewers/annotators), show role-specific empty states when they have no visible tasks
-  // This applies whether the project has tasks or not - what matters is what's visible to this user
-  if (userRole === "REVIEWER" || userRole === "ANNOTATOR") {
+  // PRIORITY CHECK: Role-based empty state for annotators/experts
+  // Check this FIRST to prevent any flash of import screen
+  // Fallback to APP_SETTINGS.user flags if userRole is not yet loaded
+  const isAnnotator = userRole === "ANNOTATOR" || window.APP_SETTINGS?.user?.is_annotator === true;
+  const isReviewer = userRole === "REVIEWER" || window.APP_SETTINGS?.user?.is_expert === true;
+  
+  if (isReviewer || isAnnotator) {
     // Reviewer empty state
-    if (userRole === "REVIEWER") {
+    if (isReviewer) {
       return renderEmptyStateLayout({
         icon: <IconCheck />,
         title: "No tasks available for review or labeling",
@@ -245,13 +224,13 @@ export const EmptyState: FC<EmptyStateProps> = ({
     }
 
     // Annotator empty state
-    if (userRole === "ANNOTATOR") {
+    if (isAnnotator) {
       const isAutoDistribution = project?.assignment_settings?.label_stream_task_distribution === "auto_distribution";
       const isManualDistribution = project?.assignment_settings?.label_stream_task_distribution === "assigned_only";
 
       if (isAutoDistribution) {
         return renderEmptyStateLayout({
-          // icon: <IconLsLabeling />,
+          icon: <IconLsLabeling />,
           title: "Start labeling tasks",
           description: "Tasks you've labeled will appear here",
           actions: canAnnotate && onLabelAllTasks ? (
@@ -283,6 +262,34 @@ export const EmptyState: FC<EmptyStateProps> = ({
         description: "Tasks will appear here when they become available",
       });
     }
+  }
+
+  // If user cannot annotate (organization member), show view-only message
+  if (!canAnnotate && _hasData) {
+    return renderEmptyStateLayout({
+      icon: <IconCheck />,
+      iconBackground: "bg-warning-background",
+      iconColor: "text-warning-icon",
+      title: "View Only Mode",
+      description: "You can view annotation results but cannot create or edit annotations. Our annotation team handles the labeling work.",
+      actions: null,
+    });
+  }
+
+  // If filters are applied, show the filter-specific empty state (regardless of user role)
+  if (hasFilters) {
+    return renderEmptyStateLayout({
+      icon: <IconSearch />,
+      iconBackground: "bg-warning-background",
+      iconColor: "text-warning-icon",
+      title: "No tasks found",
+      description: "Try adjusting or clearing the filters to see more results",
+      actions: (
+        <Button variant="primary" look="outlined" onClick={onClearFilters} data-testid="dm-clear-filters-button">
+          Clear Filters
+        </Button>
+      ),
+    });
   }
 
   // Default case: show import functionality (existing behavior for Owners/Admins/Managers)

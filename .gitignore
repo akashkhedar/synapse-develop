@@ -86,3 +86,5 @@ web/libs/editor/tests/coverage
 .cache
 
 *.txt
+
+*.zip

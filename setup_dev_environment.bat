@@ -1,3 +1,4 @@
+git reset HEAD source.zip
 @echo off
 echo ========================================
 echo Synapse Dev Environment Setup

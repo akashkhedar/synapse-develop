@@ -70,15 +70,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
       name: 'Starter Monthly',
       plan_type: 'starter',
       billing_cycle: 'monthly',
-      price_inr: 2499,
-      credits_per_month: 500,
-      effective_rate: 4.99,
-      storage_gb: 5,
-      max_users: 3,
-      priority_support: false,
+      price_inr: 19999,
+      credits_per_month: 16000,
+      effective_rate: 1.25,
+      storage_gb: 10,
+      max_users: null,
+      priority_support: true,
       api_access: true,
       credit_rollover: true,
-      max_rollover_months: 1,
+      max_rollover_months: 12,
       is_active: true,
     },
     {
@@ -86,15 +86,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
       name: 'Growth Monthly',
       plan_type: 'growth',
       billing_cycle: 'monthly',
-      price_inr: 9999,
-      credits_per_month: 2500,
-      effective_rate: 4.00,
+      price_inr: 49999,
+      credits_per_month: 43000,
+      effective_rate: 1.16,
       storage_gb: 25,
-      max_users: 10,
+      max_users: null,
       priority_support: true,
       api_access: true,
       credit_rollover: true,
-      max_rollover_months: 2,
+      max_rollover_months: 12,
       is_active: true,
     },
     {
@@ -102,15 +102,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
       name: 'Scale Monthly',
       plan_type: 'scale',
       billing_cycle: 'monthly',
-      price_inr: 24999,
-      credits_per_month: 7500,
-      effective_rate: 3.33,
-      storage_gb: 100,
+      price_inr: 79999,
+      credits_per_month: 79999,
+      effective_rate: 1.00,
+      storage_gb: 50,
       max_users: null,
       priority_support: true,
       api_access: true,
       credit_rollover: true,
-      max_rollover_months: 3,
+      max_rollover_months: 12,
       is_active: true,
     },
     {
@@ -118,15 +118,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
       name: 'Starter Annual',
       plan_type: 'starter',
       billing_cycle: 'annual',
-      price_inr: 24990,
-      credits_per_month: 500,
-      effective_rate: 4.16,
-      storage_gb: 5,
-      max_users: 3,
-      priority_support: false,
+      price_inr: 199990,
+      credits_per_month: 18000,
+      effective_rate: 0.93,
+      storage_gb: 10,
+      max_users: null,
+      priority_support: true,
       api_access: true,
       credit_rollover: true,
-      max_rollover_months: 2,
+      max_rollover_months: 12,
       is_active: true,
     },
     {
@@ -134,15 +134,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
       name: 'Growth Annual',
       plan_type: 'growth',
       billing_cycle: 'annual',
-      price_inr: 99990,
-      credits_per_month: 2500,
-      effective_rate: 3.33,
+      price_inr: 499990,
+      credits_per_month: 45000,
+      effective_rate: 0.93,
       storage_gb: 25,
-      max_users: 10,
+      max_users: null,
       priority_support: true,
       api_access: true,
       credit_rollover: true,
-      max_rollover_months: 3,
+      max_rollover_months: 12,
       is_active: true,
     },
     {
@@ -150,15 +150,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
       name: 'Scale Annual',
       plan_type: 'scale',
       billing_cycle: 'annual',
-      price_inr: 249990,
-      credits_per_month: 7500,
-      effective_rate: 2.78,
-      storage_gb: 100,
+      price_inr: 799990,
+      credits_per_month: 81000,
+      effective_rate: 0.82,
+      storage_gb: 50,
       max_users: null,
       priority_support: true,
       api_access: true,
       credit_rollover: true,
-      max_rollover_months: 6,
+      max_rollover_months: 12,
       is_active: true,
     },
   ];
@@ -166,42 +166,34 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
   const demoPackages: CreditPackage[] = [
     {
       id: 1,
-      name: '100 Credits',
-      credits: 100,
-      price_inr: 599,
-      rate_per_credit: 5.99,
+      name: 'Explorer Package',
+      credits: 5000,
+      price_inr: 8750,
+      rate_per_credit: 1.75,
       is_active: true,
     },
     {
       id: 2,
-      name: '500 Credits',
-      credits: 500,
-      price_inr: 2499,
-      rate_per_credit: 4.99,
+      name: 'Professional Package',
+      credits: 25000,
+      price_inr: 37500,
+      rate_per_credit: 1.50,
       is_active: true,
     },
     {
       id: 3,
-      name: '1,500 Credits',
-      credits: 1500,
-      price_inr: 6749,
-      rate_per_credit: 4.50,
+      name: 'Team Package',
+      credits: 100000,
+      price_inr: 135000,
+      rate_per_credit: 1.35,
       is_active: true,
     },
     {
       id: 4,
-      name: '5,000 Credits',
-      credits: 5000,
-      price_inr: 19995,
-      rate_per_credit: 4.00,
-      is_active: true,
-    },
-    {
-      id: 5,
-      name: '15,000 Credits',
-      credits: 15000,
-      price_inr: 52500,
-      rate_per_credit: 3.50,
+      name: 'Enterprise PAYG',
+      credits: 500000,
+      price_inr: 650000,
+      rate_per_credit: 1.30,
       is_active: true,
     },
   ];
@@ -326,12 +318,6 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
                     <span className="icon"><CheckIcon /></span>
                     {plan.max_users ? `Up to ${plan.max_users} users` : 'Unlimited users'}
                   </li>
-                  {plan.credit_rollover && (
-                    <li>
-                      <span className="icon"><CheckIcon /></span>
-                      Credit rollover ({plan.max_rollover_months} month)
-                    </li>
-                  )}
                   {plan.priority_support && (
                     <li>
                       <span className="icon"><CheckIcon /></span>
@@ -466,7 +452,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onPurchase }) => {
           <div className="faq-item">
             <h4>Do credits expire?</h4>
             <p>
-              PAYG credits never expire. Subscription credits rollover for 1 month if unused.
+              All credits (both PAYG and Subscription) never expire and remain in your account permanently.
             </p>
           </div>
           <div className="faq-item">

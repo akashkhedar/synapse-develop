@@ -543,17 +543,6 @@ export const CreditDashboard: React.FC = () => {
           </div>
         </div>
 
-        {billing.rollover_credits > 0 && (
-          <div className="balance-card">
-            <div className="card-icon"><RolloverIcon /></div>
-            <div className="card-content">
-              <div className="card-label">Rollover Credits</div>
-              <div className="card-value">{billing.rollover_credits.toLocaleString()}</div>
-              <div className="card-note">From previous month</div>
-            </div>
-          </div>
-        )}
-
         <div className="balance-card">
           <div className="card-icon"><PlanIcon /></div>
           <div className="card-content">

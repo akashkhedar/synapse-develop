@@ -8,7 +8,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.synapse')
 django.setup()
 
 from users.models import User
-from annotators.models import AnnotatorProfile
+from annotators.models import AnnotatorProfile, ExpertProfile
 
 # Password for all users
 PASSWORD = "synapse123"
@@ -102,6 +102,14 @@ for config in users_config:
             
         profile.save()
         print(f"  - Profile Approved: YES ({profile.experience_level})")
+
+    # Create ExpertProfile for experts
+    if config["is_expert"]:
+        expert_profile, created = ExpertProfile.objects.get_or_create(user=user)
+        expert_profile.status = "active"
+        expert_profile.expertise_level = "senior_expert"
+        expert_profile.save()
+        print(f"  - Expert Profile Created: YES")
 
     print(f"  - Role: {config['role_name']}")
     print(f"  - Verified: YES")

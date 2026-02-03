@@ -44,9 +44,7 @@ def verify_email(request, token):
                         try:
                             profile = user.annotator_profile
                             if profile.status == "pending_test":
-                                messages.info(
-                                    request, "Your email is already verified. Please complete the test."
-                                )
+                                # Don't add message - let test page handle it
                                 return redirect("/annotators/skill-test/")
                             elif profile.status == "approved":
                                 messages.success(request, "Welcome back!")
@@ -95,10 +93,9 @@ def verify_email(request, token):
             # Log the user in
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
-            messages.success(
-                request,
-                "Your email has been verified! Please complete the test to activate your account.",
-            )
+            # Don't add a success message here - let the test page handle messaging
+            # This prevents the message from persisting if they navigate away
+            
             # Redirect to test page
             return redirect("/annotators/skill-test/")
         else:

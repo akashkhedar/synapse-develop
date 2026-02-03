@@ -286,7 +286,7 @@ class StorageService:
     @staticmethod
     def calculate_storage_usage(organization):
         """
-        Calculate total storage used by organization
+        Calculate total storage used by organization using StorageCalculationService
 
         Args:
             organization: Organization object
@@ -294,32 +294,17 @@ class StorageService:
         Returns:
             Decimal: Storage used in GB
         """
-        from tasks.models import Task
-        from io_storages.models import ImportStorage
-        import os
-
-        total_bytes = 0
-
-        # Calculate size from tasks
-        tasks = Task.objects.filter(project__organization=organization)
-
-        # This is a simplified calculation
-        # In production, you'd scan actual file sizes
-        for task in tasks.iterator():
-            if task.data and isinstance(task.data, dict):
-                # Estimate size based on number of data fields
-                # Real implementation should check actual file sizes
-                total_bytes += len(str(task.data))
-
-        # Convert bytes to GB
-        total_gb = Decimal(str(total_bytes / (1024**3)))
-
-        return total_gb
+        from billing.storage_service import StorageCalculationService
+        
+        # Use the new StorageCalculationService for accurate calculation
+        storage_info = StorageCalculationService.calculate_organization_storage(organization)
+        
+        return storage_info["total_gb_decimal"]
 
     @staticmethod
     def charge_storage(organization, billing_month):
         """
-        Charge organization for storage usage
+        Charge organization for storage usage with subscription discounts
 
         Args:
             organization: Organization object
@@ -329,9 +314,11 @@ class StorageService:
             Decimal: Credits charged
         """
         from .models import StorageBilling
+        from billing.storage_service import StorageCalculationService
 
-        # Calculate storage usage
-        storage_gb = StorageService.calculate_storage_usage(organization)
+        # Calculate storage usage using the new service
+        storage_info = StorageCalculationService.calculate_organization_storage(organization)
+        storage_gb = storage_info["total_gb_decimal"]
 
         # Get or create storage billing record
         storage_billing, created = StorageBilling.objects.get_or_create(
@@ -348,24 +335,41 @@ class StorageService:
 
         # Update storage usage
         storage_billing.storage_used_gb = storage_gb
+        storage_billing.storage_used_bytes = storage_info["total_bytes"]
 
-        # Get free storage from active subscription
+        # Get subscription plan for discounts
         billing = organization.billing
+        subscription_plan = None
+        
         if billing.active_subscription and billing.active_subscription.is_active():
-            storage_billing.free_storage_gb = (
-                billing.active_subscription.plan.storage_gb
-            )
+            subscription = billing.active_subscription
+            subscription_plan = subscription.plan
+            
+            # Set free storage from subscription
+            storage_billing.free_storage_gb = Decimal(str(subscription_plan.storage_gb))
+            
+            # Set rate and discount from subscription
+            storage_billing.rate_per_gb = subscription_plan.extra_storage_rate_per_gb
+            storage_billing.discount_percent = subscription_plan.storage_discount_percent
+            storage_billing.subscription_plan_name = subscription_plan.name
+            storage_billing.billing_type = "subscription"
         else:
-            storage_billing.free_storage_gb = Decimal("5")  # Default 5GB
+            # PAYG defaults - no discount
+            storage_billing.free_storage_gb = Decimal("1")  # PAYG gets 1GB free
+            storage_billing.rate_per_gb = Decimal("20")  # Higher rate for PAYG
+            storage_billing.discount_percent = Decimal("0")
+            storage_billing.subscription_plan_name = "Pay As You Go"
+            storage_billing.billing_type = "payg"
 
-        # Calculate charges
-        credits_charged = storage_billing.calculate_charges()
+        # Calculate charges with subscription discounts
+        credits_charged = storage_billing.calculate_charges(subscription_plan)
 
         if credits_charged > 0:
             try:
                 billing.deduct_credits(
                     credits_charged,
-                    f"Storage billing for {billing_month} - {storage_billing.billable_storage_gb} GB",
+                    f"Storage billing for {billing_month} - {storage_billing.billable_storage_gb} GB "
+                    f"({storage_billing.subscription_plan_name}, {storage_billing.discount_percent}% discount)",
                 )
 
                 storage_billing.is_charged = True
@@ -374,7 +378,8 @@ class StorageService:
 
                 logger.info(
                     f"Charged {credits_charged} credits for storage to {organization.title} "
-                    f"({storage_gb} GB total, {storage_billing.billable_storage_gb} GB billable)"
+                    f"({storage_gb} GB total, {storage_billing.billable_storage_gb} GB billable, "
+                    f"{storage_billing.discount_percent}% discount applied)"
                 )
 
             except Exception as e:

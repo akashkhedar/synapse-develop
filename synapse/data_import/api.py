@@ -471,6 +471,13 @@ class ImportAPI(generics.CreateAPIView):
                     )
             except Exception as e:
                 logger.warning(f"Auto-assignment skipped or failed: {e}")
+            
+            # Update storage after import
+            try:
+                from .functions import update_project_storage_after_import
+                update_project_storage_after_import(project)
+            except Exception as e:
+                logger.warning(f"Storage update after sync import failed: {e}")
         else:
             # Do nothing - just output file upload ids for further use
             task_count = len(parsed_data)

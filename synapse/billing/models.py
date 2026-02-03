@@ -11,6 +11,7 @@ class SubscriptionPlan(models.Model):
     """Subscription plans available for purchase"""
 
     PLAN_TYPE_CHOICES = [
+        ("payg", "Pay As You Go"),
         ("starter", "Starter"),
         ("growth", "Growth"),
         ("scale", "Scale"),
@@ -18,6 +19,7 @@ class SubscriptionPlan(models.Model):
     ]
 
     BILLING_CYCLE_CHOICES = [
+        ("none", "No Billing Cycle (PAYG)"),
         ("monthly", "Monthly"),
         ("annual", "Annual"),
     ]
@@ -48,6 +50,60 @@ class SubscriptionPlan(models.Model):
     )
     max_rollover_months = models.IntegerField(
         default=1, help_text="Max months to rollover credits"
+    )
+    
+    # Project limits
+    max_projects = models.IntegerField(
+        default=3,
+        help_text="Maximum number of active projects allowed (0 = unlimited)"
+    )
+    
+    # Storage pricing
+    extra_storage_rate_per_gb = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=15.00,
+        help_text="Rate per GB per month for storage beyond free limit (in INR)"
+    )
+    storage_discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text="Discount percentage on extra storage charges"
+    )
+    
+    # Subscription discounts
+    annotation_discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text="Discount percentage on annotation costs"
+    )
+    renewal_discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text="Discount for existing subscribers renewing"
+    )
+    
+    # Annual plan bonus
+    annual_bonus_months = models.IntegerField(
+        default=0,
+        help_text="Number of free months for annual plan (e.g., 2 = pay for 10, get 12)"
+    )
+    annual_bonus_credits = models.IntegerField(
+        default=0,
+        help_text="Bonus credits for annual subscription"
+    )
+    
+    # Description for display
+    description = models.TextField(
+        blank=True,
+        help_text="Plan description for display to users"
+    )
+    features_json = models.JSONField(
+        default=list,
+        help_text="List of features for display"
     )
 
     class Meta:
@@ -464,16 +520,52 @@ class StorageBilling(models.Model):
     billable_storage_gb = models.DecimalField(
         max_digits=10, decimal_places=2, default=0
     )
+    
+    # Rate and discount tracking
+    rate_per_gb = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=15.00,
+        help_text="Rate per GB per month applied"
+    )
+    discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text="Discount percentage applied from subscription"
+    )
+    gross_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Amount before discount"
+    )
+    discount_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Discount amount"
+    )
+    net_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Final amount after discount"
+    )
 
     credits_charged = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0,
-        help_text="1 credit per GB per month",
+        help_text="Credits deducted from balance",
     )
 
     is_charged = models.BooleanField(default=False)
     charged_at = models.DateTimeField(null=True, blank=True)
+    
+    # Subscription info at time of billing
+    subscription_plan_name = models.CharField(max_length=100, blank=True)
+    billing_type = models.CharField(max_length=20, default="payg")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -485,10 +577,34 @@ class StorageBilling(models.Model):
     def __str__(self):
         return f"{self.organization.title} - {self.billing_month} ({self.storage_used_gb} GB)"
 
-    def calculate_charges(self):
-        """Calculate storage charges"""
-        self.billable_storage_gb = max(0, self.storage_used_gb - self.free_storage_gb)
-        self.credits_charged = self.billable_storage_gb  # 1 credit per GB
+    def calculate_charges(self, subscription_plan=None):
+        """
+        Calculate storage charges with subscription discounts
+        
+        Args:
+            subscription_plan: Optional SubscriptionPlan for discount calculation
+        """
+        self.billable_storage_gb = max(Decimal("0"), self.storage_used_gb - self.free_storage_gb)
+        
+        # Get rate and discount from subscription or use defaults
+        if subscription_plan:
+            self.rate_per_gb = subscription_plan.extra_storage_rate_per_gb
+            self.discount_percent = subscription_plan.storage_discount_percent
+            self.subscription_plan_name = subscription_plan.name
+            self.billing_type = "subscription"
+        else:
+            # PAYG defaults
+            self.rate_per_gb = Decimal("20.00")  # Higher rate for PAYG
+            self.discount_percent = Decimal("0.00")
+            self.subscription_plan_name = ""
+            self.billing_type = "payg"
+        
+        # Calculate amounts
+        self.gross_amount = self.billable_storage_gb * self.rate_per_gb
+        self.discount_amount = self.gross_amount * (self.discount_percent / Decimal("100"))
+        self.net_amount = self.gross_amount - self.discount_amount
+        self.credits_charged = self.net_amount  # 1 INR = 1 credit
+        
         self.save()
         return self.credits_charged
 

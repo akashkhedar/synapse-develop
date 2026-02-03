@@ -23,6 +23,38 @@ from .uploader import load_tasks_for_async_import
 logger = logging.getLogger(__name__)
 
 
+def update_project_storage_after_import(project):
+    """
+    Update project storage calculations after data import.
+    This should be called after tasks are created from file uploads.
+    """
+    try:
+        from billing.storage_service import StorageCalculationService
+        
+        # Update the project's storage tracking
+        storage_info = StorageCalculationService.update_project_storage(project)
+        
+        if storage_info:
+            logger.info(
+                f"Updated storage for project {project.id}: "
+                f"{storage_info['total_gb']:.4f} GB"
+            )
+            
+            # Also update organization-level storage tracking
+            if project.organization:
+                org_storage = StorageCalculationService.update_organization_storage(project.organization)
+                if org_storage:
+                    logger.info(
+                        f"Updated storage for organization {project.organization.id}: "
+                        f"{org_storage['total_gb']:.4f} GB"
+                    )
+                    
+        return storage_info
+    except Exception as e:
+        logger.warning(f"Failed to update storage after import for project {project.id}: {e}")
+        return None
+
+
 def async_import_background(
     import_id,
     user_id,
@@ -188,6 +220,9 @@ def async_import_background(
 
     project_import.status = ProjectImport.Status.COMPLETED
     project_import.save()
+
+    # Update storage calculations after import
+    update_project_storage_after_import(project)
 
     # Trigger auto-assignment after async import completes
     try:

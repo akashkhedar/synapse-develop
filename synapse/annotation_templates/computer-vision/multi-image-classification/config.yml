@@ -1,0 +1,38 @@
+title: Multi-Image Classification
+type: community
+group: Computer Vision
+order: 2
+image: /static/templates/multi-image-classification.png
+details: |
+  <h1>Compare and classify multiple images</h1>
+  <dl>
+    <dt>Industry Applications</dt>
+    <dd>medical diagnosis comparison, before/after analysis, quality control, A/B testing, product comparison, image similarity, temporal comparison, change detection, duplicate detection, visual search ranking, e-commerce comparison</dd>
+    <dt>Associated Models</dt>
+    <dd>Siamese Networks, Triplet Networks, Comparative CNN, Vision Transformers</dd>
+    <dt>Domain Terminology</dt>
+    <dd>comparative analysis, multi-view classification, image pairs, similarity ranking</dd>
+  </dl>
+config: |
+  <View>
+    <View style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <View>
+        <Text value="Image 1"/>
+        <Image name="image1" value="$image1"/>
+      </View>
+      <View>
+        <Text value="Image 2"/>
+        <Image name="image2" value="$image2"/>
+      </View>
+    </View>
+    <Choices name="comparison" toName="image1" choice="single-radio">
+      <Choice value="Same"/>
+      <Choice value="Different"/>
+      <Choice value="Similar"/>
+    </Choices>
+    <Choices name="category" toName="image1" choice="single">
+      <Choice value="Better Quality - Image 1"/>
+      <Choice value="Better Quality - Image 2"/>
+      <Choice value="Equal Quality"/>
+    </Choices>
+  </View>

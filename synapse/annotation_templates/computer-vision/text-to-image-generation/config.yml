@@ -1,0 +1,48 @@
+title: Text-to-Image Generation
+type: community
+group: Computer Vision
+order: 15
+image: /static/templates/text-to-image-generation.png
+details: |
+  <h1>Evaluate text-to-image alignment</h1>
+  <dl>
+    <dt>Industry Applications</dt>
+    <dd>AI art generation, stable diffusion evaluation, DALL-E evaluation, prompt engineering, creative AI, advertising, marketing content, product design, game assets, architecture visualization, fashion design</dd>
+    <dt>Associated Models</dt>
+    <dd>Stable Diffusion, DALL-E, Midjourney, Imagen, Firefly</dd>
+    <dt>Domain Terminology</dt>
+    <dd>prompt-image alignment, generative AI, image synthesis quality, semantic consistency</dd>
+  </dl>
+config: |
+  <View>
+    <View style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+      <Text value="Prompt:"/>
+      <Text name="prompt" value="$prompt" style="font-weight: bold; font-size: 14px; margin-top: 5px;"/>
+    </View>
+    
+    <Image name="image" value="$image" style="max-width: 100%;"/>
+    
+    <Header value="Evaluate Image Quality"/>
+    <Rating name="quality" toName="image" maxRating="5" icon="star" size="large"/>
+    
+    <Header value="Prompt Alignment"/>
+    <Choices name="alignment" toName="image" choice="single-radio">
+      <Choice value="Excellent - Matches perfectly"/>
+      <Choice value="Good - Mostly accurate"/>
+      <Choice value="Fair - Partially accurate"/>
+      <Choice value="Poor - Doesn't match"/>
+    </Choices>
+    
+    <Header value="Issues (if any)"/>
+    <Choices name="issues" toName="image" choice="multiple">
+      <Choice value="Incorrect objects"/>
+      <Choice value="Wrong colors"/>
+      <Choice value="Missing elements"/>
+      <Choice value="Distorted features"/>
+      <Choice value="Low quality"/>
+      <Choice value="Unrealistic"/>
+    </Choices>
+    
+    <Header value="Comments"/>
+    <TextArea name="comments" toName="image" placeholder="Additional feedback..." rows="3"/>
+  </View>

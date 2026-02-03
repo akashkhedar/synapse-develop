@@ -1,0 +1,24 @@
+title: Object Detection with Ellipses
+type: community
+group: Computer Vision
+order: 4
+image: /static/templates/object-detection-with-ellipses.png
+details: |
+  <h1>Draw an ellipse around the object</h1>
+  <dl>
+    <dt>Industry Applications</dt>
+    <dd>cell detection, microscopy analysis, medical imaging, radiology, tumor detection, lesion marking, satellite imagery, aerial photography, sports analytics, player tracking, facial recognition, eye detection, wheel detection, circular object detection</dd>
+    <dt>Associated Models</dt>
+    <dd>Ellipse R-CNN, Mask R-CNN (ellipse fitting), Custom ellipse detectors</dd>
+    <dt>Domain Terminology</dt>
+    <dd>ellipse bbox, circular detection, radial annotation</dd>
+  </dl>
+config: |
+  <View>
+    <Image name="image" value="$image"/>
+    <EllipseLabels name="label" toName="image">
+      <Label value="Cell" background="green"/>
+      <Label value="Nucleus" background="blue"/>
+      <Label value="Object" background="red"/>
+    </EllipseLabels>
+  </View>

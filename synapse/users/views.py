@@ -205,7 +205,7 @@ def user_login(request):
                         if form.cleaned_data["persist_session"] is not True:
                             request.session["keep_me_logged_in"] = False
                             request.session.set_expiry(0)
-                        messages.info(request, "Please complete the test to activate your account.")
+                        # Don't add message here - let the test page handle messaging
                         return redirect("/annotators/skill-test/")
                     elif current_status == "pending_verification":
                         error_msg = "Please verify your email first."

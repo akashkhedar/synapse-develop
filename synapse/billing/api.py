@@ -51,6 +51,7 @@ from .services import (
     InsufficientCreditsError,
     SecurityDepositError,
 )
+from .cost_estimation import CostEstimationService
 from organizations.models import Organization
 from projects.models import Project
 
@@ -560,6 +561,207 @@ class ProjectBillingViewSet(viewsets.ViewSet):
 
         except Exception as e:
             logger.error(f"Error calculating deposit: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"])
+    def estimate_cost(self, request):
+        """
+        Get detailed cost estimation for project creation and annotation work.
+        
+        This provides a comprehensive breakdown including:
+        - Upfront deposit cost
+        - Expected actual cost after completion
+        - Expected refund amount
+        - Cost per task breakdown
+        - Formula explanation
+        
+        Request body:
+        {
+            "task_count": 100,
+            "label_config": "<View>...",  // Optional
+            "estimated_storage_gb": 2.5,  // Optional
+            "avg_duration_mins": 3,  // Optional, for audio/video
+            "annotation_types": ["rectanglelabels"],  // Optional
+            "label_count": 10  // Optional
+        }
+        """
+        task_count = request.data.get("task_count")
+        label_config = request.data.get("label_config")
+        estimated_storage_gb = request.data.get("estimated_storage_gb")
+        avg_duration_mins = request.data.get("avg_duration_mins")
+        annotation_types = request.data.get("annotation_types")
+        label_count = request.data.get("label_count")
+        
+        if not task_count:
+            return Response(
+                {"error": "task_count is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            estimation = CostEstimationService.estimate_project_cost(
+                task_count=int(task_count),
+                label_config=label_config,
+                estimated_storage_gb=float(estimated_storage_gb) if estimated_storage_gb else None,
+                avg_duration_mins=float(avg_duration_mins) if avg_duration_mins else None,
+                annotation_types=annotation_types,
+                label_count=int(label_count) if label_count else None,
+            )
+            
+            return Response({
+                "success": True,
+                **estimation
+            })
+            
+        except Exception as e:
+            logger.error(f"Error estimating cost: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=["get"])
+    def cost_formula(self, request):
+        """
+        Get detailed documentation of cost calculation formulas.
+        
+        Returns comprehensive explanation of:
+        - Project creation cost calculation
+        - Annotation work cost calculation
+        - Complexity multipliers
+        - Rate tables
+        - Example calculations
+        """
+        try:
+            documentation = CostEstimationService.get_formula_documentation()
+            
+            return Response({
+                "success": True,
+                "documentation": documentation,
+                "rate_tables": {
+                    "annotation_rates": {k: float(v) for k, v in CostEstimationService.ANNOTATION_RATES.items()},
+                    "duration_rates": {k: float(v) for k, v in CostEstimationService.DURATION_RATES.items()},
+                    "base_deposit_fee": float(CostEstimationService.BASE_DEPOSIT_FEE),
+                    "storage_rate_per_gb": float(CostEstimationService.STORAGE_RATE_PER_GB),
+                    "buffer_multiplier": float(CostEstimationService.ANNOTATION_BUFFER_MULTIPLIER),
+                },
+                "complexity_tiers": [
+                    {
+                        "max_labels": tier[0] if tier[0] != float('inf') else "unlimited",
+                        "multiplier": float(tier[1]),
+                        "level": tier[2]
+                    }
+                    for tier in CostEstimationService.COMPLEXITY_TIERS
+                ]
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting cost formula: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["get"])
+    def storage_info(self, request):
+        """
+        Get storage information for organization or project.
+        
+        Query params:
+        - project_id: Get storage info for specific project
+        - organization: Get storage info for specific organization (default: user's active org)
+        
+        Returns storage usage, free limits, and cost estimates.
+        """
+        from billing.storage_service import StorageCalculationService
+        
+        project_id = request.query_params.get("project_id")
+        
+        try:
+            if project_id:
+                # Get project storage info
+                project = self.get_project(project_id)
+                storage_info = StorageCalculationService.calculate_project_total_storage(project)
+                
+                # Get subscription plan for the project's org
+                billing = project.organization.billing
+                subscription_plan = None
+                if billing.active_subscription and billing.active_subscription.is_active():
+                    subscription_plan = billing.active_subscription.plan
+                
+                # Calculate deposit for this storage
+                deposit_info = StorageCalculationService.calculate_storage_deposit(
+                    storage_info["total_gb_decimal"],
+                    subscription_plan
+                )
+                
+                return Response({
+                    "success": True,
+                    "type": "project",
+                    "project_id": project.id,
+                    "storage": storage_info,
+                    "deposit": deposit_info,
+                    "subscription_plan": subscription_plan.name if subscription_plan else "Pay As You Go"
+                })
+            else:
+                # Get organization storage info
+                org = self.get_organization()
+                storage_info = StorageCalculationService.calculate_organization_storage(org)
+                
+                # Get monthly cost estimate
+                billing = org.billing
+                subscription_plan = None
+                if billing.active_subscription and billing.active_subscription.is_active():
+                    subscription_plan = billing.active_subscription.plan
+                
+                monthly_estimate = StorageCalculationService.estimate_monthly_storage_cost(org)
+                
+                return Response({
+                    "success": True,
+                    "type": "organization",
+                    "organization_id": org.id,
+                    "storage": storage_info,
+                    "monthly_estimate": monthly_estimate,
+                    "subscription_plan": subscription_plan.name if subscription_plan else "Pay As You Go",
+                    "free_storage_gb": float(subscription_plan.storage_gb) if subscription_plan else 1.0,
+                })
+                
+        except Exception as e:
+            logger.error(f"Error getting storage info: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"])
+    def update_project_storage(self, request):
+        """
+        Manually update storage calculations for a project.
+        
+        Request body:
+        {
+            "project_id": 123
+        }
+        
+        Recalculates storage from file uploads and tasks.
+        """
+        from billing.storage_service import StorageCalculationService
+        
+        project_id = request.data.get("project_id")
+        
+        if not project_id:
+            return Response(
+                {"error": "project_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            project = self.get_project(project_id)
+            storage_info = StorageCalculationService.update_project_storage(project)
+            
+            # Also update organization storage
+            if project.organization:
+                StorageCalculationService.update_organization_storage(project.organization)
+            
+            return Response({
+                "success": True,
+                "project_id": project.id,
+                "storage": storage_info
+            })
+            
+        except Exception as e:
+            logger.error(f"Error updating project storage: {e}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"])

@@ -1,0 +1,45 @@
+title: Search Engine Result Relevance
+type: community
+group: Ranking and Scoring
+order: 1
+image: /static/templates/search-engine.png
+details: |
+  <h1>Label search result relevance</h1>
+  <dl>
+    <dt>Industry Applications</dt>
+    <dd>search engine optimization, information retrieval, query understanding, result ranking, web search, e-commerce search, document retrieval, knowledge bases, semantic search, recommendation systems</dd>
+    <dt>Associated Models</dt>
+    <dd>BERT for search, Elasticsearch, Learning to Rank (LTR), Neural IR models</dd>
+    <dt>Domain Terminology</dt>
+    <dd>relevance scoring, NDCG, precision, recall, MRR, query-document matching</dd>
+  </dl>
+config: |
+  <View>
+    <View style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+      <Text value="Search Query:"/>
+      <Text name="query" value="$query" style="font-weight: bold; font-size: 16px; margin-top: 5px;"/>
+    </View>
+    
+    <View style="background: white; padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 15px;">
+      <Text name="result_title" value="$result_title" style="font-weight: bold; font-size: 14px; color: #1a0dab;"/>
+      <Text name="result_url" value="$result_url" style="color: #006621; font-size: 12px; margin-top: 3px;"/>
+      <Text name="result_snippet" value="$result_snippet" style="color: #545454; font-size: 13px; margin-top: 8px;"/>
+    </View>
+    
+    <Header value="Relevance to Query"/>
+    <Choices name="relevance" toName="query" choice="single-radio" required="true">
+      <Choice value="Highly Relevant"/>
+      <Choice value="Relevant"/>
+      <Choice value="Somewhat Relevant"/>
+      <Choice value="Not Relevant"/>
+    </Choices>
+    
+    <Header value="Quality Indicators"/>
+    <Choices name="quality" toName="query" choice="multiple">
+      <Choice value="Trustworthy source"/>
+      <Choice value="Up-to-date information"/>
+      <Choice value="Comprehensive"/>
+      <Choice value="Clear and concise"/>
+      <Choice value="Well-structured"/>
+    </Choices>
+  </View>

@@ -284,6 +284,7 @@ MIDDLEWARE = [
     "core.middleware.XApiKeySupportMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "users.middleware_verification.EmailVerificationMiddleware",  # Email verification check
+    "annotators.middleware.AnnotatorTestCompletionMiddleware",  # Annotator test completion check
     "django.contrib.messages.middleware.MessageMiddleware",
     "core.middleware.CommonMiddlewareAppendSlashWithoutRedirect",  # instead of 'CommonMiddleware'
     "django_user_agents.middleware.UserAgentMiddleware",

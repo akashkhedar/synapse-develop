@@ -80,6 +80,8 @@ export const API_CONFIG = {
     billingDashboard: "GET:/billing/dashboard",
     calculateSecurityDeposit: "POST:/billing/project-billing/calculate_deposit",
     collectSecurityDeposit: "POST:/billing/project-billing/collect_deposit",
+    calculateImportCost: "POST:/billing/project-billing/calculate_import_cost",
+    chargeImportCost: "POST:/billing/project-billing/charge_import_cost",
     projectBillingStatus: "POST:/billing/project-billing/project_status",
     organizationBillingSummary:
       "GET:/billing/project-billing/organization_summary",

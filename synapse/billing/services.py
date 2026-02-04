@@ -1129,6 +1129,214 @@ class ProjectBillingService:
         return project_billing
 
     @classmethod
+    def calculate_import_cost(cls, project, new_task_count, file_upload_ids=None):
+        """
+        Calculate the cost for importing additional data into an existing project.
+        
+        This calculates:
+        1. Annotation cost for new tasks (based on existing label config)
+        2. Additional base fee if the new total tasks increase the tier
+        
+        Args:
+            project: Project instance
+            new_task_count: Number of new tasks being imported
+            file_upload_ids: Optional list of file upload IDs (for storage calculation)
+            
+        Returns:
+            dict: Import cost breakdown
+        """
+        from billing.models import ProjectBilling, OrganizationBilling
+        
+        if new_task_count <= 0:
+            return {
+                "success": True,
+                "annotation_cost": 0,
+                "additional_base_fee": 0,
+                "storage_cost": 0,
+                "total_cost": 0,
+                "breakdown": {},
+            }
+        
+        organization = project.organization
+        
+        # Get existing billing info
+        try:
+            project_billing = project.billing
+            existing_task_count = project.num_tasks or 0
+            original_base_fee = float(project_billing.security_deposit_required) - float(project_billing.estimated_annotation_cost) - float(project_billing.storage_fee_paid)
+        except ProjectBilling.DoesNotExist:
+            existing_task_count = project.num_tasks or 0
+            original_base_fee = Decimal('500')  # Minimum base fee
+        
+        # Analyze label config for complexity
+        config_analysis = cls._analyze_label_config(project.label_config or "")
+        complexity_multiplier = config_analysis["complexity_multiplier"]
+        
+        # Get detected data types from project
+        data_types = list(project.data_types.keys()) if project.data_types else ["image"]
+        
+        # Calculate annotation rate based on detected types and data types
+        annotation_rate = cls._calculate_annotation_rate(
+            config_analysis["annotation_types"],
+            data_types=data_types
+        )
+        
+        # Calculate annotation cost for new tasks
+        new_annotation_cost = (
+            Decimal(str(new_task_count))
+            * annotation_rate
+            * complexity_multiplier
+            * cls.ANNOTATION_BUFFER_MULTIPLIER
+        )
+        
+        # Calculate what the base fee SHOULD be with the new total
+        new_total_tasks = existing_task_count + new_task_count
+        
+        # Calculate annotation cost for the new total to determine base fee
+        total_annotation_cost = (
+            Decimal(str(new_total_tasks))
+            * annotation_rate
+            * complexity_multiplier
+            * cls.ANNOTATION_BUFFER_MULTIPLIER
+        )
+        
+        # Calculate new base fee based on total annotation cost
+        new_base_fee = cls.calculate_security_fee(Decimal('0'), total_annotation_cost)
+        
+        # Additional base fee = new base fee - original base fee (if positive)
+        original_base_fee_decimal = Decimal(str(original_base_fee)) if original_base_fee > 0 else Decimal('500')
+        additional_base_fee = max(Decimal('0'), new_base_fee - original_base_fee_decimal)
+        
+        # Calculate storage cost for new data (if any)
+        storage_cost = Decimal('0')
+        if file_upload_ids:
+            # This would calculate additional storage needed
+            # For now, storage is calculated at upload time
+            pass
+        
+        # Total import cost
+        total_cost = new_annotation_cost + additional_base_fee + storage_cost
+        
+        # Check if organization has enough credits
+        try:
+            org_billing = organization.billing
+            has_sufficient_credits = org_billing.has_sufficient_credits(total_cost)
+            available_credits = float(org_billing.available_credits)
+        except OrganizationBilling.DoesNotExist:
+            has_sufficient_credits = False
+            available_credits = 0
+        
+        breakdown = {
+            "existing_task_count": existing_task_count,
+            "new_task_count": new_task_count,
+            "total_task_count": new_total_tasks,
+            "annotation_rate": float(annotation_rate),
+            "complexity_multiplier": float(complexity_multiplier),
+            "buffer_multiplier": float(cls.ANNOTATION_BUFFER_MULTIPLIER),
+            "original_base_fee": float(original_base_fee_decimal),
+            "new_base_fee": float(new_base_fee),
+            "additional_base_fee": float(additional_base_fee),
+            "annotation_cost": float(new_annotation_cost),
+            "storage_cost": float(storage_cost),
+        }
+        
+        return {
+            "success": True,
+            "annotation_cost": float(new_annotation_cost),
+            "additional_base_fee": float(additional_base_fee),
+            "storage_cost": float(storage_cost),
+            "total_cost": float(total_cost),
+            "has_sufficient_credits": has_sufficient_credits,
+            "available_credits": available_credits,
+            "breakdown": breakdown,
+        }
+
+    @classmethod
+    @transaction.atomic
+    def charge_import_cost(cls, project, new_task_count, user=None):
+        """
+        Charge the organization for importing additional data.
+        
+        Args:
+            project: Project instance
+            new_task_count: Number of new tasks being imported
+            user: User performing the import
+            
+        Returns:
+            dict: Charge result
+            
+        Raises:
+            InsufficientCreditsError: If organization doesn't have enough credits
+        """
+        from billing.models import ProjectBilling, OrganizationBilling, CreditTransaction
+        
+        if new_task_count <= 0:
+            return {"success": True, "charged": 0}
+        
+        # Calculate import cost
+        cost_info = cls.calculate_import_cost(project, new_task_count)
+        
+        if not cost_info["success"]:
+            return cost_info
+        
+        total_cost = Decimal(str(cost_info["total_cost"]))
+        
+        if total_cost <= 0:
+            return {"success": True, "charged": 0}
+        
+        organization = project.organization
+        
+        # Check credits
+        try:
+            org_billing = organization.billing
+        except OrganizationBilling.DoesNotExist:
+            org_billing = OrganizationBilling.objects.create(organization=organization)
+        
+        if not org_billing.has_sufficient_credits(total_cost):
+            raise InsufficientCreditsError(
+                f"Insufficient credits for data import. "
+                f"Required: ₹{total_cost}, Available: ₹{org_billing.available_credits}"
+            )
+        
+        # Deduct credits
+        org_billing.deduct_credits(
+            total_cost,
+            f"Data import for project: {project.title} ({new_task_count} new tasks)"
+        )
+        
+        # Update project billing record
+        try:
+            project_billing = project.billing
+        except ProjectBilling.DoesNotExist:
+            # Shouldn't happen for published projects, but create if needed
+            project_billing = ProjectBilling.objects.create(
+                project=project,
+                security_deposit_required=Decimal('0'),
+            )
+        
+        # Add to the deposit record
+        additional_base_fee = Decimal(str(cost_info["additional_base_fee"]))
+        annotation_cost = Decimal(str(cost_info["annotation_cost"]))
+        
+        project_billing.security_deposit_required += total_cost
+        project_billing.security_deposit_paid += total_cost
+        project_billing.estimated_annotation_cost += annotation_cost
+        project_billing.save()
+        
+        logger.info(
+            f"Import cost of ₹{total_cost} charged for project {project.title} "
+            f"(ID: {project.id}) - {new_task_count} new tasks"
+        )
+        
+        return {
+            "success": True,
+            "charged": float(total_cost),
+            "annotation_cost": float(annotation_cost),
+            "additional_base_fee": float(additional_base_fee),
+            "new_task_count": new_task_count,
+        }
+
+    @classmethod
     @transaction.atomic
     def refund_security_deposit(cls, project, reason="Project completed successfully"):
         """

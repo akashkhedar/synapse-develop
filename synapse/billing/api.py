@@ -847,6 +847,87 @@ class ProjectBillingViewSet(viewsets.ViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"])
+    def calculate_import_cost(self, request):
+        """
+        Calculate the cost for importing additional data into an existing project.
+
+        Request body:
+        {
+            "project_id": 123,
+            "new_task_count": 50,
+            "file_upload_ids": [1, 2, 3]  # Optional
+        }
+        """
+        project_id = request.data.get("project_id")
+        new_task_count = request.data.get("new_task_count", 0)
+        file_upload_ids = request.data.get("file_upload_ids")
+
+        if not project_id:
+            return Response(
+                {"error": "project_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            project = self.get_project(project_id)
+            
+            result = ProjectBillingService.calculate_import_cost(
+                project,
+                new_task_count=new_task_count,
+                file_upload_ids=file_upload_ids,
+            )
+            
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"Error calculating import cost: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"])
+    def charge_import_cost(self, request):
+        """
+        Charge the organization for importing additional data.
+
+        Request body:
+        {
+            "project_id": 123,
+            "new_task_count": 50
+        }
+        """
+        project_id = request.data.get("project_id")
+        new_task_count = request.data.get("new_task_count", 0)
+
+        if not project_id:
+            return Response(
+                {"error": "project_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if new_task_count <= 0:
+            return Response(
+                {"error": "new_task_count must be greater than 0"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            project = self.get_project(project_id)
+            
+            result = ProjectBillingService.charge_import_cost(
+                project,
+                new_task_count=new_task_count,
+                user=request.user,
+            )
+            
+            return Response(result)
+            
+        except InsufficientCreditsError as e:
+            return Response(
+                {"error": str(e), "code": "insufficient_credits"},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+        except Exception as e:
+            logger.error(f"Error charging import cost: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"])
     def refund_deposit(self, request):
         """
         Refund security deposit for a completed project.

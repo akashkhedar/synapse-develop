@@ -244,15 +244,112 @@ class FileUpload(models.Model):
             tasks = [{'data': {settings.DATA_UNDEFINED_NAME: self.url}}]
         return tasks
 
+    def read_tasks_from_zip(self):
+        """Extract files from ZIP archive and create tasks for each file.
+        
+        Returns:
+            list: List of task dictionaries with data pointing to extracted files.
+        """
+        import zipfile
+        import tempfile
+        import shutil
+        import hashlib
+        from django.core.files.storage import default_storage
+        
+        logger.debug(f'Reading tasks from ZIP file {self.filepath}')
+        
+        tasks = []
+        
+        # Supported file extensions for task creation
+        supported_extensions = {
+            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.tiff', '.tif',  # Images
+            '.wav', '.mp3', '.flac', '.m4a', '.ogg',  # Audio
+            '.mp4', '.webm', '.mov', '.avi', '.mkv',  # Video
+            '.txt',  # Text
+            '.pdf',  # PDF
+            '.html', '.htm', '.xml',  # Hypertext
+            '.dcm', '.dicom', '.ima',  # DICOM
+        }
+        
+        try:
+            # Create a cache directory for extracted files
+            file_hash = hashlib.md5(self.filepath.encode('utf-8')).hexdigest()
+            cache_dir = os.path.join(settings.MEDIA_ROOT, 'zip_extracted', str(self.project.id), file_hash)
+            
+            # Check if already extracted
+            if not os.path.exists(cache_dir):
+                os.makedirs(cache_dir, exist_ok=True)
+                
+                # Download and extract ZIP
+                tmp_path = None
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp:
+                        tmp_path = tmp.name
+                        with default_storage.open(self.filepath, 'rb') as f:
+                            shutil.copyfileobj(f, tmp)
+                    
+                    # Extract ZIP
+                    with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
+                        zip_ref.extractall(cache_dir)
+                        
+                finally:
+                    if tmp_path and os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
+            
+            # Walk through extracted files and create tasks
+            for root, dirs, files in os.walk(cache_dir):
+                # Skip __MACOSX and hidden directories
+                dirs[:] = [d for d in dirs if not d.startswith('.') and d != '__MACOSX']
+                
+                for filename in files:
+                    # Skip hidden files and system files
+                    if filename.startswith('.') or filename.startswith('__'):
+                        continue
+                    
+                    ext = os.path.splitext(filename.lower())[1]
+                    
+                    # Check if file is supported or has no extension (could be DICOM)
+                    if ext in supported_extensions or (ext == '' and '.' not in filename):
+                        # Get relative path from cache_dir
+                        full_path = os.path.join(root, filename)
+                        rel_path = os.path.relpath(full_path, cache_dir)
+                        
+                        # Create URL for the extracted file
+                        # Use the zip-serve endpoint to serve files
+                        serve_url = f'/api/import/zip-serve/{self.project.id}/{file_hash}/{rel_path.replace(os.sep, "/")}'
+                        
+                        tasks.append({
+                            'data': {settings.DATA_UNDEFINED_NAME: serve_url}
+                        })
+            
+            # Sort tasks by filename for consistent ordering
+            tasks.sort(key=lambda t: t['data'].get(settings.DATA_UNDEFINED_NAME, ''))
+            
+            logger.info(f'Extracted {len(tasks)} tasks from ZIP file {self.filepath}')
+            
+        except zipfile.BadZipFile:
+            raise ValidationError(f'Invalid ZIP file: {self.file_name}')
+        except Exception as exc:
+            logger.error(f'Error extracting ZIP file {self.filepath}: {exc}')
+            raise ValidationError(f'Failed to extract ZIP file {self.file_name}: {str(exc)}')
+        
+        return tasks
+
     @property
     def format_could_be_tasks_list(self):
         return self.format in ('.csv', '.tsv', '.txt')
 
     def read_tasks(self, file_as_tasks_list=True):
         file_format = self.format
+        logger.info(f'[read_tasks] Processing file: {self.file_name}, format: {file_format}')
         try:
+            # Handle ZIP files - extract contents and create tasks for each file
+            if file_format == '.zip':
+                logger.info(f'[read_tasks] Detected ZIP file, calling read_tasks_from_zip')
+                tasks = self.read_tasks_from_zip()
+                logger.info(f'[read_tasks] ZIP extraction returned {len(tasks)} tasks')
             # file as tasks list
-            if file_format == '.csv' and file_as_tasks_list:
+            elif file_format == '.csv' and file_as_tasks_list:
                 tasks = self.read_tasks_list_from_csv()
             elif file_format == '.tsv' and file_as_tasks_list:
                 tasks = self.read_tasks_list_from_tsv()

@@ -37,6 +37,7 @@ export interface SubscriptionPlan {
   credits_per_month: number;
   effective_rate: number;
   storage_gb: number;
+  extra_storage_rate_per_gb: number;
   max_users: number | null;
   priority_support: boolean;
   api_access: boolean;

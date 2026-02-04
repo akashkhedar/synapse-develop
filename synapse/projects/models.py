@@ -1214,6 +1214,30 @@ class Project(ProjectMixin, FsmHistoryStateModel):
             dt = extract_data_types(config_str)
             logger.info(f"DEBUG_SAMPLE_TASK: Project {self.id}, Config: {config_str[:100]}..., Extracted Types: {dt}")
             keys = list(dt.keys())
+            
+            # For ZIP files, get a sample from extracted contents
+            if file_upload.format == '.zip':
+                try:
+                    # Get extracted file URLs from the ZIP
+                    tasks = file_upload.read_tasks_from_zip()
+                    if tasks and len(tasks) > 0:
+                        # Get the first extracted file URL
+                        sample_data = tasks[0].get('data', {})
+                        if sample_data:
+                            # Get the URL from the sample data (it's stored with DATA_UNDEFINED_NAME key)
+                            url = sample_data.get(settings.DATA_UNDEFINED_NAME)
+                            if url:
+                                # Use the correct key from label config
+                                if keys:
+                                    logger.info(f"DEBUG_SAMPLE_TASK: Returning extracted file from ZIP with key '{keys[0]}': {url}")
+                                    return {keys[0]: url}
+                                else:
+                                    logger.info(f"DEBUG_SAMPLE_TASK: Returning extracted file from ZIP: {url}")
+                                    return {settings.DATA_UNDEFINED_NAME: url}
+                except Exception as e:
+                    logger.error(f"Error extracting ZIP for sample task: {e}")
+            
+            # For regular files
             if keys:
                 return {keys[0]: file_upload.url}
             

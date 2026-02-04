@@ -69,6 +69,89 @@ def check_request_files_size(files):
     check_tasks_max_file_size(total)
 
 
+def check_storage_limit(project, new_files_size):
+    """
+    Check if uploading new files would exceed organization's storage limit.
+    Considers free storage from subscription plan and charges for overage.
+    
+    Args:
+        project: Project instance
+        new_files_size: Size of new files to upload (in bytes)
+        
+    Returns:
+        dict: Overage details if storage exceeds free tier, None otherwise
+        
+    Raises:
+        ValidationError: If storage limit would be exceeded without credits
+    """
+    from billing.models import OrganizationBilling
+    from billing.storage_service import StorageCalculationService
+    from decimal import Decimal
+    
+    organization = project.organization
+    
+    # Get current storage usage
+    try:
+        org_billing = OrganizationBilling.objects.get(organization=organization)
+        current_storage_gb = org_billing.storage_used_gb or Decimal('0')
+    except OrganizationBilling.DoesNotExist:
+        current_storage_gb = Decimal('0')
+        org_billing = None
+    
+    # Calculate new total storage
+    new_files_gb = Decimal(str(new_files_size)) / Decimal(str(1024 ** 3))
+    new_total_storage_gb = current_storage_gb + new_files_gb
+    
+    # Get free storage from active subscription
+    free_storage_gb = Decimal('5')  # Default PAYG
+    if org_billing and org_billing.active_subscription:
+        subscription = org_billing.active_subscription
+        if subscription.plan:
+            free_storage_gb = Decimal(str(subscription.plan.storage_gb))
+    
+    # Calculate overage
+    overage_gb = max(Decimal('0'), new_total_storage_gb - free_storage_gb)
+    
+    if overage_gb > 0:
+        # Calculate overage cost
+        storage_rate = Decimal('25.00')  # Default rate
+        if org_billing and org_billing.active_subscription:
+            subscription = org_billing.active_subscription
+            if subscription.plan and hasattr(subscription.plan, 'extra_storage_rate_per_gb'):
+                storage_rate = subscription.plan.extra_storage_rate_per_gb
+        
+        overage_cost = overage_gb * storage_rate
+        
+        # Check if organization has enough credits
+        available_credits = org_billing.available_credits if org_billing else Decimal('0')
+        
+        if available_credits < overage_cost:
+            raise ValidationError(
+                f'Insufficient credits for storage overage. '
+                f'Uploading these files will use {float(new_files_gb):.2f} GB, '
+                f'bringing total to {float(new_total_storage_gb):.2f} GB. '
+                f'Your plan includes {float(free_storage_gb)} GB free. '
+                f'Overage: {float(overage_gb):.2f} GB × ₹{float(storage_rate)}/GB = ₹{float(overage_cost):.2f} credits. '
+                f'Available credits: {float(available_credits):.2f}. '
+                f'Please purchase more credits or upgrade your plan.'
+            )
+        
+        logger.info(
+            f"Storage overage for {organization.title}: "
+            f"{float(overage_gb):.2f} GB will cost {float(overage_cost):.2f} credits"
+        )
+        
+        return {
+            'overage_gb': float(overage_gb),
+            'overage_cost': float(overage_cost),
+            'storage_rate': float(storage_rate),
+            'new_total_gb': float(new_total_storage_gb),
+            'free_storage_gb': float(free_storage_gb),
+        }
+    
+    return None
+
+
 def create_file_upload(user, project, file):
     instance = FileUpload(user=user, project=project, file=file)
     if settings.SVG_SECURITY_CLEANUP:
@@ -177,11 +260,30 @@ def create_file_uploads(user, project, FILES):
     file_upload_ids = []
     check_request_files_size(FILES)
     check_extensions(FILES)
+    
+    # Check storage limits before uploading
+    total_size = sum([file.size for _, file in FILES.items()])
+    overage_details = check_storage_limit(project, total_size)
+    
+    # Upload files
     for _, file in FILES.items():
         file_upload = create_file_upload(user, project, file)
         if file_upload.format_could_be_tasks_list:
             could_be_tasks_list = True
         file_upload_ids.append(file_upload.id)
+    
+    # Charge for storage overage if needed
+    if overage_details and overage_details['overage_gb'] > 0:
+        from billing.storage_service import StorageCalculationService
+        StorageCalculationService.charge_storage_overage(
+            organization=project.organization,
+            overage_gb=overage_details['overage_gb'],
+            overage_cost=overage_details['overage_cost']
+        )
+        logger.info(
+            f"Charged storage overage: {overage_details['overage_gb']:.2f} GB "
+            f"= ₹{overage_details['overage_cost']:.2f}"
+        )
 
     logger.debug(f'created file uploads: {file_upload_ids} could_be_tasks_list: {could_be_tasks_list}')
     return file_upload_ids, could_be_tasks_list
@@ -344,19 +446,51 @@ def load_tasks(request, project):
     file_upload_ids, found_formats, data_keys = [], [], set()
     could_be_tasks_list = False
 
-    # take tasks from request FILES
-    if len(request.FILES):
-        check_request_files_size(request.FILES)
-        check_extensions(request.FILES)
-        for filename, file in request.FILES.items():
-            file_upload = create_file_upload(request.user, project, file)
-            if file_upload.format_could_be_tasks_list:
-                could_be_tasks_list = True
-            file_upload_ids.append(file_upload.id)
-        tasks, found_formats, data_keys = FileUpload.load_tasks_from_uploaded_files(project, file_upload_ids)
+    # Check content type first to determine how to handle the request
+    content_type = request.content_type or ''
+    
+    logger.debug(f"load_tasks: content_type={content_type}")
+    
+    # For multipart/form-data, handle file uploads
+    if 'multipart/form-data' in content_type:
+        # Try to get files - use request.FILES which DRF provides
+        # The middleware fix should have prevented the stream from being consumed
+        try:
+            files = request.FILES
+            logger.debug(f"load_tasks: Found {len(files)} files in request.FILES")
+        except Exception as e:
+            logger.error(f"load_tasks: Error accessing request.FILES: {e}")
+            files = None
+        
+        if files:
+            check_request_files_size(files)
+            check_extensions(files)
+            for filename, file in files.items():
+                file_upload = create_file_upload(request.user, project, file)
+                if file_upload.format_could_be_tasks_list:
+                    could_be_tasks_list = True
+                file_upload_ids.append(file_upload.id)
+            tasks, found_formats, data_keys = FileUpload.load_tasks_from_uploaded_files(project, file_upload_ids)
+        else:
+            # Fallback: try the underlying Django request
+            django_request = getattr(request, '_request', request)
+            files = getattr(django_request, 'FILES', None)
+            logger.debug(f"load_tasks: Fallback - found {len(files) if files else 0} files in django_request.FILES")
+            
+            if files:
+                check_request_files_size(files)
+                check_extensions(files)
+                for filename, file in files.items():
+                    file_upload = create_file_upload(request.user, project, file)
+                    if file_upload.format_could_be_tasks_list:
+                        could_be_tasks_list = True
+                    file_upload_ids.append(file_upload.id)
+                tasks, found_formats, data_keys = FileUpload.load_tasks_from_uploaded_files(project, file_upload_ids)
+            else:
+                raise ValidationError('load_tasks: No files found in multipart request. Please ensure files are attached correctly.')
 
     # take tasks from url address
-    elif 'application/x-www-form-urlencoded' in request.content_type:
+    elif 'application/x-www-form-urlencoded' in content_type:
         # empty url
         url = request.data.get('url')
         if not url:
@@ -380,12 +514,23 @@ def load_tasks(request, project):
             ) = tasks_from_url(file_upload_ids, project, request.user, url, could_be_tasks_list)
 
     # take one task from request DATA
-    elif 'application/json' in request.content_type and isinstance(request.data, dict):
+    elif 'application/json' in content_type and isinstance(request.data, dict):
         tasks = [request.data]
 
     # take many tasks from request DATA
-    elif 'application/json' in request.content_type and isinstance(request.data, list):
+    elif 'application/json' in content_type and isinstance(request.data, list):
         tasks = request.data
+
+    # Fallback: try to access request.FILES (for backwards compatibility)
+    elif len(request.FILES):
+        check_request_files_size(request.FILES)
+        check_extensions(request.FILES)
+        for filename, file in request.FILES.items():
+            file_upload = create_file_upload(request.user, project, file)
+            if file_upload.format_could_be_tasks_list:
+                could_be_tasks_list = True
+            file_upload_ids.append(file_upload.id)
+        tasks, found_formats, data_keys = FileUpload.load_tasks_from_uploaded_files(project, file_upload_ids)
 
     # incorrect data source
     else:

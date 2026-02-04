@@ -240,8 +240,10 @@ class ProjectListAPI(generics.ListCreateAPIView):
             )
         else:
             # Default: return projects in the user's active organization (clients/admins)
+            # Only show published projects (projects with deposit paid)
             projects = Project.objects.filter(
-                organization=user.active_organization
+                organization=user.active_organization,
+                is_published=True
             ).order_by(F("pinned_at").desc(nulls_last=True), "-created_at")
         if filter in ["pinned_only", "exclude_pinned"]:
             projects = projects.filter(pinned_at__isnull=filter == "exclude_pinned")

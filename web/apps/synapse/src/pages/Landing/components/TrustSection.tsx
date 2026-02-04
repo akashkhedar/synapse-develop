@@ -70,7 +70,7 @@ export const TrustSection = () => {
       number: "03",
       title: "Transparent Credit-Based Billing",
       description:
-        "Pay only for completed annotations. Security deposits, real-time cost tracking, and detailed breakdowns per annotation type.",
+        "Pay only for completed annotations. Project expenditures, real-time cost tracking, and detailed breakdowns per annotation type.",
     },
   ];
 

@@ -274,6 +274,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "core.middleware.MultipartStreamMiddleware",  # MUST BE FIRST - handles multipart parsing
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -634,12 +635,28 @@ DELAYED_EXPORT_DIR = "export"
 os.makedirs(os.path.join(BASE_DATA_DIR, MEDIA_ROOT, DELAYED_EXPORT_DIR), exist_ok=True)
 
 # file / task size limits
-DATA_UPLOAD_MAX_MEMORY_SIZE = int(
-    get_env("DATA_UPLOAD_MAX_MEMORY_SIZE", 250 * 1024 * 1024)
-)
+# For multipart file uploads, this limits the non-file POST data size, not file size
+# Set to None to allow unlimited request body (file data goes to temp)
+DATA_UPLOAD_MAX_MEMORY_SIZE = None  # Allow large multipart uploads
+DATA_UPLOAD_MAX_NUMBER_FIELDS = int(get_env("DATA_UPLOAD_MAX_NUMBER_FIELDS", 1000))
 DATA_UPLOAD_MAX_NUMBER_FILES = int(get_env("DATA_UPLOAD_MAX_NUMBER_FILES", 100))
+
+# File upload settings for large files (like ZIP archives)
+# Files larger than this threshold go to temp disk storage instead of memory
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(
+    get_env("FILE_UPLOAD_MAX_MEMORY_SIZE", 10 * 1024 * 1024)  # 10MB - files larger than this go to temp
+)
+# Temp directory for large file uploads
+FILE_UPLOAD_TEMP_DIR = get_env("FILE_UPLOAD_TEMP_DIR", None)  # Uses system temp by default
+# File upload handlers - ensure we can handle large files
+FILE_UPLOAD_HANDLERS = [
+    "django.core.files.uploadhandler.MemoryFileUploadHandler",
+    "django.core.files.uploadhandler.TemporaryFileUploadHandler",
+]
+
 TASKS_MAX_NUMBER = 1000000
-TASKS_MAX_FILE_SIZE = DATA_UPLOAD_MAX_MEMORY_SIZE
+# Maximum file size for task imports (5GB to support large ZIP archives)
+TASKS_MAX_FILE_SIZE = int(get_env("TASKS_MAX_FILE_SIZE", 5 * 1024 * 1024 * 1024))  # 5GB
 
 TASK_LOCK_TTL = int(get_env("TASK_LOCK_TTL", default=86400))
 

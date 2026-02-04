@@ -207,18 +207,18 @@ export class APIProxy<T extends {}> {
             });
           }
 
-          if (extendedBody instanceof FormData || extendedBody instanceof URLSearchParams) {
+          if (extendedBody instanceof FormData) {
+            // FormData - let browser set Content-Type with boundary
+            requestParams.body = extendedBody;
+            requestHeaders.delete("Content-Type");
+          } else if (extendedBody instanceof URLSearchParams) {
             requestParams.body = extendedBody;
           } else if (contentType === "multipart/form-data") {
             requestParams.body = this.createRequestBody(extendedBody);
-          } else if (contentType === "application/json") {
-            requestParams.body = this.bodyToJSON(extendedBody);
-          }
-
-          // @todo better check for files maybe?
-          if (contentType === "multipart/form-data") {
             // fetch will set correct header with boundaries
             requestHeaders.delete("Content-Type");
+          } else if (contentType === "application/json") {
+            requestParams.body = this.bodyToJSON(extendedBody);
           }
         }
 

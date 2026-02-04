@@ -75,6 +75,25 @@ const CircularProgress = ({ percentage, size = 80, strokeWidth = 6 }) => {
   );
 };
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  marginTop:"25px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
 // Stat badge component
 const StatBadge = ({ icon: Icon, value, label, color, gradient }) => {
   return (
@@ -233,7 +252,11 @@ export const EmptyProjectsList = ({ openModal, isAnnotator, isExpert }) => {
       <div className={cn("empty-projects-page").elem("icon").toClassName()}>
         <IconFolder />
       </div>
-      <div className={cn("empty-projects-page").elem("step-indicator").toClassName()}>
+      <div
+        className={cn("empty-projects-page")
+          .elem("step-indicator")
+          .toClassName()}
+      >
         01/
       </div>
       {isWorker ? (
@@ -243,9 +266,7 @@ export const EmptyProjectsList = ({ openModal, isAnnotator, isExpert }) => {
           >
             No projects assigned
           </h1>
-          <p>
-            You don't have any projects assigned yet. 
-          </p>
+          <p>You don't have any projects assigned yet.</p>
         </>
       ) : (
         <>
@@ -254,12 +275,16 @@ export const EmptyProjectsList = ({ openModal, isAnnotator, isExpert }) => {
           >
             Create your first project
           </h1>
-          <p>Import your data and configure the labeling interface to start annotating.</p>
+          <p>
+            Import your data and configure the labeling interface to start
+            annotating.
+          </p>
           {openModal && (
             <button
               onClick={openModal}
               className="create-btn"
               aria-label="Create new project"
+              style={primaryButtonStyle}
             >
               Create Project
             </button>

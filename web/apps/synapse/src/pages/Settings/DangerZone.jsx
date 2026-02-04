@@ -207,7 +207,7 @@ export const DangerZone = () => {
                     <div className="breakdown-table">
                       <div className="breakdown-row">
                         <span className="breakdown-label">
-                          Security Deposit Paid:
+                          Project Expenditure Paid:
                         </span>
                         <span className="breakdown-value">
                           ₹{refundBreakdown.deposit_paid.toFixed(0)}

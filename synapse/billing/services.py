@@ -667,9 +667,10 @@ class ProjectBillingService:
                 complexity_multiplier = multiplier
                 break
 
-        # Add complexity for multiple control tags (multi-task annotation)
-        if len(annotation_types) > 1:
-            complexity_multiplier *= Decimal(str(1 + 0.2 * (len(annotation_types) - 1)))
+        # Note: Complexity is based ONLY on label count as per pricing rules:
+        # 1-5 labels: 1.0x, 6-15: 1.2x, 16-30: 1.5x, 31-100: 2.0x, 101+: 2.5x
+        # Multiple annotation types (e.g., segmentation + NER) are handled via
+        # separate rate charges, not additional complexity multiplier.
 
         return {
             "annotation_types": (
@@ -682,12 +683,16 @@ class ProjectBillingService:
         }
 
     @classmethod
-    def _calculate_annotation_rate(cls, annotation_types):
+    def _calculate_annotation_rate(cls, annotation_types, data_types=None):
         """
         Calculate the combined annotation rate for multiple annotation types.
+        
+        First tries to get rates from AnnotationPricing table based on data type,
+        then falls back to hardcoded ANNOTATION_RATE_ESTIMATES.
 
         Args:
             annotation_types: List of annotation types detected
+            data_types: List of data types detected (e.g., ['image', 'audio'])
 
         Returns:
             Decimal: Combined annotation rate
@@ -695,8 +700,56 @@ class ProjectBillingService:
         if not annotation_types:
             return cls.ANNOTATION_RATE_ESTIMATES["default"]
 
-        # Sum rates for all annotation types (since annotator does all of them)
+        # Map Label Studio data types to AnnotationPricing data_type values
+        data_type_mapping = {
+            'image': '2d_image',
+            'audio': 'time_series',  # Audio is a type of time series
+            'video': 'video',
+            'text': 'document',
+            'time_series': 'time_series',
+        }
+        
+        # Map annotation types to AnnotationPricing field names
+        annotation_type_mapping = {
+            'classification': 'classification',
+            'bounding_box': 'bounding_box',
+            'polygon': 'polygon',
+            'segmentation': 'segmentation',
+            'keypoint': 'keypoint',
+            'ner': 'classification',  # NER is a type of classification
+            'text_area': 'classification',
+            'rating': 'classification',
+            'taxonomy': 'classification',
+            'pairwise': 'classification',
+        }
+        
         total_rate = Decimal("0")
+        
+        # Try to get rates from AnnotationPricing table
+        if data_types:
+            primary_data_type = data_types[0] if data_types else 'image'
+            pricing_data_type = data_type_mapping.get(primary_data_type, '2d_image')
+            
+            try:
+                # Get any active pricing for this data type
+                pricing = AnnotationPricing.objects.filter(
+                    data_type=pricing_data_type,
+                    is_active=True
+                ).first()
+                
+                if pricing:
+                    # Calculate rate from pricing table
+                    for ann_type in annotation_types:
+                        pricing_ann_type = annotation_type_mapping.get(ann_type, 'classification')
+                        rate = pricing.calculate_credit(pricing_ann_type, 1)
+                        total_rate += rate
+                    
+                    if total_rate > 0:
+                        return total_rate
+            except Exception:
+                pass  # Fall back to hardcoded rates
+        
+        # Fall back to hardcoded rates
         for ann_type in annotation_types:
             rate = cls.ANNOTATION_RATE_ESTIMATES.get(
                 ann_type, cls.ANNOTATION_RATE_ESTIMATES["default"]
@@ -705,6 +758,45 @@ class ProjectBillingService:
 
         return total_rate
 
+    @classmethod
+    def calculate_security_fee(cls, storage_fee, annotation_fee):
+        """
+        Calculate base fee (security fee) as 10% of annotation cost.
+        Minimum base fee is ₹500 (fixed).
+        If 10% > ₹500, round to nearest 50 or 100.
+        
+        Formula: 
+        - 10% of annotation cost <= 500 → Base Fee = 500 (fixed)
+        - 10% of annotation cost > 500 → Base Fee = rounded to nearest 50/100
+        
+        Args:
+            storage_fee: Calculated storage fee (Decimal) - not used in new logic
+            annotation_fee: Calculated annotation fee (Decimal)
+            
+        Returns:
+            Decimal: Base fee amount (minimum ₹500)
+        """
+        from decimal import Decimal, ROUND_HALF_UP
+        
+        # Calculate 10% of annotation cost only
+        ten_percent = annotation_fee * Decimal('0.10')
+        
+        # If less than or equal to 500, return fixed 500
+        if ten_percent <= Decimal('500'):
+            return Decimal('500')
+        
+        # Otherwise, round to nearest 50 or 100
+        # For amounts < 1000, round to nearest 50
+        # For amounts >= 1000, round to nearest 100
+        if ten_percent < Decimal('1000'):
+            # Round to nearest 50
+            base_fee = (ten_percent / Decimal('50')).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal('50')
+        else:
+            # Round to nearest 100
+            base_fee = (ten_percent / Decimal('100')).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal('100')
+        
+        return base_fee
+    
     @classmethod
     @transaction.atomic
     def calculate_security_deposit(
@@ -721,7 +813,7 @@ class ProjectBillingService:
 
         The calculation considers:
         - Base fee: Minimum deposit required
-        - Storage fee: Based on estimated storage requirements
+        - Storage fee: Based on estimated storage requirements with subscription plan limits
         - Annotation cost: Based on task count, annotation types, and label complexity
         - Complexity multiplier: Based on number of labels and annotation types
 
@@ -734,14 +826,66 @@ class ProjectBillingService:
         Returns:
             dict: Breakdown of deposit calculation
         """
-        # Base fee
-        base_fee = cls.BASE_DEPOSIT_FEE
-
-        # Storage fee
-        storage_gb = (
+        from billing.models import SubscriptionPlan, OrganizationBilling
+        from billing.storage_service import StorageCalculationService
+        
+        # Get organization and subscription plan
+        organization = getattr(project, 'organization', None)
+        
+        subscription_plan = None
+        free_storage_gb = Decimal("5")  # Default free storage
+        storage_rate_per_gb = cls.STORAGE_RATE_PER_GB
+        storage_discount = Decimal("0")
+        
+        if organization:
+            # Get active subscription
+            org_billing = OrganizationBilling.objects.filter(organization=organization).first()
+            
+            if org_billing and org_billing.active_subscription and org_billing.active_subscription.status == 'active':
+                # Get the subscription plan from the active subscription
+                subscription_plan = org_billing.active_subscription.plan
+                free_storage_gb = Decimal(str(subscription_plan.storage_gb))
+                storage_rate_per_gb = subscription_plan.extra_storage_rate_per_gb
+                storage_discount = subscription_plan.storage_discount_percent
+            
+            # Calculate existing storage usage
+            existing_storage_info = StorageCalculationService.calculate_organization_storage(organization)
+            existing_storage_gb = existing_storage_info["total_gb_decimal"]
+        else:
+            existing_storage_gb = Decimal("0")
+        
+        # Calculate new project storage
+        new_project_storage_gb = (
             Decimal(str(estimated_storage_gb)) if estimated_storage_gb else Decimal("0")
         )
-        storage_fee = storage_gb * cls.STORAGE_RATE_PER_GB
+        
+        # Total storage after this project
+        total_storage_gb = existing_storage_gb + new_project_storage_gb
+        
+        # Calculate billable storage (overage beyond free limit)
+        billable_storage_gb = max(Decimal("0"), total_storage_gb - free_storage_gb)
+        
+        # Calculate storage fee for this project's contribution to overage
+        if total_storage_gb <= free_storage_gb:
+            # All storage is within free limit
+            storage_fee = Decimal("0")
+            storage_overage_gb = Decimal("0")
+        else:
+            # Calculate how much of this project contributes to overage
+            if existing_storage_gb >= free_storage_gb:
+                # Already over limit, charge for entire project storage
+                storage_overage_gb = new_project_storage_gb
+            else:
+                # This project pushes over the limit
+                storage_overage_gb = total_storage_gb - free_storage_gb
+            
+            # Calculate fee with subscription rate
+            storage_fee = storage_overage_gb * storage_rate_per_gb
+            
+            # Apply discount if available
+            if storage_discount > 0:
+                discount_amount = storage_fee * (storage_discount / Decimal("100"))
+                storage_fee = storage_fee - discount_amount
 
         # Get label config from project
         label_config = getattr(project, "label_config", None)
@@ -758,9 +902,10 @@ class ProjectBillingService:
         # Get detected data types
         data_types = config_analysis.get("data_types", ["image"])
 
-        # Calculate annotation rate based on detected types
+        # Calculate annotation rate based on detected types and data types
         annotation_rate = cls._calculate_annotation_rate(
-            config_analysis["annotation_types"]
+            config_analysis["annotation_types"],
+            data_types=data_types
         )
 
         # Check for duration-based data types (audio/video)
@@ -771,7 +916,7 @@ class ProjectBillingService:
                     data_type=data_type,
                     task_count=task_count,
                     avg_duration_mins=None,  # Will use default
-                    total_storage_gb=storage_gb if storage_gb > 0 else None,
+                    total_storage_gb=new_project_storage_gb if new_project_storage_gb > 0 else None,
                 )
                 # Use duration-based pricing for the annotation rate
                 if duration_pricing:
@@ -789,8 +934,17 @@ class ProjectBillingService:
             * cls.ANNOTATION_BUFFER_MULTIPLIER
         )
 
-        # Total deposit
-        total_deposit = base_fee + storage_fee + estimated_annotation_cost
+        # Calculate security fee as 10% of annotation cost only
+        security_fee = cls.calculate_security_fee(storage_fee, estimated_annotation_cost)
+        base_fee = security_fee  # For backward compatibility
+
+        # Total deposit = Base Fee + Storage Fee (non-refundable) + Annotation Cost
+        total_deposit = security_fee + storage_fee + estimated_annotation_cost
+        
+        # Refundable portion = Base Fee + Annotation Cost
+        # Non-refundable portion = Storage Fee
+        refundable_amount = security_fee + estimated_annotation_cost
+        non_refundable_amount = storage_fee
 
         breakdown = {
             "base_fee": float(base_fee),
@@ -799,13 +953,22 @@ class ProjectBillingService:
             "annotation_rate": float(annotation_rate),
             "total_labels": config_analysis["total_labels"],
             "complexity_multiplier": float(complexity_multiplier),
-            "estimated_storage_gb": float(storage_gb),
-            "storage_rate": float(cls.STORAGE_RATE_PER_GB),
+            "estimated_storage_gb": float(new_project_storage_gb),
+            "existing_storage_gb": float(existing_storage_gb),
+            "total_storage_gb": float(total_storage_gb),
+            "free_storage_gb": float(free_storage_gb),
+            "storage_overage_gb": float(storage_overage_gb),
+            "storage_rate": float(storage_rate_per_gb),
+            "storage_discount_percent": float(storage_discount),
             "storage_fee": float(storage_fee),
+            "storage_fee_refundable": False,  # Storage is non-refundable
             "buffer_multiplier": float(cls.ANNOTATION_BUFFER_MULTIPLIER),
             "annotation_fee": float(estimated_annotation_cost),
             "detected_tags": config_analysis["detected_tags"],
             "data_types": data_types,
+            "subscription_plan": subscription_plan.name if subscription_plan else "Pay As You Go",
+            "refundable_amount": float(refundable_amount),
+            "non_refundable_amount": float(non_refundable_amount),
         }
 
         # Add duration pricing details if applicable
@@ -816,8 +979,11 @@ class ProjectBillingService:
             "success": True,
             "base_fee": float(base_fee),
             "storage_fee": float(storage_fee),
+            "storage_fee_refundable": False,
             "annotation_fee": float(estimated_annotation_cost),
             "total_deposit": float(total_deposit),
+            "refundable_amount": float(refundable_amount),
+            "non_refundable_amount": float(non_refundable_amount),
             "breakdown": breakdown,
         }
 
@@ -890,6 +1056,9 @@ class ProjectBillingService:
             )
 
         # Create ProjectBilling record
+        storage_fee = Decimal(str(deposit_calc.get("storage_fee", 0)))
+        storage_overage_gb = Decimal(str(deposit_calc.get("breakdown", {}).get("storage_overage_gb", 0)))
+        
         project_billing, created = ProjectBilling.objects.get_or_create(
             project=project,
             defaults={
@@ -897,6 +1066,8 @@ class ProjectBillingService:
                 "estimated_annotation_cost": Decimal(
                     str(deposit_calc["annotation_fee"])
                 ),
+                "storage_fee_paid": storage_fee,
+                "storage_overage_gb": storage_overage_gb,
             },
         )
 
@@ -906,6 +1077,8 @@ class ProjectBillingService:
             project_billing.estimated_annotation_cost = Decimal(
                 str(deposit_calc["annotation_fee"])
             )
+            project_billing.storage_fee_paid = storage_fee
+            project_billing.storage_overage_gb = storage_overage_gb
             project_billing.save()
 
         # Create SecurityDeposit record
@@ -943,6 +1116,10 @@ class ProjectBillingService:
         project_billing.deposit_paid_at = timezone.now()
         project_billing.is_deposit_held = True
         project_billing.save()
+
+        # Publish the project after deposit is collected
+        project.is_published = True
+        project.save(update_fields=['is_published'])
 
         logger.info(
             f"Security deposit of ₹{total_deposit} collected for project {project.title} "

@@ -147,24 +147,53 @@
 
   .create-btn {
     margin-top: 32px;
-    padding: 14px 32px;
-    background: #8b5cf6;
+    padding: 14px 36px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     color: #ffffff;
     border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: none;
     cursor: pointer;
     transition: all 200ms ease;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
       monospace;
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      opacity: 0;
+      transition: opacity 200ms ease;
+    }
 
     &:hover {
-      background: #7c3aed;
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+    }
+
+    // Ensure text is above the gradient overlay
+    span {
+      position: relative;
+      z-index: 1;
     }
   }
 }

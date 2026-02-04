@@ -23,14 +23,31 @@ export const importFiles = async ({
 
   const query = dontCommitToProject ? { commit_to_project: "false" } : {};
 
-  const contentType =
-    body instanceof FormData
-      ? "multipart/form-data" // usual multipart for usual files
-      : "application/x-www-form-urlencoded"; // chad urlencoded for URL uploads
+  // IMPORTANT: Don't set Content-Type for FormData!
+  // The browser automatically sets it with the correct boundary parameter
+  // (e.g., "multipart/form-data; boundary=----WebKitFormBoundary...")
+  // Setting it manually breaks multipart parsing on the server
+  const headers: Record<string, string> = {};
+  if (!(body instanceof FormData)) {
+    headers["Content-Type"] = "application/x-www-form-urlencoded";
+  }
+  
+  // Debug: Log FormData contents
+  if (body instanceof FormData) {
+    console.log("Uploading FormData with entries:");
+    for (const [key, value] of body.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
+  }
+  
   const res = await API.invoke(
     "importFiles",
     { pk: project.id, ...query },
-    { headers: { "Content-Type": contentType }, body },
+    { headers, body },
   );
 
   if (res && !res.error) {

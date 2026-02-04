@@ -477,6 +477,7 @@ class ProjectBillingViewSet(viewsets.ViewSet):
 
                 # Get actual task count and storage from database
                 from data_import.models import FileUpload
+                from data_import.serializers import analyze_zip_contents
                 from django.db.models import Sum
 
                 # First try tasks, then try file uploads (for draft projects)
@@ -486,8 +487,27 @@ class ProjectBillingViewSet(viewsets.ViewSet):
                 file_uploads = FileUpload.objects.filter(project=project)
 
                 if actual_task_count == 0:
-                    # Check file uploads for draft projects
-                    actual_task_count = file_uploads.count()
+                    # For draft projects, count files including ZIP contents
+                    for fu in file_uploads:
+                        try:
+                            file_name = fu.file.name.lower() if fu.file else ''
+                            if file_name.endswith('.zip'):
+                                # Analyze ZIP contents to get actual file count
+                                zip_analysis = analyze_zip_contents(fu.file.name)
+                                if zip_analysis.get('total_files', 0) > 0:
+                                    actual_task_count += zip_analysis['total_files']
+                                else:
+                                    # If ZIP analysis failed, count as 1
+                                    actual_task_count += 1
+                            else:
+                                # Regular file counts as 1 task
+                                actual_task_count += 1
+                        except Exception:
+                            actual_task_count += 1  # Count as 1 if analysis fails
+                    
+                    # Ensure at least 1 task if files exist
+                    if actual_task_count == 0 and file_uploads.exists():
+                        actual_task_count = file_uploads.count()
 
                 # Calculate total storage from file uploads
                 total_bytes = 0
@@ -512,6 +532,8 @@ class ProjectBillingViewSet(viewsets.ViewSet):
                             self._project = proj
                             self.label_config = config
                             self._task_count = task_count
+                            # Expose organization from the original project
+                            self.organization = getattr(proj, 'organization', None)
 
                         @property
                         def tasks(self):
@@ -527,9 +549,13 @@ class ProjectBillingViewSet(viewsets.ViewSet):
                     project = ProjectWrapper(project, label_config, actual_task_count)
             else:
                 # Create a dummy project object for calculation
+                # Use user's active organization to get subscription info
+                user_org = getattr(request.user, 'active_organization', None)
+                
                 class DummyProject:
-                    def __init__(self, config):
+                    def __init__(self, config, organization):
                         self.label_config = config or ""
+                        self.organization = organization
 
                         class Tasks:
                             @staticmethod
@@ -538,7 +564,7 @@ class ProjectBillingViewSet(viewsets.ViewSet):
 
                         self.tasks = Tasks()
 
-                project = DummyProject(label_config)
+                project = DummyProject(label_config, user_org)
 
             # Use estimated storage from request, or calculated from files
             if estimated_storage_gb:

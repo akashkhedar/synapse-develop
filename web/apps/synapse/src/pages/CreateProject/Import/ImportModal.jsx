@@ -11,6 +11,31 @@ import { useRefresh } from "../../../utils/hooks";
 import { ImportPage } from "./Import";
 import { useImportPage } from "./useImportPage";
 
+const primaryButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  padding: "0 16px",
+  height: "40px",
+  minWidth: "90px",
+  background: "#8b5cf6",
+  border: "1px solid #8b5cf6",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+};
+
+const dangerButtonStyle = {
+  ...primaryButtonStyle,
+  background: "rgba(239, 68, 68, 0.12)",
+  border: "1px solid rgba(239, 68, 68, 0.3)",
+  color: "#fca5a5",
+};
+
 export const Inner = () => {
   const history = useHistory();
   const location = useFixedLocation();
@@ -75,25 +100,27 @@ export const Inner = () => {
         <div className={cn("modal").elem("title").toClassName()}>Import Data</div>
 
         <Space>
-          <Button
+          <button
             size="small"
             variant="negative"
             look="outlined"
             waiting={waiting}
             onClick={onCancel}
             aria-label="Cancel import"
+            style={dangerButtonStyle}
           >
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
             size="small"
             onClick={onFinish}
             waiting={waiting || uploading}
             disabled={uploadDisabled}
             aria-label="Finish import"
+            style={primaryButtonStyle}
           >
             Import
-          </Button>
+          </button>
         </Space>
       </Modal.Header>
       <ImportPage

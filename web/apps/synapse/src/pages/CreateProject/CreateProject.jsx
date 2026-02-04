@@ -122,6 +122,7 @@ export const CreateProject = ({ onClose }) => {
 
   const [hasDicom, setHasDicom] = React.useState(false);
   const [detectedFileType, setDetectedFileType] = React.useState(null);
+  const [estimatedTaskCount, setEstimatedTaskCount] = React.useState(0);
 
   React.useEffect(() => {
     setError(null);
@@ -166,7 +167,7 @@ export const CreateProject = ({ onClose }) => {
     ),
     deposit: (
       <span className={tabClass.mod({ disabled: !_isConfigValid })}>
-        Security Deposit
+        Project Expenditure
       </span>
     ),
   };
@@ -174,7 +175,7 @@ export const CreateProject = ({ onClose }) => {
   // Handle deposit collection
   const handleDepositCollected = React.useCallback((response) => {
     setDepositPaid(true);
-    console.log("Security deposit collected:", response);
+    console.log("Project expenditure collected:", response);
   }, []);
 
   const handleDepositError = React.useCallback((errorMsg) => {
@@ -288,11 +289,12 @@ export const CreateProject = ({ onClose }) => {
     performClose();
   }, [project]);
 
-  // Get estimated task count from uploads
+  // Get estimated task count from uploads (including ZIP file contents)
   const estimatedTasks = React.useMemo(() => {
-    // Use fileIds length (number of uploaded files) as the task estimate
-    return fileIds?.length || project?.task_number || 0;
-  }, [fileIds, project?.task_number]);
+    // Use estimatedTaskCount from Import component (includes ZIP contents analysis)
+    // Falls back to fileIds length or project task_number
+    return estimatedTaskCount || fileIds?.length || project?.task_number || 0;
+  }, [estimatedTaskCount, fileIds, project?.task_number]);
 
   const isDisabled = !project || uploadDisabled || !!error || !depositPaid;
 
@@ -387,6 +389,7 @@ export const CreateProject = ({ onClose }) => {
           openLabelingConfig={() => setStep("config")}
           onDicomDetected={setHasDicom}
           onTypeDetected={setDetectedFileType}
+          onEstimatedTasksUpdate={setEstimatedTaskCount}
           {...pageProps}
         />
         <ConfigPage

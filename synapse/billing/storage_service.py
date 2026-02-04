@@ -247,6 +247,54 @@ class StorageCalculationService:
         return billing
     
     @classmethod
+    @transaction.atomic
+    def charge_storage_overage(cls, organization, overage_gb, overage_cost):
+        """
+        Charge organization for storage overage beyond free tier.
+        
+        Args:
+            organization: Organization instance
+            overage_gb: Amount of storage exceeding free tier (in GB)
+            overage_cost: Cost to charge (in credits/INR)
+            
+        Returns:
+            dict: Charge details
+        """
+        from billing.models import OrganizationBilling, CreditTransaction
+        from decimal import Decimal
+        
+        billing, created = OrganizationBilling.objects.get_or_create(
+            organization=organization
+        )
+        
+        overage_cost_decimal = Decimal(str(overage_cost))
+        
+        # Deduct credits
+        billing.credit_balance -= overage_cost_decimal
+        billing.save(update_fields=["credit_balance"])
+        
+        # Create transaction record
+        CreditTransaction.objects.create(
+            organization=organization,
+            amount=-overage_cost_decimal,
+            transaction_type="storage_overage",
+            description=f"Storage overage charge: {overage_gb:.2f} GB",
+            balance_after=billing.credit_balance,
+            created_by=None,  # System charge
+        )
+        
+        logger.info(
+            f"Charged storage overage for {organization.title}: "
+            f"{overage_gb:.2f} GB = ₹{overage_cost:.2f}"
+        )
+        
+        return {
+            "overage_gb": float(overage_gb),
+            "cost": float(overage_cost_decimal),
+            "new_balance": float(billing.credit_balance),
+        }
+    
+    @classmethod
     def calculate_storage_deposit(cls, storage_gb, subscription_plan=None):
         """
         Calculate security deposit amount for storage.

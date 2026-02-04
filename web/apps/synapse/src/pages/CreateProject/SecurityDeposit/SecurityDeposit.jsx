@@ -105,9 +105,9 @@ const successButtonStyle = {
 };
 
 /**
- * SecurityDeposit component for collecting security deposit during project creation.
+ * SecurityDeposit component for collecting project expenditure during project creation.
  *
- * Shows the calculated deposit amount and allows user to confirm payment from credits.
+ * Shows the calculated expenditure amount and allows user to confirm payment from credits.
  */
 export const SecurityDeposit = ({
   project,
@@ -285,7 +285,7 @@ export const SecurityDeposit = ({
               <WarningIcon />
             </div>
             <Typography variant="body" size="medium">
-              You don't have enough credits to pay the security deposit.
+              You don't have enough credits to pay the project expenditure.
             </Typography>
             <div className="security-deposit__modal-details">
               <div className="security-deposit__modal-row">
@@ -340,8 +340,8 @@ export const SecurityDeposit = ({
           letterSpacing: '0.02em',
           margin: '12px 0 24px 0'
         }}>
-          A refundable security deposit is required to publish your project.
-          This helps ensure project quality and prevents abandoned projects.
+          A project expenditure is required to publish your project.
+          Only the base fee is refundable; annotation cost and storage fee are non-refundable.
         </p>
       </div>
 
@@ -361,7 +361,7 @@ export const SecurityDeposit = ({
             letterSpacing: '0.1em',
             fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace'
           }}>
-            Calculating deposit amount...
+            Calculating expenditure amount...
           </span>
         </div>
       ) : depositInfo ? (
@@ -405,7 +405,7 @@ export const SecurityDeposit = ({
               letterSpacing: '0.1em',
               fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace'
             }}>
-              <span style={{ color: '#6b7280' }}>// </span>Deposit Breakdown
+              <span style={{ color: '#6b7280' }}>// </span>Expenditure Breakdown
             </h3>
 
             <div className="security-deposit__row" style={{
@@ -438,17 +438,67 @@ export const SecurityDeposit = ({
               padding: '24px 0',
               borderBottom: '1px solid #1f2937'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ color: '#8b5cf6' }}>
-                  <DatabaseIcon />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ color: '#8b5cf6' }}>
+                    <DatabaseIcon />
+                  </div>
+                  <span style={{ color: '#e8e4d9', fontSize: '13px' }}>
+                    Storage Fee
+                    {depositInfo.breakdown?.storage_fee > 0 && (
+                      <span style={{
+                        marginLeft: '8px',
+                        padding: '2px 6px',
+                        background: 'rgba(245, 158, 11, 0.2)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        color: '#f59e0b',
+                        fontWeight: 500,
+                      }}>
+                        NON-REFUNDABLE
+                      </span>
+                    )}
+                  </span>
                 </div>
-                <span style={{ color: '#e8e4d9', fontSize: '13px' }}>
-                  Storage Fee ({depositInfo.breakdown?.estimated_storage_gb?.toFixed(1) || 0} GB)
-                </span>
+                {depositInfo.breakdown?.storage_overage_gb > 0 && (
+                  <span style={{
+                    color: '#6b7280',
+                    fontSize: '11px',
+                    letterSpacing: '0.02em',
+                    marginLeft: '24px'
+                  }}>
+                    {depositInfo.breakdown?.existing_storage_gb?.toFixed(1) || 0} GB existing + {depositInfo.breakdown?.estimated_storage_gb?.toFixed(1) || 0} GB new = {depositInfo.breakdown?.total_storage_gb?.toFixed(1) || 0} GB total
+                    {depositInfo.breakdown?.free_storage_gb > 0 && (
+                      <> • {depositInfo.breakdown?.free_storage_gb?.toFixed(0)} GB free • {depositInfo.breakdown?.storage_overage_gb?.toFixed(1)} GB overage @ ₹{depositInfo.breakdown?.storage_rate?.toFixed(0)}/GB</>
+                    )}
+                  </span>
+                )}
+                {depositInfo.breakdown?.storage_overage_gb === 0 && (
+                  <span style={{
+                    color: '#10b981',
+                    fontSize: '11px',
+                    letterSpacing: '0.02em',
+                    marginLeft: '24px'
+                  }}>
+                    Within free limit ({depositInfo.breakdown?.free_storage_gb?.toFixed(0)} GB free)
+                  </span>
+                )}
+                {depositInfo.breakdown?.storage_fee > 0 && (
+                  <span style={{
+                    color: '#9ca3af',
+                    fontSize: '10px',
+                    letterSpacing: '0.02em',
+                    marginLeft: '24px',
+                    fontStyle: 'italic'
+                  }}>
+                    Monthly retention: ₹{depositInfo.breakdown?.storage_rate?.toFixed(0)}/GB for overage storage
+                  </span>
+                )}
               </div>
               <span style={{
                 fontWeight: 600,
-                color: '#e8e4d9',
+                color: depositInfo.breakdown?.storage_fee > 0 ? '#f59e0b' : '#10b981',
                 fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
                 fontSize: '13px'
               }}>
@@ -512,6 +562,33 @@ export const SecurityDeposit = ({
                   {depositInfo.breakdown.duration_pricing.avg_duration_mins?.toFixed(1)}{" "}
                   mins/task @ {depositInfo.breakdown.duration_pricing.base_rate_per_min}{" "}
                   credits/min
+                </span>
+              </div>
+            )}
+
+            {depositInfo.breakdown?.subscription_plan && (
+              <div style={{
+                background: 'rgba(139, 92, 246, 0.05)',
+                margin: '8px -20px',
+                padding: '12px 20px',
+                borderRadius: '4px',
+                borderLeft: '2px solid rgba(139, 92, 246, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <div style={{ color: '#8b5cf6' }}>
+                  <ShieldIcon />
+                </div>
+                <span style={{
+                  color: '#9ca3af',
+                  fontSize: '11px',
+                  fontStyle: 'normal'
+                }}>
+                  Subscription: {depositInfo.breakdown.subscription_plan} • {depositInfo.breakdown?.free_storage_gb?.toFixed(0)} GB free storage
+                  {depositInfo.breakdown?.storage_discount_percent > 0 && (
+                    <> • {depositInfo.breakdown.storage_discount_percent}% storage discount</>
+                  )}
                 </span>
               </div>
             )}
@@ -582,7 +659,7 @@ export const SecurityDeposit = ({
                 letterSpacing: '0.1em',
                 fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace'
               }}>
-                Total Deposit
+                Total Expenditure
               </span>
               <span style={{
                 fontWeight: 600,
@@ -639,7 +716,7 @@ export const SecurityDeposit = ({
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <SmallWarningIcon />
-                <span>You need {creditsNeeded} more credits to pay this deposit.</span>
+                <span>You need {creditsNeeded} more credits to pay this expenditure.</span>
               </div>
               <button
                 style={{
@@ -675,19 +752,25 @@ export const SecurityDeposit = ({
               <div style={{ color: '#8b5cf6', marginTop: '2px' }}>
                 <InfoIcon />
               </div>
-              <span>Deposit is refundable upon project completion and data export</span>
+              <span><strong>Refundable:</strong> Base fee is refunded when project is closed</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
               <div style={{ color: '#8b5cf6', marginTop: '2px' }}>
                 <InfoIcon />
               </div>
-              <span>Unused credits will be returned when project is closed</span>
+              <span><strong>Non-refundable:</strong> Annotation cost and storage fee are not refundable</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ color: '#8b5cf6', marginTop: '2px' }}>
+                <InfoIcon />
+              </div>
+              <span><strong>Retention billing:</strong> Monthly storage charges apply after annotation is complete (7-day advance notice)</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
               <div style={{ color: '#8b5cf6', marginTop: '2px' }}>
                 <InfoIcon />
               </div>
-              <span>If project is abandoned (no activity for 30 days), deposit may be forfeited</span>
+              <span><strong>Grace period:</strong> 3-week grace period if credits are insufficient; project deleted if unpaid</span>
             </div>
           </div>
 
@@ -705,7 +788,7 @@ export const SecurityDeposit = ({
               gap: '12px'
             }}>
               <CheckIcon />
-              <span>Security deposit collected successfully</span>
+              <span>Project expenditure collected successfully</span>
             </div>
           ) : (
             <div className="security-deposit__action" style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>

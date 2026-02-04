@@ -289,13 +289,13 @@ print(f"Storage ID: {storage.id}")`
   {
     id: "billing",
     name: "Billing & Deposits",
-    description: "Manage security deposits and billing for annotation projects",
+    description: "Manage project expenditures and billing for annotation projects",
     icon: <BillingIcon />,
     methods: [
       {
         name: "billing.calculate_deposit",
         signature: "client.billing.calculate_deposit(project_id, estimated_tasks, ...)",
-        description: "Calculate the required security deposit based on project configuration and task count.",
+        description: "Calculate the required project expenditure based on project configuration and task count.",
         parameters: [
           { name: "project_id", type: "int", required: false, description: "Existing project ID" },
           { name: "label_config", type: "str", required: false, description: "Label config for new projects" },
@@ -316,7 +316,7 @@ print(f"Storage cost: {deposit['estimated_storage_cost']}")`
       {
         name: "billing.pay_deposit",
         signature: "client.billing.pay_deposit(project_id, deposit_amount, ...)",
-        description: "Collect security deposit from organization credits to activate the project.",
+        description: "Collect project expenditure from organization credits to activate the project.",
         parameters: [
           { name: "project_id", type: "int", required: true, description: "Project ID to pay deposit for" },
           { name: "deposit_amount", type: "float", required: false, description: "Pre-calculated deposit amount" },

@@ -32,9 +32,13 @@ const isCompatible = (recipe, detectedFileType) => {
         if (!config.includes("<Video")) valid = false;
     } else if (["text", "txt"].includes(detectedFileType)) {
         if (!config.includes("<Text") && !config.includes("<HyperText")) valid = false;
-    } else if (["medical", "dicom", "dcm", "zip"].includes(detectedFileType)) {
-         if (!config.includes("<Dicom") && !config.includes("<Dicom3D")) valid = false;
+    } else if (["medical", "dicom", "dcm"].includes(detectedFileType)) {
+        // Only filter for DICOM templates when we actually have DICOM files
+        // ZIP files are now analyzed by the backend, so they won't automatically be "medical"
+        if (!config.includes("<Dicom") && !config.includes("<Dicom3D")) valid = false;
     }
+    // Note: ZIP files are no longer automatically assumed to be medical/DICOM
+    // The backend analyzes ZIP contents and returns the actual file type
     
     return valid;
 };

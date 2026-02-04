@@ -21,6 +21,69 @@ from rest_framework.permissions import SAFE_METHODS
 logger = logging.getLogger(__name__)
 
 
+class MultipartStreamMiddleware:
+    """Middleware to pre-parse multipart requests before other middleware can consume the stream.
+    
+    This must be the FIRST middleware in the chain. DRF and other components may read
+    the request stream during authentication/permission checks, consuming it before
+    the view can parse files. This middleware parses multipart data early and caches it.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        content_type = request.META.get('CONTENT_TYPE', '') or ''
+        
+        # Only process multipart requests for import endpoints
+        if 'multipart/form-data' in content_type and '/import' in request.path:
+            # Parse multipart NOW, before any other middleware can touch the stream
+            if not getattr(request, '_read_started', False):
+                self._parse_multipart_now(request)
+        
+        return self.get_response(request)
+    
+    def _parse_multipart_now(self, request):
+        """Parse multipart data immediately and cache on request."""
+        from django.http.multipartparser import MultiPartParser
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Get the stream
+            stream = getattr(request, '_stream', None)
+            if not stream:
+                stream = request.META.get('wsgi.input')
+            
+            if not stream:
+                logger.warning("MultipartStreamMiddleware: No stream available")
+                return
+            
+            # Parse the multipart data
+            parser = MultiPartParser(
+                META=request.META,
+                input_data=stream,
+                upload_handlers=request.upload_handlers,
+                encoding=request.encoding or 'utf-8'
+            )
+            
+            post_data, files = parser.parse()
+            
+            # Cache on request
+            request._post = post_data
+            request._files = files
+            request._read_started = True
+            
+            if files:
+                logger.debug(f"MultipartStreamMiddleware: Parsed {len(files)} file(s)")
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"MultipartStreamMiddleware: Parse error: {e}")
+
+
 def enforce_csrf_checks(func):
     """Enable csrf for specified view func"""
     # USE_ENFORCE_CSRF_CHECKS=False is for tests
@@ -132,13 +195,20 @@ class ContextLogMiddleware(CommonMiddleware):
 
     def __call__(self, request):
         body = None
-        try:
-            body = json.loads(request.body)
-        except:  # noqa: E722
+        # Get content type from META (Django's HttpRequest stores it there)
+        content_type = request.META.get('CONTENT_TYPE', '') or ''
+        
+        # Don't read body for multipart requests (file uploads)
+        # Reading the body stream prevents DRF from parsing files later
+        is_multipart = 'multipart/form-data' in content_type
+        if not is_multipart:
             try:
-                body = request.body.decode("utf-8")
+                body = json.loads(request.body)
             except:  # noqa: E722
-                pass
+                try:
+                    body = request.body.decode("utf-8")
+                except:  # noqa: E722
+                    pass
 
         if "server_id" not in request:
             setattr(request, "server_id", self.log._get_server_id())

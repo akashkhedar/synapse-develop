@@ -628,24 +628,43 @@ class ProjectBilling(models.Model):
         "projects.Project", on_delete=models.CASCADE, related_name="billing"
     )
 
-    # Security Deposit
+    # Project Cost (formerly Security Deposit)
+    project_cost_required = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Project cost required (security fees + estimated costs)",
+    )
+    project_cost_paid = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Project cost actually paid",
+    )
+    project_cost_refunded = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Project cost refunded",
+    )
+    # Keep old fields for backward compatibility
     security_deposit_required = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=0,
-        help_text="Security deposit required for this project",
+        help_text="(Deprecated: use project_cost_required)",
     )
     security_deposit_paid = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=0,
-        help_text="Security deposit actually paid",
+        help_text="(Deprecated: use project_cost_paid)",
     )
     security_deposit_refunded = models.DecimalField(
         max_digits=15,
         decimal_places=2,
         default=0,
-        help_text="Security deposit refunded",
+        help_text="(Deprecated: use project_cost_refunded)",
     )
     deposit_paid_at = models.DateTimeField(null=True, blank=True)
     deposit_refunded_at = models.DateTimeField(null=True, blank=True)
@@ -680,6 +699,75 @@ class ProjectBilling(models.Model):
     warning_sent_at = models.DateTimeField(null=True, blank=True)
     grace_period_start = models.DateTimeField(null=True, blank=True)
     scheduled_deletion_at = models.DateTimeField(null=True, blank=True)
+    
+    # Storage Charges (non-refundable)
+    storage_fee_paid = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Storage overage fee paid at project creation (non-refundable)"
+    )
+    storage_overage_gb = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        default=0,
+        help_text="Storage exceeding free limit at project creation"
+    )
+    
+    # Project Retention (Monthly Storage Billing)
+    annotation_completed = models.BooleanField(
+        default=False,
+        help_text="Whether annotation work is completed"
+    )
+    annotation_completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When annotation work was marked completed"
+    )
+    retention_billing_started = models.BooleanField(
+        default=False,
+        help_text="Whether monthly retention billing has started"
+    )
+    current_billing_cycle_start = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Start of current monthly billing cycle"
+    )
+    next_retention_charge_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the next monthly retention charge is due"
+    )
+    last_retention_charged_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the last retention fee was charged"
+    )
+    retention_warning_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the retention warning was sent (7 days before charge)"
+    )
+    insufficient_credits_warned_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When user was warned about insufficient credits for retention"
+    )
+    retention_deletion_scheduled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When project will be deleted due to unpaid retention (3 weeks after warning)"
+    )
+    total_retention_charges = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text="Total retention charges paid over project lifetime"
+    )
+    months_retained = models.IntegerField(
+        default=0,
+        help_text="Number of months the project has been retained after annotation completion"
+    )
 
     # Flags
     is_deposit_held = models.BooleanField(default=False)
@@ -714,11 +802,19 @@ class ProjectBilling(models.Model):
 
     @property
     def refundable_deposit(self):
-        """Calculate refundable deposit amount"""
-        # Refund = Paid - Consumed - Already Refunded
+        """
+        Calculate refundable deposit amount.
+        
+        Storage fee is NON-REFUNDABLE.
+        Refund = Paid - Storage Fee Paid - Consumed - Already Refunded
+        """
+        # Storage fee is non-refundable
         consumed = self.credits_consumed + self.actual_annotation_cost
         refundable = (
-            self.security_deposit_paid - consumed - self.security_deposit_refunded
+            self.security_deposit_paid 
+            - self.storage_fee_paid  # Exclude storage fee (non-refundable)
+            - consumed 
+            - self.security_deposit_refunded
         )
         return max(Decimal("0"), refundable)
 
@@ -779,6 +875,155 @@ class ProjectBilling(models.Model):
             to_state=new_state,
             reason=reason,
         )
+    
+    def mark_annotation_completed(self):
+        """
+        Mark annotation work as completed and start retention billing cycle.
+        Called when all annotations are finished.
+        """
+        from datetime import timedelta
+        
+        self.annotation_completed = True
+        self.annotation_completed_at = timezone.now()
+        self.retention_billing_started = True
+        self.current_billing_cycle_start = timezone.now()
+        # Next charge is 1 month from now
+        self.next_retention_charge_at = timezone.now() + timedelta(days=30)
+        self.save(update_fields=[
+            'annotation_completed',
+            'annotation_completed_at',
+            'retention_billing_started',
+            'current_billing_cycle_start',
+            'next_retention_charge_at',
+        ])
+        
+        # Log the event
+        ProjectBillingStateLog.objects.create(
+            project_billing=self,
+            from_state=self.state,
+            to_state=self.state,
+            reason="Annotation completed, retention billing started",
+        )
+    
+    def calculate_monthly_retention_fee(self, subscription_plan=None):
+        """
+        Calculate the monthly retention fee based on storage overage.
+        
+        Args:
+            subscription_plan: Optional subscription plan for rate lookup
+            
+        Returns:
+            Decimal: Monthly retention fee in credits
+        """
+        from decimal import Decimal
+        
+        # Get storage overage from current project
+        storage_overage = self.storage_overage_gb
+        
+        if storage_overage <= 0:
+            return Decimal("0")
+        
+        # Get rate from subscription plan
+        if subscription_plan:
+            rate_per_gb = subscription_plan.extra_storage_rate_per_gb
+        else:
+            # PAYG rate
+            rate_per_gb = Decimal("20.00")
+        
+        return storage_overage * rate_per_gb
+    
+    def charge_retention_fee(self, organization_billing, subscription_plan=None):
+        """
+        Charge the monthly retention fee from organization credits.
+        
+        Args:
+            organization_billing: OrganizationBilling instance
+            subscription_plan: Optional subscription plan
+            
+        Returns:
+            dict: Charge result with success status
+        """
+        from decimal import Decimal
+        from datetime import timedelta
+        
+        retention_fee = self.calculate_monthly_retention_fee(subscription_plan)
+        
+        if retention_fee <= 0:
+            # No charge needed
+            self.months_retained += 1
+            self.last_retention_charged_at = timezone.now()
+            self.current_billing_cycle_start = timezone.now()
+            self.next_retention_charge_at = timezone.now() + timedelta(days=30)
+            self.retention_warning_sent_at = None  # Reset warning
+            self.save()
+            return {"success": True, "charged": 0, "message": "No retention fee needed"}
+        
+        # Check if organization has sufficient credits
+        if organization_billing.available_credits < retention_fee:
+            return {
+                "success": False, 
+                "charged": 0, 
+                "message": "Insufficient credits",
+                "required": float(retention_fee),
+                "available": float(organization_billing.available_credits),
+            }
+        
+        # Deduct credits
+        organization_billing.deduct_credits(
+            retention_fee, 
+            f"Monthly storage retention for project: {self.project.title}"
+        )
+        
+        # Update retention tracking
+        self.months_retained += 1
+        self.total_retention_charges += retention_fee
+        self.last_retention_charged_at = timezone.now()
+        self.current_billing_cycle_start = timezone.now()
+        self.next_retention_charge_at = timezone.now() + timedelta(days=30)
+        self.retention_warning_sent_at = None  # Reset warning
+        self.insufficient_credits_warned_at = None  # Reset insufficient warning
+        self.retention_deletion_scheduled_at = None  # Cancel any scheduled deletion
+        self.save()
+        
+        # Create transaction record
+        CreditTransaction.objects.create(
+            organization=self.project.organization,
+            transaction_type="debit",
+            category="storage",
+            amount=-retention_fee,
+            balance_after=organization_billing.available_credits,
+            description=f"Monthly storage retention for project: {self.project.title}",
+            metadata={
+                "project_id": self.project.id,
+                "project_title": self.project.title,
+                "storage_overage_gb": float(self.storage_overage_gb),
+                "months_retained": self.months_retained,
+            }
+        )
+        
+        return {
+            "success": True, 
+            "charged": float(retention_fee),
+            "message": "Retention fee charged successfully",
+        }
+    
+    def schedule_deletion_for_unpaid_retention(self):
+        """
+        Schedule project for deletion due to unpaid retention fees.
+        Called when user has been warned but hasn't added credits.
+        Deletion happens 3 weeks after this is called.
+        """
+        from datetime import timedelta
+        
+        self.retention_deletion_scheduled_at = timezone.now() + timedelta(weeks=3)
+        self.save(update_fields=['retention_deletion_scheduled_at'])
+        
+        ProjectBillingStateLog.objects.create(
+            project_billing=self,
+            from_state=self.state,
+            to_state=self.state,
+            reason=f"Project scheduled for deletion on {self.retention_deletion_scheduled_at} due to unpaid retention fees",
+        )
 
 
 class ProjectBillingStateLog(models.Model):
@@ -817,8 +1062,19 @@ class SecurityDeposit(models.Model):
         Organization, on_delete=models.CASCADE, related_name="security_deposits"
     )
 
-    # Deposit calculation breakdown
-    base_fee = models.DecimalField(max_digits=10, decimal_places=2, default=500)
+    # Project cost calculation breakdown
+    security_fee = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=500,
+        help_text="Security fee based on project size: 500/700/900/1100/1300/1500"
+    )
+    base_fee = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=500,
+        help_text="(Deprecated: use security_fee)"
+    )
     storage_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     annotation_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_deposit = models.DecimalField(max_digits=15, decimal_places=2)

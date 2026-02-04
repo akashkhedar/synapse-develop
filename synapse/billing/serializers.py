@@ -8,12 +8,13 @@ from .models import (
 class SubscriptionPlanSerializer(serializers.ModelSerializer):
     effective_rate = serializers.FloatField()
     price_inr = serializers.FloatField()
+    extra_storage_rate_per_gb = serializers.FloatField()
     
     class Meta:
         model = SubscriptionPlan
         fields = [
             'id', 'name', 'plan_type', 'billing_cycle', 'price_inr', 'credits_per_month',
-            'effective_rate', 'storage_gb', 'max_users', 'priority_support', 'api_access',
+            'effective_rate', 'storage_gb', 'extra_storage_rate_per_gb', 'max_users', 'priority_support', 'api_access',
             'credit_rollover', 'max_rollover_months', 'is_active'
         ]
 

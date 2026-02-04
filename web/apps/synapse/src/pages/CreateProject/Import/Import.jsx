@@ -37,7 +37,9 @@ const supportedExtensions = {
   html: ["html", "htm", "xml"],
   pdf: ["pdf"],
   structuredData: ["csv", "tsv", "json"],
-  medical: ["dcm", "dicom", "zip"],
+  medical: ["dcm", "dicom"],
+  // ZIP files are analyzed by the backend to determine their actual content type
+  archive: ["zip"],
 };
 const allSupportedExtensions = flatten(Object.values(supportedExtensions));
 
@@ -147,6 +149,7 @@ export const ImportPage = ({
   show = true,
   onWaiting,
   onFileListUpdate,
+  onEstimatedTasksUpdate,
   onSampleDatasetSelect,
   highlightCsvHandling,
   dontCommitToProject = false,
@@ -212,47 +215,89 @@ export const ImportPage = ({
     const counts = {};
     let maxCount = 0;
     let dominantType = null;
+    let hasDicom = false;
+    let hasZipWithAnalysis = false;
+    let totalEstimatedTasks = 0;
 
     files.uploaded.forEach((f) => {
       const ext = getFileExtension(f.file);
-      for (const [type, extensions] of Object.entries(supportedExtensions)) {
-        if (extensions.includes(ext)) {
-          counts[type] = (counts[type] || 0) + 1;
-          if (counts[type] > maxCount) {
-            maxCount = counts[type];
-            dominantType = type;
+      
+      // Check if this is a ZIP file with analysis data from the backend
+      if (ext === 'zip' && f.zip_analysis) {
+        hasZipWithAnalysis = true;
+        const analysis = f.zip_analysis;
+        
+        // Add ZIP contents to estimated tasks
+        const zipFileCount = analysis.total_files || 1;
+        totalEstimatedTasks += zipFileCount;
+        
+        // Use the backend's analysis for ZIP contents
+        if (analysis.dominant_type) {
+          const zipType = analysis.dominant_type;
+          counts[zipType] = (counts[zipType] || 0) + zipFileCount;
+          if (counts[zipType] > maxCount) {
+            maxCount = counts[zipType];
+            dominantType = zipType;
           }
-          break;
+        }
+        
+        // Check if ZIP contains DICOM files
+        if (analysis.has_dicom) {
+          hasDicom = true;
+        }
+      } else {
+        // Regular file counts as 1 task
+        totalEstimatedTasks += 1;
+        
+        // Regular file - use extension-based detection
+        for (const [type, extensions] of Object.entries(supportedExtensions)) {
+          if (extensions.includes(ext)) {
+            counts[type] = (counts[type] || 0) + 1;
+            if (counts[type] > maxCount) {
+              maxCount = counts[type];
+              dominantType = type;
+            }
+            break;
+          }
+        }
+        
+        // Check for DICOM files directly
+        if (['dcm', 'dicom'].includes(ext)) {
+          hasDicom = true;
         }
       }
     });
 
-    // Special handling: Dicom is "medical", but we want to be specific? 
-    // supportedExtensions has "medical": ["dcm", "dicom"]
-    // If medical is detected, we pass "medical" (or 'dicom' if consistent with earlier logic).
-    
-    // Existing logic just checked for any dicom:
-    // if (files.uploaded.some((f) => /\.(dcm|dicom)$/i.test(f.file))) { onDicomDetected?.(true); }
-    
-    // We keep existing dcm check but also add general type detection
-    if (files.uploaded.some((f) => /\.(dcm|dicom|zip)$/i.test(f.file))) {
-        onDicomDetected?.(true);
-        // Medical overrides others for our specific use case?
-        // Let's rely on dominantType but prefer medical if present?
-        // Actually, if I upload 10 images and 1 dicom, is it dicom project? 
-        // For now let's use dominant, but maybe Dicom usually implies Dicom project. 
-        // Let's stick to dominant for generic types.
+    // Report estimated tasks to parent
+    onEstimatedTasksUpdate?.(totalEstimatedTasks);
+
+    // Set hasDicom flag if DICOM was detected
+    if (hasDicom) {
+      onDicomDetected?.(true);
+    } else {
+      onDicomDetected?.(false);
     }
+    
+    // Map backend types to frontend types if needed
+    const typeMapping = {
+      'dicom': 'medical',
+      'image': 'image',
+      'audio': 'audio',
+      'video': 'video',
+      'text': 'text',
+      'csv': 'structuredData',
+      'tsv': 'structuredData',
+      'json': 'structuredData',
+      'html': 'html',
+      'pdf': 'pdf',
+    };
     
     if (dominantType) {
-        // Pass the detected type up
-        // We need to add this prop to ImportPage
-        // reusing onTypeDetected if it exists, or create new prop?
-        // The instruction said "pass setDetectedFileType to ImportPage".
-        // Let's assume onTypeDetected is that prop.
-        onTypeDetected?.(dominantType);
+      // Map to frontend type names
+      const mappedType = typeMapping[dominantType] || dominantType;
+      onTypeDetected?.(mappedType);
     }
-  }, [files.uploaded, onDicomDetected, onTypeDetected]);
+  }, [files.uploaded, onDicomDetected, onTypeDetected, onEstimatedTasksUpdate]);
   const showList = Boolean(files.uploaded?.length || files.uploading?.length || sample);
 
   const loadFilesList = useCallback(
@@ -421,6 +466,19 @@ export const ImportPage = ({
       setError(null);
       onWaiting?.(true);
       files = [...files]; // they can be array-like object
+      
+      // Check if too many individual files are being uploaded
+      const MAX_INDIVIDUAL_FILES = 100;
+      if (files.length > MAX_INDIVIDUAL_FILES) {
+        const errorMsg = `Too many individual files (${files.length}). For uploading more than ${MAX_INDIVIDUAL_FILES} files, please compress them into a ZIP file and upload the ZIP instead. This prevents upload failures and improves performance.`;
+        onError({ 
+          detail: errorMsg,
+          message: errorMsg,
+        });
+        onWaiting?.(false);
+        return;
+      }
+      
       const fd = new FormData();
 
       for (const f of files) {
@@ -432,7 +490,7 @@ export const ImportPage = ({
       }
       return importFilesImmediately(files, fd);
     },
-    [importFilesImmediately],
+    [importFilesImmediately, onError, onWaiting],
   );
 
   const onUpload = useCallback(
@@ -618,47 +676,17 @@ export const ImportPage = ({
                       <dd>{supportedExtensions.pdf.join(", ")}</dd>
                     </dl>
                     <div className="tips">
-                      <b>Important:</b>
+                      <b>Tips:</b>
                       <ul className="mt-2 ml-4 list-disc font-normal">
                         <li>
-                          We recommend{" "}
-                          <a
-                            href="https://synapse.io/guide/storage.html"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Cloud Storage documentation (opens in a new tab)"
-                          >
-                            Cloud Storage
-                          </a>{" "}
-                          over direct uploads due to{" "}
-                          <a
-                            href="https://synapse.io/guide/tasks.html#Import-data-from-the-Synapse-UI"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Upload limitations documentation (opens in a new tab)"
-                          >
-                            upload limitations
-                          </a>
-                          .
+                          Use <strong>ZIP files</strong> to upload large datasets efficiently. 
+                          ZIP archives are automatically extracted and processed.
                         </li>
                         <li>
-                          For PDFs, use{" "}
-                          <a
-                            href="https://synapse.io/templates/multi-page-document-annotation"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Multi-image labeling documentation (opens in a new tab)"
-                          >
-                            multi-image labeling
-                          </a>
-                          . JSONL or Parquet (Enterprise only) files require cloud storage.
+                          Supported formats include images, audio, video, text, and structured data (CSV, JSON).
                         </li>
                         <li>
-                          Check the documentation to{" "}
-                          <a target="_blank" href="https://synapse.io/guide/predictions.html" rel="noreferrer">
-                            import preannotated data
-                          </a>
-                          .
+                          For best performance, keep individual files under 100MB.
                         </li>
                       </ul>
                     </div>

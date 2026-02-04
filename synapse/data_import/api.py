@@ -251,8 +251,9 @@ class ImportAPI(generics.CreateAPIView):
             project = None
         return {"project": project, "user": self.request.user}
 
-    def post(self, *args, **kwargs):
-        return super(ImportAPI, self).post(*args, **kwargs)
+    def post(self, request, *args, **kwargs):
+        # Multipart parsing is handled by MultipartStreamDebugMiddleware
+        return super(ImportAPI, self).post(request, *args, **kwargs)
 
     def _save(self, tasks):
         serializer = self.get_serializer(data=tasks, many=True)
@@ -518,7 +519,9 @@ class ImportAPI(generics.CreateAPIView):
             return_task_ids=return_task_ids,
         )
 
-        if len(request.FILES):
+        # Check content_type first to avoid accessing request.data when we have FILES
+        # Accessing request.data reads the stream and prevents accessing request.FILES later
+        if "multipart/form-data" in request.content_type or len(request.FILES):
             logger.debug(f"Import from files: {request.FILES}")
             file_upload_ids, could_be_tasks_list = create_file_uploads(
                 request.user, project, request.FILES
@@ -1598,4 +1601,67 @@ class DicomServeAPI(APIView):
         response = FileResponse(open(full_path, 'rb'), content_type="application/dicom")
         # Necessary for SharedArrayBuffer when COOP/COEP are enabled
         response["Cross-Origin-Resource-Policy"] = "cross-origin"
+        return response
+
+
+class ZipServeAPI(APIView):
+    """
+    Serves extracted files from ZIP archives.
+    Files are extracted to: MEDIA_ROOT/zip_extracted/{project_id}/{file_hash}/{filename}
+    """
+    permission_classes = (IsAuthenticated,)
+    
+    @override_report_only_csp
+    @csp(SANDBOX=[], IMG_SRC=["'self'", "data:", "blob:"])
+    def get(self, request, project_id, file_hash, filename):
+        import os
+        import mimetypes
+        from django.conf import settings
+        from django.http import FileResponse, Http404
+        
+        # Security check: Ensure we are only reading from the dedicated cache directory
+        cache_root = os.path.join(settings.MEDIA_ROOT, "zip_extracted", str(project_id), file_hash)
+        file_path = os.path.join(cache_root, filename)
+        
+        # Normalize and check for path traversal attacks
+        try:
+            full_path = os.path.realpath(file_path)
+            cache_root_real = os.path.realpath(cache_root)
+        except ValueError:
+            raise Http404("Invalid path")
+
+        if not full_path.startswith(cache_root_real):
+            return Response({"error": "Access denied"}, status=403)
+            
+        if not os.path.exists(full_path):
+            raise Http404("File not found")
+        
+        # Determine content type
+        content_type, _ = mimetypes.guess_type(full_path)
+        if not content_type:
+            # Default based on common extensions
+            ext = os.path.splitext(filename.lower())[1]
+            content_type_map = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.bmp': 'image/bmp',
+                '.webp': 'image/webp',
+                '.svg': 'image/svg+xml',
+                '.mp3': 'audio/mpeg',
+                '.wav': 'audio/wav',
+                '.mp4': 'video/mp4',
+                '.webm': 'video/webm',
+                '.pdf': 'application/pdf',
+                '.txt': 'text/plain',
+                '.dcm': 'application/dicom',
+                '.dicom': 'application/dicom',
+            }
+            content_type = content_type_map.get(ext, 'application/octet-stream')
+        
+        # Serve the file
+        response = FileResponse(open(full_path, 'rb'), content_type=content_type)
+        response["Cross-Origin-Resource-Policy"] = "cross-origin"
+        response["Content-Disposition"] = f'inline; filename="{os.path.basename(filename)}"'
         return response

@@ -76,9 +76,40 @@ class CostEstimationService:
     """Service for estimating project costs"""
     
     # Base constants
-    BASE_DEPOSIT_FEE = Decimal("500")
+    BASE_DEPOSIT_FEE = Decimal("500")  # Minimum security fee
     STORAGE_RATE_PER_GB = Decimal("10")
     ANNOTATION_BUFFER_MULTIPLIER = Decimal("1.5")
+    SECURITY_FEE_PERCENTAGE = Decimal("0.10")  # 10% of project cost
+    
+    @classmethod
+    def calculate_security_fee(cls, storage_fee: Decimal, annotation_fee: Decimal) -> Decimal:
+        """
+        Calculate security fee as 10% of project cost (storage + annotation).
+        Minimum security fee is ₹500.
+        
+        Formula: Security Fee = max(500, round(10% of (Storage Fee + Annotation Fee)))
+        
+        Args:
+            storage_fee: Calculated storage fee
+            annotation_fee: Calculated annotation fee
+            
+        Returns:
+            Decimal: Security fee amount (minimum ₹500)
+        """
+        from decimal import ROUND_HALF_UP
+        
+        # Calculate 10% of project cost (storage + annotation)
+        project_cost = storage_fee + annotation_fee
+        security_fee = project_cost * cls.SECURITY_FEE_PERCENTAGE
+        
+        # Round to nearest whole number
+        security_fee = security_fee.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+        
+        # Apply minimum of ₹500
+        if security_fee < cls.BASE_DEPOSIT_FEE:
+            return cls.BASE_DEPOSIT_FEE
+        
+        return security_fee
     
     # Annotation type base rates (₹ per task)
     ANNOTATION_RATES = {
@@ -147,8 +178,7 @@ class CostEstimationService:
             detected_label_count = label_count or 5
             detected_data_types = ["image"]
         
-        # Calculate base components
-        base_fee = cls.BASE_DEPOSIT_FEE
+        # Calculate storage fee first
         storage_fee = Decimal(str(estimated_storage_gb or 0)) * cls.STORAGE_RATE_PER_GB
         
         # Calculate annotation rate
@@ -180,8 +210,12 @@ class CostEstimationService:
             * cls.ANNOTATION_BUFFER_MULTIPLIER
         )
         
+        # Calculate security fee as 10% of project cost (storage + annotation)
+        security_fee = cls.calculate_security_fee(storage_fee, estimated_annotation_cost)
+        base_fee = security_fee  # For backward compatibility
+        
         # Total deposit (what client pays upfront)
-        total_deposit = base_fee + storage_fee + estimated_annotation_cost
+        total_deposit = security_fee + storage_fee + estimated_annotation_cost
         
         # Actual annotation cost (without buffer - expected actual cost)
         actual_annotation_cost = (
@@ -223,7 +257,8 @@ class CostEstimationService:
                 "cost_per_task": float(annotation_rate * complexity_multiplier),
             },
             "formula_explanation": {
-                "deposit_formula": "Base Fee (₹500) + Storage Fee (GB × ₹10) + Annotation Fee (Tasks × Rate × Complexity × Buffer)",
+                "deposit_formula": "Security Fee (10% of project cost, min ₹500) + Storage Fee (GB × ₹10) + Annotation Fee (Tasks × Rate × Complexity × Buffer)",
+                "security_fee_formula": "max(₹500, round(10% × (Storage Fee + Annotation Fee)))",
                 "annotation_formula": "Task Count × Base Rate × Complexity Multiplier",
                 "buffer_explanation": "1.5x buffer added to deposit for safety - unused amount refunded after completion",
             },

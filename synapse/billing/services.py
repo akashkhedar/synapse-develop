@@ -1689,6 +1689,348 @@ class ProjectBillingService:
         elif request_type == "export":
             usage.increment_export()
 
+    @classmethod
+    @transaction.atomic
+    def refund_deleted_tasks(cls, project, task_ids):
+        """
+        Refund credits for deleted tasks that have no annotations.
+        
+        Only tasks with zero annotations are eligible for refund.
+        Refund amount = annotation cost per task.
+        
+        Args:
+            project: Project instance
+            task_ids: List of task IDs being deleted
+            
+        Returns:
+            dict: Refund details including count and amount
+        """
+        from tasks.models import Task, Annotation
+        
+        if not task_ids:
+            return {
+                "success": True,
+                "tasks_deleted": 0,
+                "tasks_refunded": 0,
+                "refund_amount": 0,
+            }
+        
+        organization = project.organization
+        
+        try:
+            project_billing = project.billing
+        except ProjectBilling.DoesNotExist:
+            logger.warning(f"No billing record for project {project.id} during task deletion")
+            return {
+                "success": False,
+                "error": "No billing record",
+                "tasks_deleted": len(task_ids),
+                "tasks_refunded": 0,
+                "refund_amount": 0,
+            }
+        
+        # Get tasks that have no annotations
+        tasks_with_annotations = set(
+            Annotation.objects.filter(task_id__in=task_ids)
+            .values_list('task_id', flat=True)
+            .distinct()
+        )
+        
+        # Tasks without any annotations are eligible for refund
+        unannotated_task_ids = [tid for tid in task_ids if tid not in tasks_with_annotations]
+        unannotated_count = len(unannotated_task_ids)
+        
+        if unannotated_count == 0:
+            logger.info(
+                f"No refund for project {project.id}: all {len(task_ids)} deleted tasks had annotations"
+            )
+            return {
+                "success": True,
+                "tasks_deleted": len(task_ids),
+                "tasks_refunded": 0,
+                "refund_amount": 0,
+                "message": "All deleted tasks had annotations - no refund issued",
+            }
+        
+        # Calculate refund amount
+        # Get the annotation rate and complexity for this project
+        config_analysis = cls._analyze_label_config(project.label_config or "")
+        complexity_multiplier = config_analysis["complexity_multiplier"]
+        
+        data_types = list(project.data_types.keys()) if project.data_types else ["image"]
+        annotation_rate = cls._calculate_annotation_rate(
+            config_analysis["annotation_types"],
+            data_types=data_types
+        )
+        
+        # Calculate cost per task
+        cost_per_task = (
+            annotation_rate
+            * complexity_multiplier
+            * cls.ANNOTATION_BUFFER_MULTIPLIER
+        )
+        
+        # Total refund
+        refund_amount = cost_per_task * Decimal(str(unannotated_count))
+        
+        # Round to 2 decimal places
+        refund_amount = refund_amount.quantize(Decimal('0.01'))
+        
+        # Refund to organization
+        try:
+            org_billing = organization.billing
+        except OrganizationBilling.DoesNotExist:
+            logger.error(f"No billing record for organization {organization.id}")
+            return {
+                "success": False,
+                "error": "No organization billing record",
+                "tasks_deleted": len(task_ids),
+                "tasks_refunded": 0,
+                "refund_amount": 0,
+            }
+        
+        # Add refund as credits
+        org_billing.purchased_credits += refund_amount
+        org_billing.save()
+        
+        # Create refund transaction record
+        CreditTransaction.objects.create(
+            organization=organization,
+            amount=refund_amount,
+            transaction_type="refund",
+            description=f"Refund for {unannotated_count} unannotated task(s) deleted from project '{project.title}'",
+            project=project,
+        )
+        
+        # Update project billing
+        project_billing.estimated_annotation_cost -= refund_amount
+        project_billing.security_deposit_required -= refund_amount
+        project_billing.save()
+        
+        logger.info(
+            f"Refunded ₹{refund_amount} for {unannotated_count} unannotated tasks "
+            f"deleted from project {project.title} (ID: {project.id}). "
+            f"{len(task_ids) - unannotated_count} tasks with annotations were not refunded."
+        )
+        
+        return {
+            "success": True,
+            "tasks_deleted": len(task_ids),
+            "tasks_refunded": unannotated_count,
+            "tasks_with_annotations": len(task_ids) - unannotated_count,
+            "refund_amount": float(refund_amount),
+            "cost_per_task": float(cost_per_task),
+            "message": f"Refunded ₹{refund_amount} for {unannotated_count} unannotated task(s)",
+        }
+
+    @classmethod
+    def calculate_project_deletion_refund(cls, project):
+        """
+        Calculate refund for project deletion based on work completion percentage.
+        
+        Rules:
+        - If work done >= 30%: Only refund unannotated tasks cost
+        - If work done < 30%: Refund base fee + buffer + unannotated tasks cost
+        
+        Work done % = (tasks with annotations / total tasks) × 100
+        
+        Args:
+            project: Project instance
+            
+        Returns:
+            dict: Refund calculation breakdown
+        """
+        from tasks.models import Task, Annotation
+        
+        try:
+            project_billing = project.billing
+        except ProjectBilling.DoesNotExist:
+            return {
+                "success": False,
+                "error": "No billing record for project",
+                "refund_amount": 0,
+            }
+        
+        # Get all tasks
+        total_tasks = project.tasks.count()
+        
+        if total_tasks == 0:
+            return {
+                "success": True,
+                "total_tasks": 0,
+                "tasks_with_annotations": 0,
+                "tasks_without_annotations": 0,
+                "work_done_percentage": 0,
+                "refund_amount": 0,
+                "base_fee_refund": 0,
+                "buffer_refund": 0,
+                "unannotated_tasks_refund": 0,
+                "message": "No tasks in project",
+            }
+        
+        # Get tasks with at least one annotation
+        task_ids_with_annotations = set(
+            Annotation.objects.filter(project=project)
+            .values_list('task_id', flat=True)
+            .distinct()
+        )
+        
+        tasks_with_annotations = len(task_ids_with_annotations)
+        tasks_without_annotations = total_tasks - tasks_with_annotations
+        
+        # Calculate work done percentage
+        work_done_percentage = (tasks_with_annotations / total_tasks) * 100
+        
+        # Get project billing details
+        original_base_fee = Decimal('0')
+        total_annotation_cost = Decimal('0')
+        
+        # Try to get the original base fee from security deposit
+        try:
+            # Base fee is the security deposit minus annotation cost and storage
+            original_base_fee = (
+                Decimal(str(project_billing.security_deposit_required)) 
+                - Decimal(str(project_billing.estimated_annotation_cost))
+                - Decimal(str(project_billing.storage_fee_paid))
+            )
+            total_annotation_cost = Decimal(str(project_billing.estimated_annotation_cost))
+        except Exception:
+            # Fallback: calculate based on current project
+            pass
+        
+        if original_base_fee <= 0:
+            original_base_fee = Decimal('500')  # Minimum base fee
+        
+        # Calculate cost per task
+        config_analysis = cls._analyze_label_config(project.label_config or "")
+        complexity_multiplier = config_analysis["complexity_multiplier"]
+        
+        data_types = list(project.data_types.keys()) if project.data_types else ["image"]
+        annotation_rate = cls._calculate_annotation_rate(
+            config_analysis["annotation_types"],
+            data_types=data_types
+        )
+        
+        cost_per_task = (
+            annotation_rate
+            * complexity_multiplier
+            * cls.ANNOTATION_BUFFER_MULTIPLIER
+        )
+        
+        # Calculate refunds based on work done percentage
+        base_fee_refund = Decimal('0')
+        buffer_refund = Decimal('0')
+        unannotated_tasks_refund = Decimal('0')
+        
+        if work_done_percentage < 30:
+            # Refund base fee
+            base_fee_refund = original_base_fee
+            
+            # Calculate buffer refund (20% of annotation cost for annotated tasks)
+            # Buffer is the difference between cost with buffer (1.2x) and without buffer (1.0x)
+            annotated_tasks_cost_without_buffer = (
+                Decimal(str(tasks_with_annotations))
+                * annotation_rate
+                * complexity_multiplier
+            )
+            buffer_refund = annotated_tasks_cost_without_buffer * Decimal('0.2')
+            
+            # Refund full cost of unannotated tasks
+            unannotated_tasks_refund = cost_per_task * Decimal(str(tasks_without_annotations))
+        else:
+            # Only refund unannotated tasks cost
+            unannotated_tasks_refund = cost_per_task * Decimal(str(tasks_without_annotations))
+        
+        total_refund = base_fee_refund + buffer_refund + unannotated_tasks_refund
+        total_refund = total_refund.quantize(Decimal('0.01'))
+        
+        return {
+            "success": True,
+            "total_tasks": total_tasks,
+            "tasks_with_annotations": tasks_with_annotations,
+            "tasks_without_annotations": tasks_without_annotations,
+            "work_done_percentage": round(work_done_percentage, 2),
+            "threshold_percentage": 30,
+            "meets_threshold": work_done_percentage >= 30,
+            "refund_amount": float(total_refund),
+            "breakdown": {
+                "base_fee_refund": float(base_fee_refund),
+                "buffer_refund": float(buffer_refund),
+                "unannotated_tasks_refund": float(unannotated_tasks_refund),
+                "cost_per_task": float(cost_per_task),
+                "original_base_fee": float(original_base_fee),
+                "annotation_rate": float(annotation_rate),
+                "complexity_multiplier": float(complexity_multiplier),
+                "buffer_multiplier": float(cls.ANNOTATION_BUFFER_MULTIPLIER),
+            },
+            "message": (
+                f"Work done: {work_done_percentage:.1f}%. "
+                f"{'Only unannotated tasks refunded' if work_done_percentage >= 30 else 'Base fee + buffer + unannotated tasks refunded'}"
+            ),
+        }
+
+    @classmethod
+    @transaction.atomic
+    def process_project_deletion_refund(cls, project, user=None):
+        """
+        Process refund for project deletion and update billing records.
+        
+        Args:
+            project: Project instance
+            user: User who deleted the project
+            
+        Returns:
+            dict: Refund result
+        """
+        refund_info = cls.calculate_project_deletion_refund(project)
+        
+        if not refund_info.get("success"):
+            return refund_info
+        
+        refund_amount = Decimal(str(refund_info["refund_amount"]))
+        
+        if refund_amount <= 0:
+            return refund_info
+        
+        organization = project.organization
+        
+        try:
+            org_billing = organization.billing
+        except OrganizationBilling.DoesNotExist:
+            logger.error(f"No billing record for organization {organization.id}")
+            return {
+                "success": False,
+                "error": "No organization billing record",
+                "refund_amount": 0,
+            }
+        
+        # Add refund as credits
+        org_billing.purchased_credits += refund_amount
+        org_billing.save()
+        
+        # Create refund transaction record
+        CreditTransaction.objects.create(
+            organization=organization,
+            amount=refund_amount,
+            transaction_type="refund",
+            description=(
+                f"Project deletion refund for '{project.title}' "
+                f"({refund_info['work_done_percentage']:.1f}% work done). "
+                f"Base fee: ₹{refund_info['breakdown']['base_fee_refund']}, "
+                f"Buffer: ₹{refund_info['breakdown']['buffer_refund']}, "
+                f"Unannotated tasks: ₹{refund_info['breakdown']['unannotated_tasks_refund']}"
+            ),
+            project=project,
+        )
+        
+        logger.info(
+            f"Project deletion refund: ₹{refund_amount} for project {project.title} (ID: {project.id}). "
+            f"Work done: {refund_info['work_done_percentage']:.1f}%"
+        )
+        
+        refund_info["refunded"] = True
+        return refund_info
+
 
 class APIRateLimitService:
     """

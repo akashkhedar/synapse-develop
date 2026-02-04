@@ -71,6 +71,10 @@ export const APIConfig = {
 
     /** Invoke a particular action */
     invokeAction: "POST:/actions",
+
+    /** Calculate refund for task deletion */
+    calculateDeletionRefund: "POST:/../billing/project-billing/calculate_deletion_refund",
+    calculateProjectDeletionRefund: "POST:/../billing/project-billing/calculate_project_deletion_refund",
   },
 };
 

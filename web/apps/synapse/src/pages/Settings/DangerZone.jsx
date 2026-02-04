@@ -204,6 +204,47 @@ export const DangerZone = () => {
                     >
                       Credit Refund Breakdown
                     </Typography>
+
+                    {/* Work percentage and threshold info */}
+                    {typeof refundBreakdown.work_done_percentage !== 'undefined' && (
+                      <div className="work-percentage-info" style={{
+                        background: "rgba(139, 92, 246, 0.1)",
+                        border: "1px solid rgba(139, 92, 246, 0.3)",
+                        padding: "12px 16px",
+                        marginBottom: "16px",
+                        borderRadius: "0",
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <span style={{ color: "#a78bfa", fontSize: "13px", fontWeight: "600" }}>
+                            Work Completion
+                          </span>
+                          <span style={{ 
+                            color: refundBreakdown.meets_threshold ? "#fbbf24" : "#4ade80",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                            fontFamily: "'Space Mono', monospace"
+                          }}>
+                            {refundBreakdown.work_done_percentage.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div style={{ 
+                          fontSize: "12px", 
+                          color: "#9ca3af",
+                          fontFamily: "'Space Grotesk', system-ui, sans-serif"
+                        }}>
+                          {refundBreakdown.meets_threshold ? (
+                            <>
+                              Work exceeds 30% threshold. Only unannotated tasks will be refunded.
+                            </>
+                          ) : (
+                            <>
+                              Work below 30% threshold. Base fee, buffer, and unannotated tasks will be refunded.
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="breakdown-table">
                       <div className="breakdown-row">
                         <span className="breakdown-label">
@@ -213,10 +254,47 @@ export const DangerZone = () => {
                           ₹{refundBreakdown.deposit_paid.toFixed(0)}
                         </span>
                       </div>
+
+                      {/* Show base fee refund if below threshold */}
+                      {refundBreakdown.base_fee_refund > 0 && (
+                        <div className="breakdown-row refund">
+                          <span className="breakdown-label">
+                            Base Fee Refund:
+                          </span>
+                          <span className="breakdown-value" style={{ color: "#4ade80" }}>
+                            + ₹{refundBreakdown.base_fee_refund.toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Show buffer refund if below threshold */}
+                      {refundBreakdown.buffer_refund > 0 && (
+                        <div className="breakdown-row refund">
+                          <span className="breakdown-label">
+                            Buffer Refund (20%):
+                          </span>
+                          <span className="breakdown-value" style={{ color: "#4ade80" }}>
+                            + ₹{refundBreakdown.buffer_refund.toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Show unannotated tasks refund */}
+                      {refundBreakdown.unannotated_tasks_refund > 0 && (
+                        <div className="breakdown-row refund">
+                          <span className="breakdown-label">
+                            Unannotated Tasks Refund:
+                          </span>
+                          <span className="breakdown-value" style={{ color: "#4ade80" }}>
+                            + ₹{refundBreakdown.unannotated_tasks_refund.toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+
                       {refundBreakdown.annotation_cost > 0 && (
                         <div className="breakdown-row deduction">
                           <span className="breakdown-label">
-                            Annotation Costs:
+                            Annotated Tasks Cost:
                           </span>
                           <span className="breakdown-value">
                             - ₹{refundBreakdown.annotation_cost.toFixed(0)}
@@ -234,7 +312,7 @@ export const DangerZone = () => {
                         </div>
                       )}
                       <div className="breakdown-row total">
-                        <span className="breakdown-label">Refund Amount:</span>
+                        <span className="breakdown-label">Total Refund:</span>
                         <span className="breakdown-value refund-amount">
                           ₹{refundBreakdown.refund_amount.toFixed(0)}
                         </span>

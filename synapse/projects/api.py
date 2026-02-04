@@ -516,7 +516,7 @@ class ProjectAPI(generics.RetrieveUpdateDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        # Process refund BEFORE deletion (since signals are disconnected during delete)
+        # Process refund BEFORE deletion using new tiered refund logic
         refund_result = None
         try:
             from billing.services import ProjectBillingService
@@ -530,24 +530,13 @@ class ProjectAPI(generics.RetrieveUpdateDestroyAPIView):
                     project_billing.security_deposit_paid > 0
                     and project_billing.security_deposit_refunded == 0
                 ):
-
-                    # Check if project has annotations (was used)
-                    has_annotations = instance.tasks.filter(
-                        annotations__isnull=False
-                    ).exists()
-
-                    if has_annotations:
-                        refund_result = ProjectBillingService.refund_security_deposit(
-                            instance, reason="Project deleted by user"
-                        )
-                    else:
-                        # Project was never used (no annotations), full refund
-                        refund_result = ProjectBillingService.refund_security_deposit(
-                            instance, reason="Project deleted without use - full refund"
-                        )
+                    # Use new project deletion refund logic with work percentage thresholds
+                    refund_result = ProjectBillingService.process_project_deletion_refund(
+                        instance, reason="Project deleted by user"
+                    )
 
                     logger.info(
-                        f"Processed refund on project deletion: {refund_result}"
+                        f"Processed project deletion refund: {refund_result}"
                     )
 
         except Exception as e:

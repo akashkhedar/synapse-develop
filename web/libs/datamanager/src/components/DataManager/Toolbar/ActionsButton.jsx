@@ -2,6 +2,7 @@ import { IconChevronDown, IconChevronRight, IconTrash } from "@synapse/icons";
 import { Button, Spinner, Tooltip } from "@synapse/ui";
 import { inject, observer } from "mobx-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createRoot } from "react-dom/client";
 import { useActions } from "../../../hooks/useActions";
 import { cn } from "../../../utils/bem";
 import { FF_LOPS_E_3, isFF } from "../../../utils/feature-flags";
@@ -216,7 +217,337 @@ const ActionButton = ({ action, parentRef, store, formRef }) => {
   );
 };
 
+const TaskDeleteModal = ({ store, onConfirm, onCancel }) => {
+  const [refundInfo, setRefundInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchRefundInfo = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Get selected task IDs
+        const selectedTasks = Array.from(store.currentView?.selected?.list || []);
+        
+        if (selectedTasks.length === 0) {
+          setError("No tasks selected");
+          setLoading(false);
+          return;
+        }
+
+        // Call API to get refund information
+        const response = await store.apiCall("calculateDeletionRefund", {}, {
+          project_id: store.project.id,
+          task_ids: selectedTasks,
+        });
+
+        if (response?.success) {
+          setRefundInfo(response);
+        } else {
+          setError(response?.error || "Failed to calculate refund");
+        }
+      } catch (err) {
+        console.error("Error calculating deletion refund:", err);
+        setError(err.message || "Failed to calculate refund");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRefundInfo();
+  }, [store]);
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "rgba(0, 0, 0, 0.85)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10000,
+    }}>
+      <div style={{
+        background: "#0a0a0a",
+        border: "1px solid #1f2937",
+        borderRadius: "8px",
+        padding: "32px",
+        maxWidth: "520px",
+        width: "90%",
+        position: "relative",
+      }}>
+        {/* Corner accents */}
+        <div style={{
+          position: 'absolute',
+          top: '-1px',
+          left: '-1px',
+          width: '20px',
+          height: '20px',
+          borderTop: '2px solid #8b5cf6',
+          borderLeft: '2px solid #8b5cf6'
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '-1px',
+          right: '-1px',
+          width: '20px',
+          height: '20px',
+          borderBottom: '2px solid #8b5cf6',
+          borderRight: '2px solid #8b5cf6'
+        }} />
+
+        <h3 style={{
+          marginBottom: '20px',
+          color: '#ffffff',
+          fontSize: '12px',
+          fontWeight: 500,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace'
+        }}>
+          <span style={{ color: '#6b7280' }}>// </span>Delete selected tasks?
+        </h3>
+
+        {loading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "48px 24px", justifyContent: "center" }}>
+            <Spinner size={24} />
+            <span style={{
+              color: '#6b7280',
+              fontSize: '12px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace'
+            }}>
+              Calculating refund...
+            </span>
+          </div>
+        ) : error ? (
+          <div style={{
+            background: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            borderRadius: "6px",
+            padding: "16px",
+            color: "#fca5a5",
+            marginBottom: "24px",
+            fontSize: "13px",
+          }}>
+            {error}
+          </div>
+        ) : refundInfo ? (
+          <>
+            {/* Warning message */}
+            <div style={{
+              background: "rgba(251, 191, 36, 0.1)",
+              border: "1px solid rgba(251, 191, 36, 0.3)",
+              borderRadius: "6px",
+              padding: "16px",
+              marginBottom: "24px",
+              color: "#fbbf24",
+              fontSize: "13px",
+            }}>
+              You are about to delete {refundInfo.tasks_total} task{refundInfo.tasks_total > 1 ? 's' : ''}. This action cannot be undone.
+            </div>
+
+            {/* Tasks breakdown */}
+            {refundInfo.tasks_with_annotations > 0 && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 0',
+                borderBottom: '1px solid #1f2937'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ color: '#e8e4d9', fontSize: '13px' }}>Tasks with Annotations</span>
+                  <span style={{
+                    color: '#6b7280',
+                    fontSize: '11px',
+                    letterSpacing: '0.02em'
+                  }}>
+                    No refund (work was done)
+                  </span>
+                </div>
+                <span style={{
+                  fontWeight: 600,
+                  color: '#ef4444',
+                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+                  fontSize: '16px'
+                }}>
+                  {refundInfo.tasks_with_annotations}
+                </span>
+              </div>
+            )}
+
+            {refundInfo.tasks_refundable > 0 && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 0',
+                borderBottom: '1px solid #1f2937'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ color: '#e8e4d9', fontSize: '13px' }}>Unannotated Tasks</span>
+                  <span style={{
+                    color: '#6b7280',
+                    fontSize: '11px',
+                    letterSpacing: '0.02em'
+                  }}>
+                    {refundInfo.tasks_refundable} × {refundInfo.cost_per_task} credits
+                  </span>
+                </div>
+                <span style={{
+                  fontWeight: 600,
+                  color: '#10b981',
+                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+                  fontSize: '16px'
+                }}>
+                  {refundInfo.tasks_refundable}
+                </span>
+              </div>
+            )}
+
+            {/* Refund amount */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px 0',
+              background: refundInfo.refund_amount > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+              margin: '0 -32px',
+              paddingLeft: '32px',
+              paddingRight: '32px',
+            }}>
+              <span style={{
+                color: '#ffffff',
+                fontSize: '14px',
+                fontWeight: 600,
+                letterSpacing: '0.05em'
+              }}>
+                {refundInfo.refund_amount > 0 ? 'REFUND AMOUNT' : 'NO REFUND'}
+              </span>
+              <span style={{
+                fontWeight: 700,
+                color: refundInfo.refund_amount > 0 ? '#10b981' : '#ef4444',
+                fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+                fontSize: '20px'
+              }}>
+                {refundInfo.refund_amount > 0 ? `${Math.round(refundInfo.refund_amount)} credits` : '0 credits'}
+              </span>
+            </div>
+          </>
+        ) : null}
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "24px" }}>
+          <button
+            onClick={onCancel}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              padding: "0 20px",
+              height: "40px",
+              minWidth: "90px",
+              background: "rgba(239, 68, 68, 0.12)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              color: "#fca5a5",
+              fontSize: "13px",
+              fontWeight: 600,
+              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              borderRadius: "6px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+              e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
+              e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading || error}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              padding: "0 16px",
+              height: "40px",
+              minWidth: "90px",
+              background: "#ef4444",
+              border: "1px solid #ef4444",
+              color: "#ffffff",
+              fontSize: "13px",
+              fontWeight: 600,
+              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              cursor: (loading || error) ? "not-allowed" : "pointer",
+              opacity: (loading || error) ? 0.5 : 1,
+              transition: "all 0.2s ease",
+              borderRadius: "6px",
+            }}
+            onMouseEnter={(e) => {
+              if (!loading && !error) {
+                e.currentTarget.style.background = "#dc2626";
+                e.currentTarget.style.borderColor = "#dc2626";
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.4)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#ef4444";
+              e.currentTarget.style.borderColor = "#ef4444";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            Delete Tasks
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const invokeAction = (action, destructive, store, formRef) => {
+  // Special handling for delete_tasks action
+  if (action.id === "delete_tasks") {
+    const modalContainer = document.createElement("div");
+    document.body.appendChild(modalContainer);
+
+    const handleConfirm = () => {
+      document.body.removeChild(modalContainer);
+      store.SDK.invoke("actionDialogOk", action.id, {});
+      store.invokeAction(action.id, {});
+    };
+
+    const handleCancel = () => {
+      document.body.removeChild(modalContainer);
+    };
+
+    const root = createRoot(modalContainer);
+    root.render(
+      <TaskDeleteModal
+        store={store}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+    );
+    return;
+  }
+
   if (action.dialog) {
     const { type: dialogType, text, form, title } = action.dialog;
     const dialog = Modal[dialogType] ?? Modal.confirm;

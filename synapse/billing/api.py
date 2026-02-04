@@ -928,6 +928,155 @@ class ProjectBillingViewSet(viewsets.ViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"])
+    def calculate_deletion_refund(self, request):
+        """
+        Calculate refund amount for deleting tasks.
+        
+        Only tasks with no annotations will be refunded.
+        
+        Request body:
+        {
+            "project_id": 123,
+            "task_ids": [1, 2, 3, 4, 5]
+        }
+        
+        Response:
+        {
+            "success": true,
+            "tasks_total": 5,
+            "tasks_with_annotations": 2,
+            "tasks_refundable": 3,
+            "refund_amount": 360.0,
+            "cost_per_task": 120.0
+        }
+        """
+        project_id = request.data.get("project_id")
+        task_ids = request.data.get("task_ids", [])
+
+        if not project_id:
+            return Response(
+                {"error": "project_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not task_ids:
+            return Response(
+                {"error": "task_ids is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            from tasks.models import Task, Annotation
+            
+            project = self.get_project(project_id)
+            
+            # Check which tasks have annotations
+            tasks_with_annotations = set(
+                Annotation.objects.filter(task_id__in=task_ids)
+                .values_list('task_id', flat=True)
+                .distinct()
+            )
+            
+            # Tasks without any annotations are eligible for refund
+            tasks_refundable = len([tid for tid in task_ids if tid not in tasks_with_annotations])
+            tasks_with_annotations_count = len([tid for tid in task_ids if tid in tasks_with_annotations])
+            
+            if tasks_refundable == 0:
+                return Response({
+                    "success": True,
+                    "tasks_total": len(task_ids),
+                    "tasks_with_annotations": tasks_with_annotations_count,
+                    "tasks_refundable": 0,
+                    "refund_amount": 0,
+                    "cost_per_task": 0,
+                    "message": "No refund - all tasks have annotations"
+                })
+            
+            # Calculate cost per task
+            config_analysis = ProjectBillingService._analyze_label_config(project.label_config or "")
+            complexity_multiplier = config_analysis["complexity_multiplier"]
+            
+            data_types = list(project.data_types.keys()) if project.data_types else ["image"]
+            annotation_rate = ProjectBillingService._calculate_annotation_rate(
+                config_analysis["annotation_types"],
+                data_types=data_types
+            )
+            
+            cost_per_task = float(
+                annotation_rate
+                * complexity_multiplier
+                * ProjectBillingService.ANNOTATION_BUFFER_MULTIPLIER
+            )
+            
+            refund_amount = cost_per_task * tasks_refundable
+            
+            return Response({
+                "success": True,
+                "tasks_total": len(task_ids),
+                "tasks_with_annotations": tasks_with_annotations_count,
+                "tasks_refundable": tasks_refundable,
+                "refund_amount": round(refund_amount, 2),
+                "cost_per_task": round(cost_per_task, 2),
+                "breakdown": {
+                    "annotation_rate": float(annotation_rate),
+                    "complexity_multiplier": float(complexity_multiplier),
+                    "buffer_multiplier": float(ProjectBillingService.ANNOTATION_BUFFER_MULTIPLIER),
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error calculating deletion refund: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"])
+    def calculate_project_deletion_refund(self, request):
+        """
+        Calculate refund for project deletion.
+        
+        Refund policy:
+        - If work done >= 30%: Only refund unannotated tasks cost
+        - If work done < 30%: Refund base fee + buffer + unannotated tasks cost
+        
+        Request body:
+        {
+            "project_id": 123
+        }
+        
+        Response:
+        {
+            "success": true,
+            "total_tasks": 100,
+            "tasks_with_annotations": 25,
+            "tasks_without_annotations": 75,
+            "work_done_percentage": 25.0,
+            "threshold_percentage": 30,
+            "meets_threshold": false,
+            "refund_amount": 15500.0,
+            "breakdown": {
+                "base_fee_refund": 500.0,
+                "buffer_refund": 600.0,
+                "unannotated_tasks_refund": 14400.0,
+                ...
+            }
+        }
+        """
+        project_id = request.data.get("project_id")
+
+        if not project_id:
+            return Response(
+                {"error": "project_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            project = self.get_project(project_id)
+            
+            result = ProjectBillingService.calculate_project_deletion_refund(project)
+            
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"Error calculating project deletion refund: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"])
     def refund_deposit(self, request):
         """
         Refund security deposit for a completed project.
@@ -1390,7 +1539,7 @@ class ProjectBillingViewSet(viewsets.ViewSet):
             }
             warnings.sort(key=lambda x: severity_order.get(x["severity"], 5))
 
-            # Calculate detailed refund breakdown
+            # Calculate detailed refund breakdown using new project deletion refund logic
             refund_breakdown = {
                 "deposit_paid": 0,
                 "annotation_cost": 0,
@@ -1400,15 +1549,36 @@ class ProjectBillingViewSet(viewsets.ViewSet):
             }
 
             if has_billing:
-                refund_breakdown = {
-                    "deposit_paid": float(billing.security_deposit_paid),
-                    "annotation_cost": float(billing.actual_annotation_cost),
-                    "credits_consumed": float(billing.credits_consumed),
-                    "total_consumed": float(
-                        billing.credits_consumed + billing.actual_annotation_cost
-                    ),
-                    "refund_amount": float(billing.refundable_deposit),
-                }
+                # Use new project deletion refund calculation
+                project_refund_data = ProjectBillingService.calculate_project_deletion_refund(project)
+                
+                if project_refund_data.get("success"):
+                    refund_breakdown = {
+                        "deposit_paid": float(billing.security_deposit_paid),
+                        "annotation_cost": project_refund_data.get("breakdown", {}).get("annotated_tasks_cost", 0),
+                        "credits_consumed": float(billing.credits_consumed),
+                        "total_consumed": float(
+                            billing.credits_consumed + project_refund_data.get("breakdown", {}).get("annotated_tasks_cost", 0)
+                        ),
+                        "refund_amount": project_refund_data.get("refund_amount", 0),
+                        "work_done_percentage": project_refund_data.get("work_done_percentage", 0),
+                        "meets_threshold": project_refund_data.get("meets_threshold", False),
+                        "base_fee_refund": project_refund_data.get("breakdown", {}).get("base_fee_refund", 0),
+                        "buffer_refund": project_refund_data.get("breakdown", {}).get("buffer_refund", 0),
+                        "unannotated_tasks_refund": project_refund_data.get("breakdown", {}).get("unannotated_tasks_refund", 0),
+                    }
+                    refund_estimate = Decimal(str(project_refund_data.get("refund_amount", 0)))
+                else:
+                    # Fallback to old calculation
+                    refund_breakdown = {
+                        "deposit_paid": float(billing.security_deposit_paid),
+                        "annotation_cost": float(billing.actual_annotation_cost),
+                        "credits_consumed": float(billing.credits_consumed),
+                        "total_consumed": float(
+                            billing.credits_consumed + billing.actual_annotation_cost
+                        ),
+                        "refund_amount": float(billing.refundable_deposit),
+                    }
 
             return Response(
                 {

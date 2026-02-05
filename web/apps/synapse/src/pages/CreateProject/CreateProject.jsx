@@ -98,6 +98,7 @@ const ProjectName = ({
 export const CreateProject = ({ onClose }) => {
   const [step, _setStep] = React.useState("name"); // name | import | config | deposit
   const [waiting, setWaitingStatus] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
 
   const { project, setProject: updateProject } = useDraftProject();
   const history = useHistory();
@@ -199,30 +200,46 @@ export const CreateProject = ({ onClose }) => {
   );
 
   const onCreate = React.useCallback(async () => {
-    // First, persist project with label_config so import/reimport validates against it
-    const response = await api.callApi("updateProject", {
-      params: {
-        pk: project.id,
-      },
-      body: projectBody,
-    });
+    if (submitting) return; // Prevent multiple submissions
+    
+    setSubmitting(true);
+    
+    try {
+      // First, persist project with label_config so import/reimport validates against it
+      const response = await api.callApi("updateProject", {
+        params: {
+          pk: project.id,
+        },
+        body: projectBody,
+      });
 
-    if (response === null) return;
+      if (response === null) {
+        setSubmitting(false);
+        return;
+      }
 
-    const imported = await finishUpload();
+      const imported = await finishUpload();
 
-    if (!imported) return;
+      if (!imported) {
+        setSubmitting(false);
+        return;
+      }
 
-    setWaitingStatus(true);
+      setWaitingStatus(true);
 
-    if (sample) await uploadSample(sample);
+      if (sample) await uploadSample(sample);
 
-    __lsa("create_project.create", { sample: sample?.url });
+      __lsa("create_project.create", { sample: sample?.url });
 
-    setWaitingStatus(false);
+      setWaitingStatus(false);
 
-    history.push(`/projects/${response.id}/data`);
-  }, [project, projectBody, finishUpload]);
+      history.push(`/projects/${response.id}/data`);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      setSubmitting(false);
+      setWaitingStatus(false);
+    }
+  }, [project, projectBody, finishUpload, submitting]);
 
   const onSaveName = async () => {
     if (error) return;
@@ -296,7 +313,7 @@ export const CreateProject = ({ onClose }) => {
     return estimatedTaskCount || fileIds?.length || project?.task_number || 0;
   }, [estimatedTaskCount, fileIds, project?.task_number]);
 
-  const isDisabled = !project || uploadDisabled || !!error || !depositPaid;
+  const isDisabled = !project || uploadDisabled || !!error || !depositPaid || submitting;
 
   // Validation Logic for Steps
   const isNameValid = !!name && !error;
@@ -364,11 +381,11 @@ export const CreateProject = ({ onClose }) => {
               onMouseLeave={(e) => {
                 if (!isDisabled) e.currentTarget.style.background = "#8b5cf6";
               }}
-              waiting={waiting || uploading}
+              waiting={waiting || uploading || submitting}
               waitingClickable={false}
               disabled={isDisabled}
             >
-              Save
+              {submitting ? "Creating..." : "Save"}
             </button>
           </Space>
         </Modal.Header>

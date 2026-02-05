@@ -182,6 +182,10 @@ export const create = (columns) => {
         if (isLabelStream) {
           taskParams.interaction = "labelstream";
         }
+        
+        // Add cache-busting parameter to force fresh data load
+        // This helps prevent blank canvas issues with ZIP files
+        taskParams._t = Date.now();
 
         const taskData = yield self.root.apiCall("task", taskParams);
 

@@ -1553,19 +1553,21 @@ class ProjectBillingViewSet(viewsets.ViewSet):
                 project_refund_data = ProjectBillingService.calculate_project_deletion_refund(project)
                 
                 if project_refund_data.get("success"):
+                    # Convert all to float for consistent JSON serialization
+                    annotated_cost = float(project_refund_data.get("breakdown", {}).get("annotated_tasks_cost", 0))
+                    credits_consumed = float(billing.credits_consumed)
+                    
                     refund_breakdown = {
                         "deposit_paid": float(billing.security_deposit_paid),
-                        "annotation_cost": project_refund_data.get("breakdown", {}).get("annotated_tasks_cost", 0),
-                        "credits_consumed": float(billing.credits_consumed),
-                        "total_consumed": float(
-                            billing.credits_consumed + project_refund_data.get("breakdown", {}).get("annotated_tasks_cost", 0)
-                        ),
-                        "refund_amount": project_refund_data.get("refund_amount", 0),
-                        "work_done_percentage": project_refund_data.get("work_done_percentage", 0),
+                        "annotation_cost": annotated_cost,
+                        "credits_consumed": credits_consumed,
+                        "total_consumed": annotated_cost + credits_consumed,
+                        "refund_amount": float(project_refund_data.get("refund_amount", 0)),
+                        "work_done_percentage": float(project_refund_data.get("work_done_percentage", 0)),
                         "meets_threshold": project_refund_data.get("meets_threshold", False),
-                        "base_fee_refund": project_refund_data.get("breakdown", {}).get("base_fee_refund", 0),
-                        "buffer_refund": project_refund_data.get("breakdown", {}).get("buffer_refund", 0),
-                        "unannotated_tasks_refund": project_refund_data.get("breakdown", {}).get("unannotated_tasks_refund", 0),
+                        "base_fee_refund": float(project_refund_data.get("breakdown", {}).get("base_fee_refund", 0)),
+                        "buffer_refund": float(project_refund_data.get("breakdown", {}).get("buffer_refund", 0)),
+                        "unannotated_tasks_refund": float(project_refund_data.get("breakdown", {}).get("unannotated_tasks_refund", 0)),
                     }
                     refund_estimate = Decimal(str(project_refund_data.get("refund_amount", 0)))
                 else:

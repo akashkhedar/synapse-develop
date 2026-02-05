@@ -159,6 +159,7 @@ export const DangerZone = () => {
       body: () => {
         const ctrl = useModalControls();
         const inputValue = ctrl?.state?.inputValue || "";
+        const isDeleting = ctrl?.state?.isDeleting || false;
 
         return (
           <div className="danger-zone-modal-body">
@@ -330,9 +331,8 @@ export const DangerZone = () => {
                 {/* Export button if unexported work */}
                 {hasUnexportedWork && (
                   <div className="export-suggestion">
-                    <Button
-                      variant="primary"
-                      look="outline"
+                    <button
+                      style={primaryButtonStyle}
                       onClick={() => {
                         ctrl?.hide();
                         history.push(
@@ -340,8 +340,8 @@ export const DangerZone = () => {
                         );
                       }}
                     >
-                      Export Data First
-                    </Button>
+                      Export Data First 
+                    </button>
                   </div>
                 )}
               </div>
@@ -402,6 +402,7 @@ export const DangerZone = () => {
         const ctrl = useModalControls();
         const inputValue = (ctrl?.state?.inputValue || "").trim().toLowerCase();
         const isValid = isDev || inputValue === requiredWord.toLowerCase();
+        const isDeleting = ctrl?.state?.isDeleting || false;
 
         return (
           <Space align="end">
@@ -409,35 +410,43 @@ export const DangerZone = () => {
               style={outlineButtonStyle}
               onClick={() => ctrl?.hide()}
               data-testid="danger-zone-cancel-button"
+              disabled={isDeleting}
             >
               Cancel
             </button>
             <button
               style={{
                 ...dangerButtonStyle,
-                opacity: isValid ? 1 : 0.5,
-                cursor: isValid ? "pointer" : "not-allowed",
+                opacity: (isValid && !isDeleting) ? 1 : 0.5,
+                cursor: (isValid && !isDeleting) ? "pointer" : "not-allowed",
               }}
-              disabled={!isValid}
+              disabled={!isValid || isDeleting}
               onMouseEnter={(e) => {
-                if (isValid) {
+                if (isValid && !isDeleting) {
                   e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
                   e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
                 }
               }}
               onMouseLeave={(e) => {
-                if (isValid) {
+                if (isValid && !isDeleting) {
                   e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
                   e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
                 }
               }}
               onClick={async () => {
-                await onConfirm();
-                ctrl?.hide();
+                if (isDeleting) return;
+                ctrl?.setState({ isDeleting: true });
+                try {
+                  await onConfirm();
+                  ctrl?.hide();
+                } catch (error) {
+                  ctrl?.setState({ isDeleting: false });
+                  throw error;
+                }
               }}
               data-testid="danger-zone-confirm-button"
             >
-              {buttonText}
+              {isDeleting ? "Deleting..." : buttonText}
             </button>
           </Space>
         );

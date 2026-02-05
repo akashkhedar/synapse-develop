@@ -4,7 +4,7 @@ Credit deduction service for handling billing when annotations are created
 
 import re
 import logging
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import timedelta
 
 from django.db import transaction
@@ -1790,7 +1790,7 @@ class ProjectBillingService:
             }
         
         # Add refund as credits
-        org_billing.purchased_credits += refund_amount
+        org_billing.available_credits += refund_amount
         org_billing.save()
         
         # Create refund transaction record
@@ -1828,9 +1828,16 @@ class ProjectBillingService:
         """
         Calculate refund for project deletion based on work completion percentage.
         
-        Rules:
-        - If work done >= 30%: Only refund unannotated tasks cost
-        - If work done < 30%: Refund base fee + buffer + unannotated tasks cost
+        Buffer Explanation:
+        - Buffer is a 20% safety margin added to annotation costs upfront
+        - If base annotation cost is ₹100, we charge ₹120 (₹100 base + ₹20 buffer)
+        - The buffer (₹20) is 20% of the base cost (₹100)
+        - Total cost with buffer = base cost × 1.2
+        - Buffer amount = total cost - base cost = total cost × (0.2/1.2) ≈ total cost × 0.1667
+        
+        Refund Rules:
+        - If work done >= 30%: Only refund unannotated tasks cost (with buffer)
+        - If work done < 30%: Refund base fee + buffer on unannotated tasks + base cost of unannotated tasks
         
         Work done % = (tasks with annotations / total tasks) × 100
         
@@ -1862,9 +1869,11 @@ class ProjectBillingService:
                 "tasks_without_annotations": 0,
                 "work_done_percentage": 0,
                 "refund_amount": 0,
-                "base_fee_refund": 0,
-                "buffer_refund": 0,
-                "unannotated_tasks_refund": 0,
+                "breakdown": {
+                    "base_fee_refund": 0,
+                    "buffer_refund": 0,
+                    "unannotated_tasks_refund": 0,
+                },
                 "message": "No tasks in project",
             }
         
@@ -1881,68 +1890,165 @@ class ProjectBillingService:
         # Calculate work done percentage
         work_done_percentage = (tasks_with_annotations / total_tasks) * 100
         
-        # Get project billing details
+        # Get the original base fee and annotation fee from SecurityDeposit record
         original_base_fee = Decimal('0')
-        total_annotation_cost = Decimal('0')
+        original_annotation_fee = Decimal('0')
+        total_deposit_paid = Decimal('0')
+        storage_fee = Decimal(str(project_billing.storage_fee_paid))
         
-        # Try to get the original base fee from security deposit
         try:
-            # Base fee is the security deposit minus annotation cost and storage
-            original_base_fee = (
-                Decimal(str(project_billing.security_deposit_required)) 
-                - Decimal(str(project_billing.estimated_annotation_cost))
-                - Decimal(str(project_billing.storage_fee_paid))
+            # Get the most recent security deposit record
+            security_deposit = project.security_deposits.order_by('-created_at').first()
+            if security_deposit:
+                total_deposit_paid = Decimal(str(security_deposit.total_deposit))
+                logger.info(
+                    f"Project {project.id} deletion refund - SecurityDeposit found: "
+                    f"total_deposit={total_deposit_paid}, storage_fee={storage_fee}"
+                )
+        except Exception as e:
+            logger.warning(f"Could not fetch SecurityDeposit for project {project.id}: {e}")
+        
+        # If no SecurityDeposit, get from ProjectBilling
+        if total_deposit_paid <= 0:
+            total_deposit_paid = Decimal(str(project_billing.security_deposit_paid))
+            logger.info(f"Project {project.id} - Using security_deposit_paid from billing: {total_deposit_paid}")
+        
+        # DERIVE base_fee and annotation_fee from total using the formula:
+        # total = base + storage + annotation, where base = 10% of annotation
+        # So: total = storage + 1.1 * annotation
+        # Therefore: annotation = (total - storage) / 1.1
+        # And: base = annotation / 10 = (total - storage) / 11
+        
+        amount_after_storage = total_deposit_paid - storage_fee
+        
+        if amount_after_storage > 0:
+            # Derive base_fee using the 10% formula
+            derived_base_fee = amount_after_storage / Decimal('11')
+            # Apply the same rounding rules as calculate_security_fee
+            if derived_base_fee <= Decimal('500'):
+                original_base_fee = Decimal('500')
+            elif derived_base_fee < Decimal('1000'):
+                # Round to nearest 50
+                original_base_fee = (derived_base_fee / Decimal('50')).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal('50')
+            else:
+                # Round to nearest 100
+                original_base_fee = (derived_base_fee / Decimal('100')).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal('100')
+            
+            # Calculate annotation fee as remainder
+            original_annotation_fee = total_deposit_paid - original_base_fee - storage_fee
+            
+            logger.info(
+                f"Project {project.id} - Derived from total={total_deposit_paid}: "
+                f"base_fee={original_base_fee} (raw={derived_base_fee:.2f}), "
+                f"annotation_fee={original_annotation_fee}, storage_fee={storage_fee}"
             )
-            total_annotation_cost = Decimal(str(project_billing.estimated_annotation_cost))
-        except Exception:
-            # Fallback: calculate based on current project
-            pass
+        else:
+            # Fallback if math doesn't work
+            original_base_fee = Decimal('500')
+            original_annotation_fee = Decimal(str(project_billing.estimated_annotation_cost))
+            logger.warning(
+                f"Project {project.id} - Could not derive fees, using fallback: "
+                f"base_fee={original_base_fee}, annotation_fee={original_annotation_fee}"
+            )
         
+        # Only use fallback if base fee is still invalid after all calculations
         if original_base_fee <= 0:
-            original_base_fee = Decimal('500')  # Minimum base fee
+            logger.warning(
+                f"Project {project.id} - Base fee still invalid ({original_base_fee}). "
+                f"This indicates data inconsistency. Using minimum ₹500 fallback."
+            )
+            original_base_fee = Decimal('500')  # Minimum base fee fallback
         
-        # Calculate cost per task
-        config_analysis = cls._analyze_label_config(project.label_config or "")
-        complexity_multiplier = config_analysis["complexity_multiplier"]
+        # Ensure annotation fee is valid
+        if original_annotation_fee <= 0:
+            logger.error(
+                f"Project {project.id} - Invalid annotation_fee={original_annotation_fee}! "
+                f"This should not happen. Cannot calculate accurate refund."
+            )
+            return {
+                "success": False,
+                "error": "Invalid annotation fee in billing records",
+                "refund_amount": 0,
+            }
         
-        data_types = list(project.data_types.keys()) if project.data_types else ["image"]
-        annotation_rate = cls._calculate_annotation_rate(
-            config_analysis["annotation_types"],
-            data_types=data_types
-        )
-        
-        cost_per_task = (
-            annotation_rate
-            * complexity_multiplier
-            * cls.ANNOTATION_BUFFER_MULTIPLIER
-        )
+        # Calculate cost per task - this MUST be based on what was actually charged
+        if total_tasks > 0 and original_annotation_fee > 0:
+            # Original annotation fee includes buffer (1.2x)
+            # So cost per task = annotation_fee / total_tasks
+            cost_per_task = original_annotation_fee / Decimal(str(total_tasks))
+            logger.info(
+                f"Project {project.id} - Cost per task: {cost_per_task} "
+                f"(annotation_fee={original_annotation_fee} / {total_tasks} tasks)"
+            )
+        else:
+            logger.error(f"Project {project.id} - Cannot calculate cost per task! Using fallback")
+            # This should never happen
+            config_analysis = cls._analyze_label_config(project.label_config or "")
+            complexity_multiplier = config_analysis["complexity_multiplier"]
+            
+            data_types = list(project.data_types.keys()) if project.data_types else ["image"]
+            annotation_rate = cls._calculate_annotation_rate(
+                config_analysis["annotation_types"],
+                data_types=data_types
+            )
+            
+            cost_per_task = (
+                annotation_rate
+                * complexity_multiplier
+                * cls.ANNOTATION_BUFFER_MULTIPLIER
+            )
         
         # Calculate refunds based on work done percentage
         base_fee_refund = Decimal('0')
         buffer_refund = Decimal('0')
         unannotated_tasks_refund = Decimal('0')
+        annotated_tasks_cost = Decimal('0')
         
         if work_done_percentage < 30:
-            # Refund base fee
+            # Below 30% threshold: Refund base fee + full cost of unannotated tasks
+            
+            # 1. Refund base fee
             base_fee_refund = original_base_fee
             
-            # Calculate buffer refund (20% of annotation cost for annotated tasks)
-            # Buffer is the difference between cost with buffer (1.2x) and without buffer (1.0x)
-            annotated_tasks_cost_without_buffer = (
-                Decimal(str(tasks_with_annotations))
-                * annotation_rate
-                * complexity_multiplier
-            )
-            buffer_refund = annotated_tasks_cost_without_buffer * Decimal('0.2')
+            # 2. Calculate cost breakdown
+            # The cost_per_task already includes the 1.2x buffer
+            # For display, we'll show buffer separately
             
-            # Refund full cost of unannotated tasks
-            unannotated_tasks_refund = cost_per_task * Decimal(str(tasks_without_annotations))
+            # Calculate cost for annotated and unannotated tasks
+            annotated_tasks_cost = cost_per_task * Decimal(str(tasks_with_annotations))
+            full_unannotated_cost = cost_per_task * Decimal(str(tasks_without_annotations))
+            
+            # Break down into base cost and buffer for display
+            # If total cost = base × 1.2, then base = total / 1.2, buffer = total - base
+            unannotated_base_cost = full_unannotated_cost / Decimal('1.2')
+            unannotated_buffer_cost = full_unannotated_cost - unannotated_base_cost
+            
+            # Set the refund amounts
+            unannotated_tasks_refund = unannotated_base_cost  # Base cost without buffer
+            buffer_refund = unannotated_buffer_cost  # Buffer on unannotated tasks
+            
+            logger.info(
+                f"Project {project.id} - Refund breakdown (work < 30%): "
+                f"annotated_cost={annotated_tasks_cost}, "
+                f"full_unannotated={full_unannotated_cost}, "
+                f"unannotated_base={unannotated_base_cost}, "
+                f"unannotated_buffer={unannotated_buffer_cost}"
+            )
         else:
-            # Only refund unannotated tasks cost
+            # Above 30% threshold: Only refund unannotated tasks cost (with buffer)
+            annotated_tasks_cost = cost_per_task * Decimal(str(tasks_with_annotations))
             unannotated_tasks_refund = cost_per_task * Decimal(str(tasks_without_annotations))
         
         total_refund = base_fee_refund + buffer_refund + unannotated_tasks_refund
         total_refund = total_refund.quantize(Decimal('0.01'))
+        
+        logger.info(
+            f"Project {project.id} deletion refund calculated: "
+            f"work={work_done_percentage:.2f}%, "
+            f"total_tasks={total_tasks}, annotated={tasks_with_annotations}, unannotated={tasks_without_annotations}, "
+            f"base_fee={base_fee_refund}, buffer={buffer_refund}, unannotated_cost={unannotated_tasks_refund}, "
+            f"total_refund={total_refund}"
+        )
         
         return {
             "success": True,
@@ -1957,11 +2063,10 @@ class ProjectBillingService:
                 "base_fee_refund": float(base_fee_refund),
                 "buffer_refund": float(buffer_refund),
                 "unannotated_tasks_refund": float(unannotated_tasks_refund),
+                "annotated_tasks_cost": float(annotated_tasks_cost),
                 "cost_per_task": float(cost_per_task),
                 "original_base_fee": float(original_base_fee),
-                "annotation_rate": float(annotation_rate),
-                "complexity_multiplier": float(complexity_multiplier),
-                "buffer_multiplier": float(cls.ANNOTATION_BUFFER_MULTIPLIER),
+                "original_annotation_fee": float(original_annotation_fee),
             },
             "message": (
                 f"Work done: {work_done_percentage:.1f}%. "
@@ -1971,13 +2076,14 @@ class ProjectBillingService:
 
     @classmethod
     @transaction.atomic
-    def process_project_deletion_refund(cls, project, user=None):
+    def process_project_deletion_refund(cls, project, user=None, reason=None):
         """
         Process refund for project deletion and update billing records.
         
         Args:
             project: Project instance
-            user: User who deleted the project
+            user: User who deleted the project (optional)
+            reason: Reason for deletion (optional, for transaction description)
             
         Returns:
             dict: Refund result
@@ -2005,22 +2111,32 @@ class ProjectBillingService:
             }
         
         # Add refund as credits
-        org_billing.purchased_credits += refund_amount
+        org_billing.available_credits += refund_amount
         org_billing.save()
+        
+        # Build transaction description
+        if not reason:
+            reason = "Project deleted"
         
         # Create refund transaction record
         CreditTransaction.objects.create(
             organization=organization,
             amount=refund_amount,
-            transaction_type="refund",
+            transaction_type="credit",
+            category="refund",
+            balance_after=org_billing.available_credits,
             description=(
-                f"Project deletion refund for '{project.title}' "
+                f"{reason}: '{project.title}' "
                 f"({refund_info['work_done_percentage']:.1f}% work done). "
-                f"Base fee: ₹{refund_info['breakdown']['base_fee_refund']}, "
-                f"Buffer: ₹{refund_info['breakdown']['buffer_refund']}, "
-                f"Unannotated tasks: ₹{refund_info['breakdown']['unannotated_tasks_refund']}"
+                f"Base fee: ₹{refund_info['breakdown']['base_fee_refund']:.0f}, "
+                f"Buffer: ₹{refund_info['breakdown']['buffer_refund']:.0f}, "
+                f"Unannotated tasks: ₹{refund_info['breakdown']['unannotated_tasks_refund']:.0f}"
             ),
-            project=project,
+            metadata={
+                "project_id": project.id,
+                "project_title": project.title,
+                "refund_type": "project_deletion",
+            },
         )
         
         logger.info(

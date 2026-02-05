@@ -470,6 +470,8 @@ export class SFWrapper {
     }
 
     if (hasChangedTasks) {
+      // Always reset state for changed tasks to ensure clean render
+      // This fixes blank canvas issues with ZIP files
       this.sf.resetState();
     } else {
       this.sf.resetAnnotationStore();

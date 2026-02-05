@@ -16,6 +16,7 @@ The workflow is fully automatic with FIXED OVERLAP=3:
 import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db import models
 from django.db.models import Count
 
 logger = logging.getLogger(__name__)
@@ -682,3 +683,312 @@ def ensure_annotator_not_in_organization(sender, instance, created, **kwargs):
         logger.error(
             f"Error in ensure_annotator_not_in_organization: {e}", exc_info=True
         )
+
+
+# ====================================================================================
+# DYNAMIC OVERLAP ASSIGNMENT SYSTEM SIGNALS
+# ====================================================================================
+# These signals support the new dynamic overlap algorithm that adjusts overlap
+# based on available annotators (1-3 range, never 0 when annotators exist)
+# ====================================================================================
+
+
+@receiver(
+    post_save,
+    sender="annotators.AnnotatorProfile",
+    dispatch_uid="dynamic_assignment_on_annotator_status_change",
+)
+def on_annotator_status_change(sender, instance, created, **kwargs):
+    """
+    Handle annotator status changes for dynamic assignment.
+    
+    - When annotator is approved: Check for projects that need annotators
+    - When annotator is suspended/rejected: Release their pending assignments
+    """
+    update_fields = kwargs.get('update_fields')
+    
+    # Check if status was updated
+    if update_fields is not None and 'status' not in update_fields:
+        return  # Status wasn't changed
+    
+    from .assignment_engine import DynamicAssignmentEngine
+    
+    try:
+        if instance.status == 'approved':
+            # Annotator was approved - check for work
+            logger.info(
+                f"[DynamicSignal] Annotator {instance.id} approved, "
+                "checking for available projects..."
+            )
+            # Run in a separate thread/task to avoid blocking
+            try:
+                DynamicAssignmentEngine.on_annotator_approved(instance)
+            except Exception as e:
+                logger.error(f"Error in on_annotator_approved: {e}", exc_info=True)
+        
+        elif instance.status in ['suspended', 'rejected']:
+            # Annotator became ineligible - release their work
+            logger.info(
+                f"[DynamicSignal] Annotator {instance.id} status changed to {instance.status}, "
+                "releasing pending assignments..."
+            )
+            try:
+                DynamicAssignmentEngine.on_annotator_suspended(instance)
+            except Exception as e:
+                logger.error(f"Error in on_annotator_suspended: {e}", exc_info=True)
+    
+    except Exception as e:
+        logger.error(f"Error in on_annotator_status_change signal: {e}", exc_info=True)
+
+
+@receiver(
+    post_save,
+    sender="annotators.TaskAssignment",
+    dispatch_uid="dynamic_assignment_on_task_completed",
+)
+def on_task_assignment_completed_dynamic(sender, instance, created, **kwargs):
+    """
+    Handle task completion for dynamic assignment.
+    
+    When an annotator completes a task:
+    1. Update their last_active timestamp
+    2. Check for more work if they have capacity
+    3. Check if task reached target overlap for consensus
+    """
+    if created:
+        return  # Only handle updates
+    
+    if instance.status != 'completed':
+        return
+    
+    # Only trigger if status was changed
+    update_fields = kwargs.get('update_fields')
+    if update_fields is not None and 'status' not in update_fields:
+        return
+    
+    from .assignment_engine import DynamicAssignmentEngine
+    
+    try:
+        logger.info(
+            f"[DynamicSignal] Task {instance.task_id} completed by annotator {instance.annotator_id}"
+        )
+        DynamicAssignmentEngine.on_task_completed(instance)
+    except Exception as e:
+        logger.error(f"Error in on_task_assignment_completed_dynamic: {e}", exc_info=True)
+
+
+def trigger_dynamic_assignment_on_import(project_id):
+    """
+    Trigger dynamic assignment after bulk task import.
+    
+    This should be called from:
+    - data_import/api.py (sync import)
+    - data_import/functions.py (async import)
+    
+    Uses the new dynamic overlap algorithm.
+    
+    Args:
+        project_id: ID of the project that received new tasks
+    """
+    from .assignment_engine import DynamicAssignmentEngine
+    from projects.models import Project
+    
+    try:
+        project = Project.objects.get(id=project_id)
+        
+        logger.info(
+            f"[DynamicImport] Processing dynamic assignment for project {project_id} after import"
+        )
+        
+        # Auto-publish if not already
+        if not project.is_published:
+            project.is_published = True
+            project.save(update_fields=['is_published'])
+            logger.info(f"[DynamicImport] Auto-published project {project_id}")
+        
+        # Run dynamic assignment
+        result = DynamicAssignmentEngine.assign_tasks_with_dynamic_overlap(project)
+        
+        logger.info(
+            f"[DynamicImport] Assignment complete for project {project_id}: "
+            f"status={result['status']}, overlap={result.get('effective_overlap')}, "
+            f"assigned={result.get('assigned_count', 0)}"
+        )
+        
+        return result
+        
+    except Project.DoesNotExist:
+        logger.error(f"[DynamicImport] Project {project_id} not found")
+        return None
+    except Exception as e:
+        logger.error(
+            f"[DynamicImport] Error for project {project_id}: {e}",
+            exc_info=True
+        )
+        return None
+
+
+def reactivate_annotator_on_login(user):
+    """
+    Reactivate an annotator when they login.
+    
+    Called from:
+    - Authentication views/middleware
+    - JWT token refresh
+    
+    This reactivates inactive annotators and checks for available work.
+    Also handles expert reactivation if user is an expert.
+    
+    Args:
+        user: User instance that just logged in
+    """
+    from .models import AnnotatorProfile
+    from .assignment_engine import DynamicAssignmentEngine
+    
+    try:
+        # Check if user is an annotator
+        profile = AnnotatorProfile.objects.filter(user=user).first()
+        if profile:
+            # Check if annotator was inactive
+            was_inactive = not profile.is_active_for_assignments
+            
+            # Reactivate and update last_active
+            profile.reactivate_on_login()
+            
+            if was_inactive and profile.status == 'approved':
+                logger.info(
+                    f"[LoginReactivation] Annotator {profile.id} reactivated after login, "
+                    "checking for work..."
+                )
+                # Check for available work
+                try:
+                    DynamicAssignmentEngine.on_annotator_approved(profile)
+                except Exception as e:
+                    logger.error(f"Error checking work after reactivation: {e}")
+        
+        # Also check if user is an expert
+        reactivate_expert_on_login(user)
+        
+    except Exception as e:
+        logger.error(f"Error in reactivate_annotator_on_login: {e}", exc_info=True)
+
+
+# ============================================================================
+# EXPERT ASSIGNMENT SIGNALS
+# ============================================================================
+
+def reactivate_expert_on_login(user):
+    """
+    Reactivate an expert when they login.
+    
+    Called from:
+    - Authentication views/middleware
+    - JWT token refresh
+    
+    This reactivates inactive experts and triggers pending review assignment.
+    
+    Args:
+        user: User instance that just logged in
+    """
+    from .models import ExpertProfile
+    from .expert_assignment_engine import ExpertAssignmentEngine
+    
+    try:
+        # Check if user is an expert
+        expert = ExpertProfile.objects.filter(user=user).first()
+        if not expert:
+            return
+        
+        # Reactivate expert
+        ExpertAssignmentEngine.reactivate_expert_on_login(expert)
+        
+    except Exception as e:
+        logger.error(f"Error in reactivate_expert_on_login: {e}", exc_info=True)
+
+
+@receiver(
+    post_save,
+    sender="annotators.ExpertReviewTask",
+    dispatch_uid="expert_review_completed_handler",
+)
+def on_expert_review_completed(sender, instance, created, **kwargs):
+    """
+    Handle expert review completion.
+    
+    Triggered when ExpertReviewTask status changes to completed states.
+    Decrements workload and triggers new assignment if expert has capacity.
+    """
+    if created:
+        return  # Skip on creation
+    
+    from .models import ExpertProfile
+    from .expert_assignment_engine import ExpertAssignmentEngine
+    
+    try:
+        review = instance
+        
+        # Check if review was just completed
+        if review.status in ['approved', 'rejected', 'corrected']:
+            # Get expert and decrement workload
+            expert = review.expert
+            
+            # Update workload (decrement)
+            ExpertProfile.objects.filter(id=expert.id).update(
+                current_workload=models.F('current_workload') - 1
+            )
+            expert.refresh_from_db()
+            
+            # Trigger next assignment
+            ExpertAssignmentEngine.on_expert_review_complete(expert, review)
+            
+            logger.info(
+                f"[ExpertReview] Expert {expert.id} completed review {review.id}, "
+                f"status: {review.status}"
+            )
+    
+    except Exception as e:
+        logger.error(f"Error in on_expert_review_completed: {e}", exc_info=True)
+
+
+def trigger_expert_assignment_after_consolidation(task_consensus):
+    """
+    Trigger expert assignment after consolidation is complete.
+    
+    Called from consensus/consolidation service when annotations are consolidated.
+    
+    Args:
+        task_consensus: TaskConsensus instance with consolidated result
+    """
+    from .expert_assignment_engine import ExpertAssignmentEngine
+    
+    try:
+        result = ExpertAssignmentEngine.assign_task_to_expert(
+            task_consensus=task_consensus,
+            force=False,
+        )
+        
+        if result.get('assigned'):
+            logger.info(
+                f"[Consolidation→Expert] Task {task_consensus.task_id} assigned to "
+                f"expert {result.get('expert_email')}"
+            )
+        elif result.get('reason') == 'skipped':
+            logger.debug(
+                f"[Consolidation→Expert] Task {task_consensus.task_id} skipped expert review "
+                f"(reason: {result.get('reason')})"
+            )
+        elif result.get('reason') == 'no_experts':
+            logger.warning(
+                f"[Consolidation→Expert] Task {task_consensus.task_id} held - no experts"
+            )
+        
+        return result
+    
+    except Exception as e:
+        logger.error(
+            f"Error in trigger_expert_assignment_after_consolidation: {e}",
+            exc_info=True
+        )
+        return {'success': False, 'error': str(e)}
+
+

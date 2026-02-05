@@ -1183,6 +1183,750 @@ class AssignmentEngine:
         }
 
 
+# =============================================================================
+# DYNAMIC OVERLAP ASSIGNMENT SYSTEM
+# =============================================================================
+# This section implements the new algorithm that dynamically adjusts overlap
+# based on available annotators:
+# - 0 annotators: Hold tasks
+# - 1-2 annotators: Overlap = annotator count
+# - 3+ annotators: Overlap = 3 (max)
+# =============================================================================
+
+# Constants for assignment system
+ASSIGNMENT_TIMEOUT_HOURS = 48  # How long before assignment times out
+INACTIVITY_THRESHOLD_DAYS = 7  # Mark annotator inactive after this many days
+MAX_OVERLAP = 3  # Maximum overlap (hard limit)
+# Trust level priority for ranking (higher = better priority)
+TRUST_LEVEL_PRIORITY = {
+    "expert": 5,
+    "senior": 4,
+    "regular": 3,
+    "junior": 2,
+    "new": 1,
+}
+
+MIN_OVERLAP = 1  # Minimum overlap when annotators exist
 
 
-
+class DynamicAssignmentEngine:
+    """
+    Dynamic assignment engine that adjusts overlap based on available annotators.
+    
+    This implements the three main cases:
+    1. No annotators (0): Hold tasks
+    2. Limited annotators (1-2): Adjust overlap to match count
+    3. Sufficient annotators (3+): Use max overlap of 3
+    
+    Distribution Strategy (3+ annotators):
+    - Annotators are ranked by trust level (expert > senior > regular > junior > new)
+    - Tasks are distributed across ALL eligible annotators (not just top 3)
+    - Higher trust annotators get priority but work is balanced for speed
+    - This ensures quality while achieving faster completion
+    """
+    
+    @classmethod
+    def get_eligible_annotators(cls, project, sort_by_trust=True):
+        """
+        Get all annotators eligible for this project.
+        
+        Eligibility Criteria:
+        1. Status = 'approved'
+        2. User is active
+        3. Not suspended (fraud_flags < 3)
+        4. Has available capacity
+        5. Active for assignments (not marked inactive)
+        6. Has not already annotated ALL tasks in the project
+        
+        Note: Trust level is NOT checked (clients cannot configure this)
+        
+        Args:
+            project: Project instance
+            sort_by_trust: If True, sort by trust level (higher first)
+            
+        Returns:
+            List of AnnotatorProfile instances that are eligible, sorted by trust level
+        """
+        from .models import AnnotatorProfile, TrustLevel
+        
+        # Base query: approved, active users who are active for assignments
+        eligible = AnnotatorProfile.objects.filter(
+            status='approved',
+            user__is_active=True,
+            is_active_for_assignments=True,
+        ).select_related('user', 'trust_level')
+        
+        # Exclude suspended annotators (fraud_flags >= 3 or is_suspended)
+        eligible = eligible.filter(
+            models.Q(trust_level__isnull=True) |
+            models.Q(trust_level__fraud_flags__lt=3, trust_level__is_suspended=False)
+        )
+        
+        # Convert to list for capacity filtering
+        eligible_list = list(eligible)
+        
+        # Filter by capacity - only include annotators with available capacity
+        eligible_with_capacity = []
+        for annotator in eligible_list:
+            capacity_info = AssignmentEngine.check_annotator_capacity(annotator)
+            if not capacity_info['at_capacity']:
+                eligible_with_capacity.append(annotator)
+        
+        # Filter out annotators who have already been assigned to ALL tasks
+        # (they have no more tasks to work on in this project)
+        total_tasks = project.tasks.count()
+        if total_tasks > 0:
+            final_eligible = []
+            for annotator in eligible_with_capacity:
+                assigned_count = TaskAssignment.objects.filter(
+                    annotator=annotator,
+                    task__project=project,
+                ).count()
+                if assigned_count < total_tasks:
+                    final_eligible.append(annotator)
+            result = final_eligible
+        else:
+            result = eligible_with_capacity
+        
+        # Sort by trust level if requested (higher priority first)
+        if sort_by_trust:
+            result = cls._sort_by_trust_level(result)
+        
+        return result
+    
+    @classmethod
+    def _sort_by_trust_level(cls, annotators):
+        """
+        Sort annotators by trust level (higher trust = higher priority).
+        
+        Priority order: expert > senior > regular > junior > new
+        
+        Args:
+            annotators: List of AnnotatorProfile instances
+            
+        Returns:
+            Sorted list with highest trust first
+        """
+        def get_priority(annotator):
+            try:
+                level = annotator.trust_level.level if annotator.trust_level else "new"
+            except:
+                level = "new"
+            return TRUST_LEVEL_PRIORITY.get(level, 1)
+        
+        return sorted(annotators, key=get_priority, reverse=True)
+    
+    @classmethod
+    def calculate_effective_overlap(cls, eligible_count):
+        """
+        Calculate the effective overlap based on available annotators.
+        
+        Rules:
+        - If eligible_count == 0: Return None (hold tasks)
+        - If eligible_count < 3: Return eligible_count
+        - If eligible_count >= 3: Return 3 (max overlap)
+        
+        Args:
+            eligible_count: Number of eligible annotators
+            
+        Returns:
+            int or None: Effective overlap, or None if should hold
+        """
+        if eligible_count == 0:
+            return None  # Signal to hold tasks
+        
+        # Effective overlap = min(available, max_overlap)
+        return min(eligible_count, MAX_OVERLAP)
+    
+    @classmethod
+    @transaction.atomic
+    def assign_tasks_with_dynamic_overlap(cls, project):
+        """
+        Main assignment algorithm with dynamic overlap.
+        
+        Steps:
+        1. Get eligible annotators
+        2. Calculate effective overlap
+        3. Handle the three cases
+        4. Update task target_assignment_count
+        5. Distribute tasks fairly
+        
+        Args:
+            project: Project instance
+            
+        Returns:
+            dict with assignment results
+        """
+        from tasks.models import Task
+        
+        logger.info(f"[DynamicAssignment] Starting for project {project.id}")
+        
+        # Step 1: Get eligible annotators
+        eligible = cls.get_eligible_annotators(project)
+        eligible_count = len(eligible)
+        
+        logger.info(f"[DynamicAssignment] Found {eligible_count} eligible annotators")
+        
+        # CASE 1: No eligible annotators - hold all tasks
+        if eligible_count == 0:
+            logger.warning(
+                f"[DynamicAssignment] No eligible annotators for project {project.id}. "
+                "Tasks will be held."
+            )
+            return {
+                'status': 'waiting',
+                'message': 'No eligible annotators available. Tasks on hold.',
+                'eligible_count': 0,
+                'effective_overlap': None,
+                'assigned_count': 0,
+                'tasks_pending': project.tasks.count(),
+            }
+        
+        # Step 2: Calculate effective overlap
+        effective_overlap = cls.calculate_effective_overlap(eligible_count)
+        
+        logger.info(
+            f"[DynamicAssignment] Effective overlap: {effective_overlap} "
+            f"(from {eligible_count} annotators)"
+        )
+        
+        # Step 3: Update task target_assignment_count for tasks that need it
+        # Only update tasks that have a higher target than current effective overlap
+        # Never reduce target below current active assignments
+        tasks_updated = cls._update_task_overlaps(project, effective_overlap)
+        
+        # Step 4: Distribute tasks based on case
+        if eligible_count < MAX_OVERLAP:
+            # CASE 2: Limited annotators (1-2)
+            # Assign all unassigned tasks to all available annotators
+            assigned_count = cls._assign_all_to_all(project, eligible, effective_overlap)
+            status = 'partial'
+            message = f"Limited annotators ({eligible_count}). Overlap set to {effective_overlap}."
+        else:
+            # CASE 3: Sufficient annotators (3+)
+            # Use rotation to distribute tasks fairly
+            assigned_count = cls._distribute_with_rotation(project, eligible, effective_overlap)
+            status = 'complete'
+            message = f"Full overlap ({effective_overlap}) with {eligible_count} annotators."
+        
+        # Calculate pending tasks
+        tasks_needing_assignment = Task.objects.filter(
+            project=project,
+        ).annotate(
+            active_assignments=Count(
+                'annotator_assignments',
+                filter=models.Q(annotator_assignments__status__in=['assigned', 'in_progress', 'completed'])
+            )
+        ).filter(
+            active_assignments__lt=models.F('target_assignment_count')
+        ).count()
+        
+        result = {
+            'status': status,
+            'message': message,
+            'eligible_count': eligible_count,
+            'effective_overlap': effective_overlap,
+            'assigned_count': assigned_count,
+            'tasks_updated': tasks_updated,
+            'tasks_pending': tasks_needing_assignment,
+        }
+        
+        logger.info(f"[DynamicAssignment] Complete: {result}")
+        return result
+    
+    @classmethod
+    def _update_task_overlaps(cls, project, effective_overlap):
+        """
+        Update task target_assignment_count based on effective overlap.
+        
+        Only updates tasks where:
+        - Current target is different from effective overlap
+        - Current active assignments < effective overlap
+        
+        Never reduces target below current active assignments.
+        """
+        from tasks.models import Task
+        
+        updated = 0
+        tasks = project.tasks.all()
+        
+        for task in tasks:
+            active_count = task.annotator_assignments.filter(
+                status__in=['assigned', 'in_progress', 'completed']
+            ).count()
+            
+            # Don't reduce below current active assignments
+            new_target = max(effective_overlap, active_count)
+            
+            if task.target_assignment_count != new_target:
+                task.target_assignment_count = new_target
+                task.save(update_fields=['target_assignment_count'])
+                updated += 1
+        
+        if updated > 0:
+            logger.info(
+                f"[DynamicAssignment] Updated target_assignment_count for {updated} tasks "
+                f"to {effective_overlap}"
+            )
+        
+        return updated
+    
+    @classmethod
+    def _assign_all_to_all(cls, project, annotators, effective_overlap):
+        """
+        Assign ALL tasks to ALL available annotators.
+        
+        Used when annotators <= effective_overlap.
+        Each annotator gets assigned to every task they haven't been assigned to yet.
+        
+        Returns count of new assignments created.
+        """
+        from tasks.models import Task
+        
+        assignments_created = 0
+        
+        tasks = project.tasks.all()
+        
+        for task in tasks:
+            # Get already assigned annotators for this task
+            already_assigned_ids = set(
+                TaskAssignment.objects.filter(task=task).values_list('annotator_id', flat=True)
+            )
+            
+            # Count active assignments
+            active_count = TaskAssignment.objects.filter(
+                task=task,
+                status__in=['assigned', 'in_progress', 'completed']
+            ).count()
+            
+            # Check if task needs more assignments
+            if active_count >= task.target_assignment_count:
+                continue
+            
+            needed = task.target_assignment_count - active_count
+            
+            for annotator in annotators:
+                if needed <= 0:
+                    break
+                    
+                if annotator.id in already_assigned_ids:
+                    continue
+                
+                # Check if annotator can work on this task
+                can_work, reason = cls._can_annotator_work_on_task(annotator, task)
+                if not can_work:
+                    logger.debug(f"Annotator {annotator.id} cannot work on task {task.id}: {reason}")
+                    continue
+                
+                # Check capacity limit based on trust level
+                capacity = AssignmentEngine.check_annotator_capacity(annotator)
+                if capacity['at_capacity']:
+                    logger.debug(
+                        f"Annotator {annotator.id} at capacity ({capacity['current']}/{capacity['maximum']})"
+                    )
+                    continue
+                
+                # Create the assignment
+                try:
+                    assignment = cls._safe_create_assignment(annotator, task, project)
+                    if assignment:
+                        assignments_created += 1
+                        needed -= 1
+                        already_assigned_ids.add(annotator.id)
+                except Exception as e:
+                    logger.error(f"Error creating assignment: {e}")
+        
+        return assignments_created
+    
+    @classmethod
+    def _distribute_with_rotation(cls, project, annotators, effective_overlap):
+        """
+        Distribute tasks using priority-weighted rotation.
+        
+        Used when annotators > effective_overlap (3+).
+        
+        Strategy:
+        - Annotators are pre-sorted by trust level (expert > senior > regular > junior > new)
+        - For each task, we select annotators in priority order
+        - But we also consider current workload to balance speed
+        - Higher trust annotators get priority but work spreads across ALL annotators
+        
+        This ensures:
+        - Quality: Higher trust annotators work on more tasks
+        - Speed: Work is distributed across all annotators for faster completion
+        - Balance: No single annotator gets overwhelmed
+        
+        Returns count of new assignments created.
+        """
+        from tasks.models import Task
+        
+        assignments_created = 0
+        
+        # Get tasks needing assignment
+        tasks = list(
+            project.tasks.annotate(
+                active_count=Count(
+                    'annotator_assignments',
+                    filter=models.Q(annotator_assignments__status__in=['assigned', 'in_progress', 'completed'])
+                )
+            ).filter(
+                active_count__lt=models.F('target_assignment_count')
+            ).order_by('id')
+        )
+        
+        if not tasks:
+            return 0
+        
+        # Build annotator list (already sorted by trust level)
+        annotator_list = list(annotators)
+        num_annotators = len(annotator_list)
+        
+        # Track current assignments per annotator for load balancing
+        annotator_load = {a.id: 0 for a in annotator_list}
+        
+        for task in tasks:
+            # Get already assigned annotators for this task
+            already_assigned_ids = set(
+                TaskAssignment.objects.filter(task=task).values_list('annotator_id', flat=True)
+            )
+            
+            active_count = task.active_count
+            needed = task.target_assignment_count - active_count
+            
+            # Get candidates sorted by priority score
+            # Score = trust_priority * 10 - current_load (higher = better)
+            # This prioritizes high trust but balances workload
+            candidates = []
+            for annotator in annotator_list:
+                if annotator.id in already_assigned_ids:
+                    continue
+                
+                # Check if can work and has capacity
+                can_work, _ = cls._can_annotator_work_on_task(annotator, task)
+                if not can_work:
+                    continue
+                
+                capacity = AssignmentEngine.check_annotator_capacity(annotator)
+                if capacity['at_capacity']:
+                    continue
+                
+                # Calculate priority score
+                try:
+                    level = annotator.trust_level.level if annotator.trust_level else "new"
+                except:
+                    level = "new"
+                trust_priority = TRUST_LEVEL_PRIORITY.get(level, 1)
+                
+                # Score balances trust priority with workload
+                # Multiply trust by 10 to make it dominant, subtract load for balance
+                score = (trust_priority * 10) - annotator_load.get(annotator.id, 0)
+                
+                candidates.append((annotator, score))
+            
+            # Sort candidates by score (higher = better)
+            candidates.sort(key=lambda x: x[1], reverse=True)
+            
+            # Assign to top candidates
+            for annotator, score in candidates[:needed]:
+                try:
+                    assignment = cls._safe_create_assignment(annotator, task, project)
+                    if assignment:
+                        assignments_created += 1
+                        annotator_load[annotator.id] = annotator_load.get(annotator.id, 0) + 1
+                        needed -= 1
+                except Exception as e:
+                    logger.error(f"Error creating assignment: {e}")
+        
+        # Log distribution summary
+        if assignments_created > 0:
+            load_summary = {
+                a.user.email: annotator_load[a.id] 
+                for a in annotator_list if annotator_load[a.id] > 0
+            }
+            logger.info(
+                f"[DynamicAssignment] Distributed {assignments_created} assignments. "
+                f"Load distribution: {load_summary}"
+            )
+        
+        return assignments_created
+    
+    @classmethod
+    def _can_annotator_work_on_task(cls, annotator, task):
+        """
+        Check if annotator can work on a specific task.
+        
+        Prevents:
+        - Duplicate assignments
+        - Re-annotation of already annotated tasks
+        
+        Returns:
+            tuple: (can_work: bool, reason: str or None)
+        """
+        from tasks.models import Annotation
+        
+        # Check if they already have ANY annotation on this task
+        existing_annotation = Annotation.objects.filter(
+            task=task,
+            completed_by=annotator.user
+        ).exists()
+        
+        if existing_annotation:
+            return False, "Annotator already has annotation on this task"
+        
+        # Check if they had a completed assignment
+        completed_assignment = TaskAssignment.objects.filter(
+            task=task,
+            annotator=annotator,
+            status='completed'
+        ).exists()
+        
+        if completed_assignment:
+            return False, "Annotator already completed this task"
+        
+        return True, None
+    
+    @classmethod
+    @transaction.atomic
+    def _safe_create_assignment(cls, annotator, task, project):
+        """
+        Safely create a task assignment with proper locking.
+        
+        Uses database-level locking to prevent race conditions.
+        """
+        from tasks.models import Task as TaskModel
+        
+        # Lock the task row to prevent concurrent assignments
+        task = TaskModel.objects.select_for_update().get(id=task.id)
+        
+        # Double-check assignment doesn't exist
+        if TaskAssignment.objects.filter(task=task, annotator=annotator).exists():
+            logger.debug(f"Assignment already exists for task {task.id}, annotator {annotator.id}")
+            return None
+        
+        # Check if task is fully covered
+        current = task.annotator_assignments.filter(
+            status__in=['assigned', 'in_progress', 'completed']
+        ).count()
+        
+        if current >= task.target_assignment_count:
+            logger.debug(f"Task {task.id} is fully covered ({current}/{task.target_assignment_count})")
+            return None
+        
+        # Create the assignment using existing helper
+        assignment = AssignmentEngine._create_task_assignment(annotator, task, project)
+        
+        return assignment
+    
+    @classmethod
+    def handle_assignment_timeout(cls, assignment):
+        """
+        Handle assignment timeout with activity-based logic.
+        
+        Logic:
+        1. If annotator was active since assignment: Extend timer
+        2. If annotator inactive for > INACTIVITY_THRESHOLD_DAYS: Mark inactive, release all
+        3. Otherwise: Release just this assignment
+        
+        Args:
+            assignment: TaskAssignment instance
+        """
+        annotator = assignment.annotator
+        now = timezone.now()
+        
+        # Check if annotator has been active since assignment was created
+        if annotator.last_active and annotator.last_active > assignment.assigned_at:
+            # Annotator is active, just hasn't reached this task yet
+            # Reset the timer by updating assigned_at
+            assignment.assigned_at = now
+            assignment.save(update_fields=['assigned_at'])
+            logger.info(
+                f"[Timeout] Extended timeout for active annotator {annotator.id} on task {assignment.task_id}"
+            )
+            return 'extended'
+        
+        # Check for prolonged inactivity
+        inactivity_cutoff = now - timedelta(days=INACTIVITY_THRESHOLD_DAYS)
+        
+        if not annotator.last_active or annotator.last_active < inactivity_cutoff:
+            # Annotator hasn't been active for too long
+            logger.warning(
+                f"[Timeout] Marking annotator {annotator.id} as inactive due to prolonged absence "
+                f"(last active: {annotator.last_active})"
+            )
+            cls._mark_annotator_inactive(annotator)
+            cls._release_all_pending_assignments(annotator)
+            return 'marked_inactive'
+        
+        # Normal timeout - release just this assignment
+        cls._release_assignment(assignment)
+        
+        # Trigger reassignment for this task
+        cls._trigger_task_reassignment(assignment.task)
+        
+        return 'released'
+    
+    @classmethod
+    def _mark_annotator_inactive(cls, annotator):
+        """Mark annotator as inactive - they won't receive new tasks until login"""
+        annotator.mark_inactive()
+        logger.info(f"[Inactive] Annotator {annotator.id} marked as inactive")
+    
+    @classmethod
+    def _release_all_pending_assignments(cls, annotator):
+        """Release all pending assignments for an annotator"""
+        pending = TaskAssignment.objects.filter(
+            annotator=annotator,
+            status__in=['assigned', 'in_progress']
+        )
+        
+        count = pending.count()
+        
+        for assignment in pending:
+            cls._release_assignment(assignment)
+            cls._trigger_task_reassignment(assignment.task)
+        
+        logger.info(f"[Inactive] Released {count} pending assignments for annotator {annotator.id}")
+    
+    @classmethod
+    def _release_assignment(cls, assignment):
+        """Release a single assignment"""
+        assignment.status = 'expired'
+        assignment.save(update_fields=['status'])
+        
+        # Decrement task counter
+        from django.db.models import F
+        assignment.task.assignment_count = F('assignment_count') - 1
+        assignment.task.save(update_fields=['assignment_count'])
+    
+    @classmethod
+    def _trigger_task_reassignment(cls, task):
+        """Trigger reassignment for a single task"""
+        project = task.project
+        eligible = cls.get_eligible_annotators(project)
+        
+        if not eligible:
+            logger.warning(f"[Reassign] No eligible annotators for task {task.id}")
+            return
+        
+        # Get already assigned annotators
+        already_assigned_ids = set(
+            TaskAssignment.objects.filter(
+                task=task,
+                status__in=['assigned', 'in_progress', 'completed']
+            ).values_list('annotator_id', flat=True)
+        )
+        
+        # Find available annotator
+        for annotator in eligible:
+            if annotator.id in already_assigned_ids:
+                continue
+            
+            can_work, _ = cls._can_annotator_work_on_task(annotator, task)
+            if not can_work:
+                continue
+            
+            capacity = AssignmentEngine.check_annotator_capacity(annotator)
+            if capacity['at_capacity']:
+                continue
+            
+            # Create assignment
+            try:
+                cls._safe_create_assignment(annotator, task, project)
+                logger.info(f"[Reassign] Reassigned task {task.id} to annotator {annotator.id}")
+                return
+            except Exception as e:
+                logger.error(f"[Reassign] Error reassigning task {task.id}: {e}")
+        
+        logger.warning(f"[Reassign] Could not find available annotator for task {task.id}")
+    
+    @classmethod
+    def check_and_process_timeouts(cls, project=None):
+        """
+        Check for timed out assignments and process them.
+        
+        Args:
+            project: Optional - only check assignments for this project
+        """
+        timeout_cutoff = timezone.now() - timedelta(hours=ASSIGNMENT_TIMEOUT_HOURS)
+        
+        queryset = TaskAssignment.objects.filter(
+            status='assigned',
+            assigned_at__lt=timeout_cutoff
+        ).select_related('annotator', 'task', 'task__project')
+        
+        if project:
+            queryset = queryset.filter(task__project=project)
+        
+        count = 0
+        for assignment in queryset:
+            cls.handle_assignment_timeout(assignment)
+            count += 1
+        
+        if count > 0:
+            logger.info(f"[Timeout] Processed {count} timed out assignments")
+        
+        return count
+    
+    @classmethod
+    def on_annotator_approved(cls, annotator):
+        """
+        Called when an annotator is approved.
+        Checks for projects that need more annotators and assigns if eligible.
+        """
+        from projects.models import Project
+        
+        logger.info(f"[NewAnnotator] Checking work for newly approved annotator {annotator.id}")
+        
+        # Find published projects
+        projects = Project.objects.filter(is_published=True)
+        
+        assignments_made = 0
+        for project in projects:
+            # Check if annotator is eligible for this project
+            eligible = cls.get_eligible_annotators(project)
+            if annotator not in eligible:
+                continue
+            
+            # Run assignment for this project
+            result = cls.assign_tasks_with_dynamic_overlap(project)
+            assignments_made += result.get('assigned_count', 0)
+        
+        logger.info(
+            f"[NewAnnotator] Annotator {annotator.id} assigned to {assignments_made} tasks"
+        )
+        return assignments_made
+    
+    @classmethod
+    def on_annotator_suspended(cls, annotator):
+        """
+        Called when an annotator is suspended.
+        Releases their pending assignments and reassigns them.
+        """
+        logger.info(f"[Suspended] Processing suspended annotator {annotator.id}")
+        cls._release_all_pending_assignments(annotator)
+    
+    @classmethod
+    def on_task_completed(cls, assignment):
+        """
+        Called when an annotator completes a task assignment.
+        Checks if more work is available for this annotator.
+        """
+        project = assignment.task.project
+        annotator = assignment.annotator
+        
+        # Update last active
+        annotator.update_last_active()
+        
+        # Check for more work
+        capacity = AssignmentEngine.check_annotator_capacity(annotator)
+        if capacity['at_capacity']:
+            return
+        
+        # Try to assign next task
+        eligible = cls.get_eligible_annotators(project)
+        if annotator in eligible:
+            result = cls.assign_tasks_with_dynamic_overlap(project)
+            logger.info(
+                f"[TaskComplete] Post-completion assignment for annotator {annotator.id}: "
+                f"{result.get('assigned_count', 0)} new tasks"
+            )

@@ -207,8 +207,8 @@ class ExpertService:
     @classmethod
     def check_and_assign_expert_review(cls, task_consensus) -> Optional[Dict]:
         """
-        Check if a task needs expert review based on disagreement.
-        If needed, assign to an available expert.
+        Check if a task needs expert review based on agreement level.
+        If needed, assign to an available expert using ExpertAssignmentEngine.
 
         Called after consensus processing.
 
@@ -218,48 +218,41 @@ class ExpertService:
         Returns:
             Dict with assignment result or None
         """
-        from .models import ExpertProfile, ExpertProjectAssignment, ExpertReviewTask
-
-        task = task_consensus.task
-        project = task.project
-
-        # Check if review is needed
-        needs_review = cls._check_if_needs_review(task_consensus)
-
-        if not needs_review["needs_review"]:
-            return None
-
-        # Find available expert for this project
-        expert_assignment = cls._find_available_expert(project, task_consensus)
-
-        if not expert_assignment:
-            logger.warning(
-                f"No available expert for task {task.id} in project {project.id}"
+        from .expert_assignment_engine import ExpertAssignmentEngine
+        
+        try:
+            # Use the new ExpertAssignmentEngine for assignment
+            result = ExpertAssignmentEngine.assign_task_to_expert(
+                task_consensus=task_consensus,
+                force=False,
             )
-            # Update consensus status to indicate review needed but no expert
-            task_consensus.status = "review_required"
-            task_consensus.save(update_fields=["status"])
-            return {
-                "needs_review": True,
-                "assigned": False,
-                "reason": "No expert available",
-            }
-
-        # Create review task
-        review_task = cls._create_review_task(
-            expert_assignment,
-            task_consensus,
-            needs_review["reason"],
-            needs_review.get("disagreement_score"),
-        )
-
-        return {
-            "needs_review": True,
-            "assigned": True,
-            "review_task_id": review_task.id,
-            "expert_email": expert_assignment.expert.user.email,
-            "reason": needs_review["reason"],
-        }
+            
+            if result.get('assigned'):
+                return {
+                    "needs_review": True,
+                    "assigned": True,
+                    "review_task_id": result.get('review_task_id'),
+                    "expert_email": result.get('expert_email'),
+                    "reason": result.get('assignment_reason'),
+                }
+            elif result.get('reason') == 'no_experts':
+                # Update consensus status to indicate review needed but no expert
+                task_consensus.status = "review_required"
+                task_consensus.save(update_fields=["status"])
+                return {
+                    "needs_review": True,
+                    "assigned": False,
+                    "reason": "No expert available",
+                }
+            elif result.get('reason') == 'skipped':
+                # Task skipped expert review (low agreement, random selection passed)
+                return None
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in check_and_assign_expert_review: {e}")
+            return None
 
     @classmethod
     def _check_if_needs_review(cls, task_consensus) -> Dict:

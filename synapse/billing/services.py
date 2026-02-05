@@ -1693,25 +1693,38 @@ class ProjectBillingService:
     @transaction.atomic
     def refund_deleted_tasks(cls, project, task_ids):
         """
-        Refund credits for deleted tasks that have no annotations.
+        Refund credits for deleted tasks based on unfilled annotation slots.
         
-        Only tasks with zero annotations are eligible for refund.
-        Refund amount = annotation cost per task.
+        With 3x overlap, each task has 3 annotation slots.
+        Refund = unfilled_slots × cost_per_slot
+        
+        Examples:
+        - Task with 0 annotations: Refund 3 slots
+        - Task with 1 annotation: Refund 2 slots
+        - Task with 2 annotations: Refund 1 slot
+        - Task with 3 annotations: Refund 0 slots (work complete)
         
         Args:
             project: Project instance
             task_ids: List of task IDs being deleted
             
         Returns:
-            dict: Refund details including count and amount
+            dict: Refund details including slot breakdown
         """
         from tasks.models import Task, Annotation
+        from billing.cost_estimation import CostEstimationService
+        
+        # Default overlap
+        OVERLAP = CostEstimationService.DEFAULT_OVERLAP
         
         if not task_ids:
             return {
                 "success": True,
                 "tasks_deleted": 0,
-                "tasks_refunded": 0,
+                "overlap_per_task": OVERLAP,
+                "total_slots": 0,
+                "slots_filled": 0,
+                "slots_refundable": 0,
                 "refund_amount": 0,
             }
         
@@ -1725,35 +1738,35 @@ class ProjectBillingService:
                 "success": False,
                 "error": "No billing record",
                 "tasks_deleted": len(task_ids),
-                "tasks_refunded": 0,
                 "refund_amount": 0,
             }
         
-        # Get tasks that have no annotations
-        tasks_with_annotations = set(
-            Annotation.objects.filter(task_id__in=task_ids)
-            .values_list('task_id', flat=True)
-            .distinct()
-        )
+        # Get annotation counts per task (capped at overlap)
+        annotation_counts = CostEstimationService.get_task_annotation_slot_counts(task_ids, OVERLAP)
         
-        # Tasks without any annotations are eligible for refund
-        unannotated_task_ids = [tid for tid in task_ids if tid not in tasks_with_annotations]
-        unannotated_count = len(unannotated_task_ids)
+        # Calculate slot statistics
+        total_slots = len(task_ids) * OVERLAP
+        slots_filled = sum(annotation_counts.values())
+        slots_refundable = total_slots - slots_filled
         
-        if unannotated_count == 0:
+        if slots_refundable == 0:
             logger.info(
-                f"No refund for project {project.id}: all {len(task_ids)} deleted tasks had annotations"
+                f"No refund for project {project.id}: all {len(task_ids)} deleted tasks had complete annotations"
             )
             return {
                 "success": True,
                 "tasks_deleted": len(task_ids),
-                "tasks_refunded": 0,
+                "overlap_per_task": OVERLAP,
+                "total_slots": total_slots,
+                "slots_filled": slots_filled,
+                "slots_refundable": 0,
                 "refund_amount": 0,
-                "message": "All deleted tasks had annotations - no refund issued",
+                "message": "All deleted tasks had complete annotations - no refund issued",
             }
         
-        # Calculate refund amount
-        # Get the annotation rate and complexity for this project
+        # Calculate cost per annotation slot
+        # Original annotation_fee was calculated as: task_count × rate × complexity × buffer × overlap
+        # So cost per slot = annotation_fee / (task_count × overlap)
         config_analysis = cls._analyze_label_config(project.label_config or "")
         complexity_multiplier = config_analysis["complexity_multiplier"]
         
@@ -1763,15 +1776,15 @@ class ProjectBillingService:
             data_types=data_types
         )
         
-        # Calculate cost per task
-        cost_per_task = (
+        # Cost per slot = rate × complexity × buffer (without multiplying by overlap)
+        cost_per_slot = (
             annotation_rate
             * complexity_multiplier
             * cls.ANNOTATION_BUFFER_MULTIPLIER
         )
         
-        # Total refund
-        refund_amount = cost_per_task * Decimal(str(unannotated_count))
+        # Calculate refund amount
+        refund_amount = cost_per_slot * Decimal(str(slots_refundable))
         
         # Round to 2 decimal places
         refund_amount = refund_amount.quantize(Decimal('0.01'))
@@ -1785,7 +1798,6 @@ class ProjectBillingService:
                 "success": False,
                 "error": "No organization billing record",
                 "tasks_deleted": len(task_ids),
-                "tasks_refunded": 0,
                 "refund_amount": 0,
             }
         
@@ -1798,7 +1810,10 @@ class ProjectBillingService:
             organization=organization,
             amount=refund_amount,
             transaction_type="refund",
-            description=f"Refund for {unannotated_count} unannotated task(s) deleted from project '{project.title}'",
+            description=(
+                f"Refund for {slots_refundable} unfilled annotation slots "
+                f"({len(task_ids)} tasks deleted from project '{project.title}')"
+            ),
             project=project,
         )
         
@@ -1807,47 +1822,62 @@ class ProjectBillingService:
         project_billing.security_deposit_required -= refund_amount
         project_billing.save()
         
+        # Build per-task breakdown
+        per_task_breakdown = []
+        for task_id in task_ids:
+            annotations = annotation_counts.get(task_id, 0)
+            refundable_slots = OVERLAP - annotations
+            per_task_breakdown.append({
+                "task_id": task_id,
+                "annotations": annotations,
+                "refundable_slots": refundable_slots,
+                "refund_amount": float(cost_per_slot * Decimal(str(refundable_slots))),
+            })
+        
         logger.info(
-            f"Refunded ₹{refund_amount} for {unannotated_count} unannotated tasks "
-            f"deleted from project {project.title} (ID: {project.id}). "
-            f"{len(task_ids) - unannotated_count} tasks with annotations were not refunded."
+            f"Refunded ₹{refund_amount} for {slots_refundable} unfilled slots "
+            f"({len(task_ids)} tasks deleted from project {project.title}, ID: {project.id}). "
+            f"Slots filled: {slots_filled}/{total_slots}"
         )
         
         return {
             "success": True,
             "tasks_deleted": len(task_ids),
-            "tasks_refunded": unannotated_count,
-            "tasks_with_annotations": len(task_ids) - unannotated_count,
+            "overlap_per_task": OVERLAP,
+            "total_slots": total_slots,
+            "slots_filled": slots_filled,
+            "slots_refundable": slots_refundable,
+            "cost_per_slot": float(cost_per_slot),
             "refund_amount": float(refund_amount),
-            "cost_per_task": float(cost_per_task),
-            "message": f"Refunded ₹{refund_amount} for {unannotated_count} unannotated task(s)",
+            "per_task_breakdown": per_task_breakdown,
+            "message": f"Refunded ₹{refund_amount} for {slots_refundable} unfilled annotation slot(s)",
         }
 
     @classmethod
     def calculate_project_deletion_refund(cls, project):
         """
-        Calculate refund for project deletion based on work completion percentage.
+        Calculate refund for project deletion based on slot-based work completion.
         
-        Buffer Explanation:
-        - Buffer is a 20% safety margin added to annotation costs upfront
-        - If base annotation cost is ₹100, we charge ₹120 (₹100 base + ₹20 buffer)
-        - The buffer (₹20) is 20% of the base cost (₹100)
-        - Total cost with buffer = base cost × 1.2
-        - Buffer amount = total cost - base cost = total cost × (0.2/1.2) ≈ total cost × 0.1667
+        With 3x overlap, work completion is measured by filled annotation slots:
+        - Total slots = total_tasks × 3
+        - Filled slots = sum(min(annotation_count, 3) for each task)
+        - Work completion % = (filled_slots / total_slots) × 100
         
         Refund Rules:
-        - If work done >= 30%: Only refund unannotated tasks cost (with buffer)
-        - If work done < 30%: Refund base fee + buffer on unannotated tasks + base cost of unannotated tasks
-        
-        Work done % = (tasks with annotations / total tasks) × 100
+        - If work done >= 30%: Only refund unfilled slots cost
+        - If work done < 30%: Refund base fee + buffer + unfilled slots cost
         
         Args:
             project: Project instance
             
         Returns:
-            dict: Refund calculation breakdown
+            dict: Refund calculation breakdown with slot statistics
         """
         from tasks.models import Task, Annotation
+        from billing.cost_estimation import CostEstimationService
+        
+        # Default overlap
+        OVERLAP = CostEstimationService.DEFAULT_OVERLAP
         
         try:
             project_billing = project.billing
@@ -1858,203 +1888,146 @@ class ProjectBillingService:
                 "refund_amount": 0,
             }
         
-        # Get all tasks
-        total_tasks = project.tasks.count()
+        # Get slot statistics using helper
+        slot_stats = CostEstimationService.calculate_project_slot_stats(project, OVERLAP)
+        
+        total_tasks = slot_stats["total_tasks"]
+        total_slots = slot_stats["total_slots"]
+        filled_slots = slot_stats["filled_slots"]
+        unfilled_slots = slot_stats["unfilled_slots"]
+        work_done_percentage = slot_stats["work_completion_percentage"]
         
         if total_tasks == 0:
             return {
                 "success": True,
                 "total_tasks": 0,
-                "tasks_with_annotations": 0,
-                "tasks_without_annotations": 0,
+                "overlap_per_task": OVERLAP,
+                "total_slots": 0,
+                "filled_slots": 0,
+                "unfilled_slots": 0,
                 "work_done_percentage": 0,
                 "refund_amount": 0,
                 "breakdown": {
                     "base_fee_refund": 0,
                     "buffer_refund": 0,
-                    "unannotated_tasks_refund": 0,
+                    "unfilled_slots_refund": 0,
                 },
                 "message": "No tasks in project",
             }
         
-        # Get tasks with at least one annotation
-        task_ids_with_annotations = set(
-            Annotation.objects.filter(project=project)
-            .values_list('task_id', flat=True)
-            .distinct()
-        )
-        
-        tasks_with_annotations = len(task_ids_with_annotations)
-        tasks_without_annotations = total_tasks - tasks_with_annotations
-        
-        # Calculate work done percentage
-        work_done_percentage = (tasks_with_annotations / total_tasks) * 100
-        
-        # Get the original base fee and annotation fee from SecurityDeposit record
+        # Get the original fees from SecurityDeposit or ProjectBilling
         original_base_fee = Decimal('0')
         original_annotation_fee = Decimal('0')
         total_deposit_paid = Decimal('0')
         storage_fee = Decimal(str(project_billing.storage_fee_paid))
         
         try:
-            # Get the most recent security deposit record
             security_deposit = project.security_deposits.order_by('-created_at').first()
             if security_deposit:
                 total_deposit_paid = Decimal(str(security_deposit.total_deposit))
-                logger.info(
-                    f"Project {project.id} deletion refund - SecurityDeposit found: "
-                    f"total_deposit={total_deposit_paid}, storage_fee={storage_fee}"
-                )
+                original_base_fee = Decimal(str(security_deposit.base_fee)) if security_deposit.base_fee else Decimal('0')
+                original_annotation_fee = Decimal(str(security_deposit.annotation_fee)) if security_deposit.annotation_fee else Decimal('0')
         except Exception as e:
             logger.warning(f"Could not fetch SecurityDeposit for project {project.id}: {e}")
         
-        # If no SecurityDeposit, get from ProjectBilling
+        # Fallback to ProjectBilling if SecurityDeposit doesn't have values
         if total_deposit_paid <= 0:
             total_deposit_paid = Decimal(str(project_billing.security_deposit_paid))
-            logger.info(f"Project {project.id} - Using security_deposit_paid from billing: {total_deposit_paid}")
         
-        # DERIVE base_fee and annotation_fee from total using the formula:
-        # total = base + storage + annotation, where base = 10% of annotation
-        # So: total = storage + 1.1 * annotation
-        # Therefore: annotation = (total - storage) / 1.1
-        # And: base = annotation / 10 = (total - storage) / 11
-        
-        amount_after_storage = total_deposit_paid - storage_fee
-        
-        if amount_after_storage > 0:
-            # Derive base_fee using the 10% formula
-            derived_base_fee = amount_after_storage / Decimal('11')
-            # Apply the same rounding rules as calculate_security_fee
-            if derived_base_fee <= Decimal('500'):
-                original_base_fee = Decimal('500')
-            elif derived_base_fee < Decimal('1000'):
-                # Round to nearest 50
-                original_base_fee = (derived_base_fee / Decimal('50')).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal('50')
-            else:
-                # Round to nearest 100
-                original_base_fee = (derived_base_fee / Decimal('100')).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal('100')
-            
-            # Calculate annotation fee as remainder
-            original_annotation_fee = total_deposit_paid - original_base_fee - storage_fee
-            
-            logger.info(
-                f"Project {project.id} - Derived from total={total_deposit_paid}: "
-                f"base_fee={original_base_fee} (raw={derived_base_fee:.2f}), "
-                f"annotation_fee={original_annotation_fee}, storage_fee={storage_fee}"
-            )
-        else:
-            # Fallback if math doesn't work
-            original_base_fee = Decimal('500')
-            original_annotation_fee = Decimal(str(project_billing.estimated_annotation_cost))
-            logger.warning(
-                f"Project {project.id} - Could not derive fees, using fallback: "
-                f"base_fee={original_base_fee}, annotation_fee={original_annotation_fee}"
-            )
-        
-        # Only use fallback if base fee is still invalid after all calculations
-        if original_base_fee <= 0:
-            logger.warning(
-                f"Project {project.id} - Base fee still invalid ({original_base_fee}). "
-                f"This indicates data inconsistency. Using minimum ₹500 fallback."
-            )
-            original_base_fee = Decimal('500')  # Minimum base fee fallback
-        
-        # Ensure annotation fee is valid
         if original_annotation_fee <= 0:
-            logger.error(
-                f"Project {project.id} - Invalid annotation_fee={original_annotation_fee}! "
-                f"This should not happen. Cannot calculate accurate refund."
-            )
+            original_annotation_fee = Decimal(str(project_billing.estimated_annotation_cost))
+        
+        # Derive base fee if not available
+        if original_base_fee <= 0:
+            amount_after_storage = total_deposit_paid - storage_fee
+            if amount_after_storage > 0:
+                derived_base_fee = amount_after_storage / Decimal('11')
+                if derived_base_fee <= Decimal('500'):
+                    original_base_fee = Decimal('500')
+                elif derived_base_fee < Decimal('1000'):
+                    original_base_fee = (derived_base_fee / Decimal('50')).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal('50')
+                else:
+                    original_base_fee = (derived_base_fee / Decimal('100')).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal('100')
+                original_annotation_fee = total_deposit_paid - original_base_fee - storage_fee
+            else:
+                original_base_fee = Decimal('500')
+        
+        # Validate annotation fee
+        if original_annotation_fee <= 0:
+            logger.error(f"Project {project.id} - Invalid annotation_fee={original_annotation_fee}")
             return {
                 "success": False,
                 "error": "Invalid annotation fee in billing records",
                 "refund_amount": 0,
             }
         
-        # Calculate cost per task - this MUST be based on what was actually charged
-        if total_tasks > 0 and original_annotation_fee > 0:
-            # Original annotation fee includes buffer (1.2x)
-            # So cost per task = annotation_fee / total_tasks
-            cost_per_task = original_annotation_fee / Decimal(str(total_tasks))
-            logger.info(
-                f"Project {project.id} - Cost per task: {cost_per_task} "
-                f"(annotation_fee={original_annotation_fee} / {total_tasks} tasks)"
-            )
+        # Calculate cost per slot
+        # Original annotation_fee = task_count × rate × complexity × buffer × overlap
+        # So cost per slot = annotation_fee / total_slots
+        if total_slots > 0:
+            cost_per_slot = original_annotation_fee / Decimal(str(total_slots))
+            # Cost per slot with buffer breakdown
+            cost_per_slot_base = cost_per_slot / cls.ANNOTATION_BUFFER_MULTIPLIER
+            cost_per_slot_buffer = cost_per_slot - cost_per_slot_base
         else:
-            logger.error(f"Project {project.id} - Cannot calculate cost per task! Using fallback")
-            # This should never happen
+            # Fallback calculation
             config_analysis = cls._analyze_label_config(project.label_config or "")
             complexity_multiplier = config_analysis["complexity_multiplier"]
-            
             data_types = list(project.data_types.keys()) if project.data_types else ["image"]
             annotation_rate = cls._calculate_annotation_rate(
                 config_analysis["annotation_types"],
                 data_types=data_types
             )
-            
-            cost_per_task = (
-                annotation_rate
-                * complexity_multiplier
-                * cls.ANNOTATION_BUFFER_MULTIPLIER
-            )
+            cost_per_slot = annotation_rate * complexity_multiplier * cls.ANNOTATION_BUFFER_MULTIPLIER
+            cost_per_slot_base = annotation_rate * complexity_multiplier
+            cost_per_slot_buffer = cost_per_slot - cost_per_slot_base
         
         # Calculate refunds based on work done percentage
         base_fee_refund = Decimal('0')
         buffer_refund = Decimal('0')
-        unannotated_tasks_refund = Decimal('0')
-        annotated_tasks_cost = Decimal('0')
+        unfilled_slots_refund = Decimal('0')
+        filled_slots_cost = cost_per_slot * Decimal(str(filled_slots))
         
         if work_done_percentage < 30:
-            # Below 30% threshold: Refund base fee + full cost of unannotated tasks
+            # Below 30% threshold: Refund base fee + buffer + unfilled slots base cost
             
             # 1. Refund base fee
             base_fee_refund = original_base_fee
             
-            # 2. Calculate cost breakdown
-            # The cost_per_task already includes the 1.2x buffer
-            # For display, we'll show buffer separately
+            # 2. Refund for unfilled slots
+            unfilled_full_cost = cost_per_slot * Decimal(str(unfilled_slots))
+            unfilled_base_cost = cost_per_slot_base * Decimal(str(unfilled_slots))
+            unfilled_buffer_cost = cost_per_slot_buffer * Decimal(str(unfilled_slots))
             
-            # Calculate cost for annotated and unannotated tasks
-            annotated_tasks_cost = cost_per_task * Decimal(str(tasks_with_annotations))
-            full_unannotated_cost = cost_per_task * Decimal(str(tasks_without_annotations))
-            
-            # Break down into base cost and buffer for display
-            # If total cost = base × 1.2, then base = total / 1.2, buffer = total - base
-            unannotated_base_cost = full_unannotated_cost / Decimal('1.2')
-            unannotated_buffer_cost = full_unannotated_cost - unannotated_base_cost
-            
-            # Set the refund amounts
-            unannotated_tasks_refund = unannotated_base_cost  # Base cost without buffer
-            buffer_refund = unannotated_buffer_cost  # Buffer on unannotated tasks
+            unfilled_slots_refund = unfilled_base_cost
+            buffer_refund = unfilled_buffer_cost
             
             logger.info(
-                f"Project {project.id} - Refund breakdown (work < 30%): "
-                f"annotated_cost={annotated_tasks_cost}, "
-                f"full_unannotated={full_unannotated_cost}, "
-                f"unannotated_base={unannotated_base_cost}, "
-                f"unannotated_buffer={unannotated_buffer_cost}"
+                f"Project {project.id} - Slot-based refund (work < 30%): "
+                f"filled_slots={filled_slots}, unfilled_slots={unfilled_slots}, "
+                f"cost_per_slot={cost_per_slot}, unfilled_cost={unfilled_full_cost}"
             )
         else:
-            # Above 30% threshold: Only refund unannotated tasks cost (with buffer)
-            annotated_tasks_cost = cost_per_task * Decimal(str(tasks_with_annotations))
-            unannotated_tasks_refund = cost_per_task * Decimal(str(tasks_without_annotations))
+            # Above 30% threshold: Only refund unfilled slots cost (with buffer)
+            unfilled_slots_refund = cost_per_slot * Decimal(str(unfilled_slots))
         
-        total_refund = base_fee_refund + buffer_refund + unannotated_tasks_refund
+        total_refund = base_fee_refund + buffer_refund + unfilled_slots_refund
         total_refund = total_refund.quantize(Decimal('0.01'))
         
         logger.info(
             f"Project {project.id} deletion refund calculated: "
-            f"work={work_done_percentage:.2f}%, "
-            f"total_tasks={total_tasks}, annotated={tasks_with_annotations}, unannotated={tasks_without_annotations}, "
-            f"base_fee={base_fee_refund}, buffer={buffer_refund}, unannotated_cost={unannotated_tasks_refund}, "
+            f"work={work_done_percentage:.2f}% (slots: {filled_slots}/{total_slots}), "
+            f"base_fee={base_fee_refund}, buffer={buffer_refund}, unfilled_cost={unfilled_slots_refund}, "
             f"total_refund={total_refund}"
         )
         
         return {
             "success": True,
             "total_tasks": total_tasks,
-            "tasks_with_annotations": tasks_with_annotations,
-            "tasks_without_annotations": tasks_without_annotations,
+            "overlap_per_task": OVERLAP,
+            "total_slots": total_slots,
+            "filled_slots": filled_slots,
+            "unfilled_slots": unfilled_slots,
             "work_done_percentage": round(work_done_percentage, 2),
             "threshold_percentage": 30,
             "meets_threshold": work_done_percentage >= 30,
@@ -2062,15 +2035,16 @@ class ProjectBillingService:
             "breakdown": {
                 "base_fee_refund": float(base_fee_refund),
                 "buffer_refund": float(buffer_refund),
-                "unannotated_tasks_refund": float(unannotated_tasks_refund),
-                "annotated_tasks_cost": float(annotated_tasks_cost),
-                "cost_per_task": float(cost_per_task),
+                "unfilled_slots_refund": float(unfilled_slots_refund),
+                "filled_slots_cost": float(filled_slots_cost),
+                "cost_per_slot": float(cost_per_slot),
                 "original_base_fee": float(original_base_fee),
                 "original_annotation_fee": float(original_annotation_fee),
+                "storage_fee": float(storage_fee),
             },
             "message": (
-                f"Work done: {work_done_percentage:.1f}%. "
-                f"{'Only unannotated tasks refunded' if work_done_percentage >= 30 else 'Base fee + buffer + unannotated tasks refunded'}"
+                f"Work done: {work_done_percentage:.1f}% ({filled_slots}/{total_slots} slots). "
+                f"{'Only unfilled slots refunded' if work_done_percentage >= 30 else 'Base fee + buffer + unfilled slots refunded'}"
             ),
         }
 

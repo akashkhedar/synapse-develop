@@ -617,6 +617,8 @@ class ProjectBillingViewSet(viewsets.ViewSet):
         avg_duration_mins = request.data.get("avg_duration_mins")
         annotation_types = request.data.get("annotation_types")
         label_count = request.data.get("label_count")
+        # Note: required_overlap is NOT client-configurable
+        # It defaults to 3 and can only be adjusted by the system algorithm
         
         if not task_count:
             return Response(
@@ -632,6 +634,7 @@ class ProjectBillingViewSet(viewsets.ViewSet):
                 avg_duration_mins=float(avg_duration_mins) if avg_duration_mins else None,
                 annotation_types=annotation_types,
                 label_count=int(label_count) if label_count else None,
+                # Overlap is system-controlled, always use default (3)
             )
             
             return Response({
@@ -930,9 +933,16 @@ class ProjectBillingViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["post"])
     def calculate_deletion_refund(self, request):
         """
-        Calculate refund amount for deleting tasks.
+        Calculate refund amount for deleting tasks based on unfilled annotation slots.
         
-        Only tasks with no annotations will be refunded.
+        With 3x overlap, each task has 3 annotation slots.
+        Refund = unfilled_slots × cost_per_slot
+        
+        Examples:
+        - Task with 0 annotations: Refund 3 slots
+        - Task with 1 annotation: Refund 2 slots
+        - Task with 2 annotations: Refund 1 slot
+        - Task with 3 annotations: Refund 0 slots (work complete)
         
         Request body:
         {
@@ -944,10 +954,13 @@ class ProjectBillingViewSet(viewsets.ViewSet):
         {
             "success": true,
             "tasks_total": 5,
-            "tasks_with_annotations": 2,
-            "tasks_refundable": 3,
-            "refund_amount": 360.0,
-            "cost_per_task": 120.0
+            "overlap_per_task": 3,
+            "total_slots_charged": 15,
+            "slots_filled": 6,
+            "slots_refundable": 9,
+            "cost_per_slot": 15.0,
+            "refund_amount": 135.0,
+            "per_task_breakdown": [...]
         }
         """
         project_id = request.data.get("project_id")
@@ -964,33 +977,15 @@ class ProjectBillingViewSet(viewsets.ViewSet):
             )
 
         try:
-            from tasks.models import Task, Annotation
+            from billing.cost_estimation import CostEstimationService
+            from decimal import Decimal
             
             project = self.get_project(project_id)
             
-            # Check which tasks have annotations
-            tasks_with_annotations = set(
-                Annotation.objects.filter(task_id__in=task_ids)
-                .values_list('task_id', flat=True)
-                .distinct()
-            )
+            # Default overlap
+            OVERLAP = CostEstimationService.DEFAULT_OVERLAP
             
-            # Tasks without any annotations are eligible for refund
-            tasks_refundable = len([tid for tid in task_ids if tid not in tasks_with_annotations])
-            tasks_with_annotations_count = len([tid for tid in task_ids if tid in tasks_with_annotations])
-            
-            if tasks_refundable == 0:
-                return Response({
-                    "success": True,
-                    "tasks_total": len(task_ids),
-                    "tasks_with_annotations": tasks_with_annotations_count,
-                    "tasks_refundable": 0,
-                    "refund_amount": 0,
-                    "cost_per_task": 0,
-                    "message": "No refund - all tasks have annotations"
-                })
-            
-            # Calculate cost per task
+            # Calculate cost per slot
             config_analysis = ProjectBillingService._analyze_label_config(project.label_config or "")
             complexity_multiplier = config_analysis["complexity_multiplier"]
             
@@ -1000,21 +995,22 @@ class ProjectBillingViewSet(viewsets.ViewSet):
                 data_types=data_types
             )
             
-            cost_per_task = float(
+            cost_per_slot = (
                 annotation_rate
                 * complexity_multiplier
                 * ProjectBillingService.ANNOTATION_BUFFER_MULTIPLIER
             )
             
-            refund_amount = cost_per_task * tasks_refundable
+            # Calculate slot-based refund
+            refund_info = CostEstimationService.calculate_slot_based_refund(
+                task_ids=task_ids,
+                cost_per_slot=cost_per_slot,
+                overlap=OVERLAP,
+            )
             
             return Response({
                 "success": True,
-                "tasks_total": len(task_ids),
-                "tasks_with_annotations": tasks_with_annotations_count,
-                "tasks_refundable": tasks_refundable,
-                "refund_amount": round(refund_amount, 2),
-                "cost_per_task": round(cost_per_task, 2),
+                **refund_info,
                 "breakdown": {
                     "annotation_rate": float(annotation_rate),
                     "complexity_multiplier": float(complexity_multiplier),
@@ -1029,11 +1025,16 @@ class ProjectBillingViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["post"])
     def calculate_project_deletion_refund(self, request):
         """
-        Calculate refund for project deletion.
+        Calculate refund for project deletion based on slot-based work completion.
+        
+        With 3x overlap, work completion is measured by filled annotation slots:
+        - Total slots = total_tasks × 3
+        - Filled slots = sum(min(annotation_count, 3) for each task)
+        - Work completion % = (filled_slots / total_slots) × 100
         
         Refund policy:
-        - If work done >= 30%: Only refund unannotated tasks cost
-        - If work done < 30%: Refund base fee + buffer + unannotated tasks cost
+        - If work done >= 30%: Only refund unfilled slots cost
+        - If work done < 30%: Refund base fee + buffer + unfilled slots cost
         
         Request body:
         {
@@ -1044,16 +1045,18 @@ class ProjectBillingViewSet(viewsets.ViewSet):
         {
             "success": true,
             "total_tasks": 100,
-            "tasks_with_annotations": 25,
-            "tasks_without_annotations": 75,
+            "overlap_per_task": 3,
+            "total_slots": 300,
+            "filled_slots": 75,
+            "unfilled_slots": 225,
             "work_done_percentage": 25.0,
             "threshold_percentage": 30,
             "meets_threshold": false,
-            "refund_amount": 15500.0,
+            "refund_amount": 3200.0,
             "breakdown": {
                 "base_fee_refund": 500.0,
-                "buffer_refund": 600.0,
-                "unannotated_tasks_refund": 14400.0,
+                "buffer_refund": 450.0,
+                "unfilled_slots_refund": 2250.0,
                 ...
             }
         }

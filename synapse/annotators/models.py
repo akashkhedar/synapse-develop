@@ -97,6 +97,18 @@ class AnnotatorProfile(models.Model):
     rejected_at = models.DateTimeField(null=True, blank=True)
     last_active = models.DateTimeField(null=True, blank=True)
 
+    # Activity tracking for assignment system
+    is_active_for_assignments = models.BooleanField(
+        default=True,
+        help_text="Whether annotator should receive new task assignments. "
+                  "Set to False when annotator is inactive for extended period."
+    )
+    inactive_since = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When annotator was marked inactive due to prolonged absence"
+    )
+
     # Rejection reason
     rejection_reason = models.TextField(blank=True)
 
@@ -132,6 +144,34 @@ class AnnotatorProfile(models.Model):
     def is_active_annotator(self):
         """Check if annotator is approved and can work"""
         return self.status == "approved"
+
+    @property
+    def is_eligible_for_assignments(self):
+        """Check if annotator is eligible to receive task assignments"""
+        return (
+            self.status == "approved" 
+            and self.user.is_active 
+            and self.is_active_for_assignments
+        )
+
+    def mark_inactive(self):
+        """Mark annotator as inactive due to prolonged absence"""
+        self.is_active_for_assignments = False
+        self.inactive_since = timezone.now()
+        self.save(update_fields=['is_active_for_assignments', 'inactive_since'])
+
+    def reactivate_on_login(self):
+        """Reactivate annotator when they login after being inactive"""
+        if not self.is_active_for_assignments:
+            self.is_active_for_assignments = True
+            self.inactive_since = None
+        self.last_active = timezone.now()
+        self.save(update_fields=['is_active_for_assignments', 'inactive_since', 'last_active'])
+
+    def update_last_active(self):
+        """Update last activity timestamp"""
+        self.last_active = timezone.now()
+        self.save(update_fields=['last_active'])
 
 
 class AnnotationTest(models.Model):
@@ -1444,7 +1484,7 @@ class ConsensusQualityScore(models.Model):
 class ExpertProfile(models.Model):
     """
     Profile for expert reviewers.
-    Experts are assigned by admin and review tasks with high disagreement.
+    Experts are assigned by admin and review consolidated annotations.
     They use the same UI as annotators but have elevated permissions.
     """
 
@@ -1454,26 +1494,18 @@ class ExpertProfile(models.Model):
         ("suspended", "Suspended"),
     ]
 
-    EXPERTISE_LEVEL_CHOICES = [
-        ("junior_expert", "Junior Expert"),
-        ("senior_expert", "Senior Expert"),
-        ("lead_expert", "Lead Expert"),
-    ]
-
     # User relationship - an expert can also be an annotator
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="expert_profile"
     )
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
-    expertise_level = models.CharField(
-        max_length=20, choices=EXPERTISE_LEVEL_CHOICES, default="junior_expert"
-    )
-
-    # Expertise areas (annotation types they can review)
+    
+    # NOTE: expertise_level removed - all experts are equal
+    # NOTE: expertise_areas on hold for future implementation
     expertise_areas = models.JSONField(
         default=list,
-        help_text="List of annotation types expert can review (classification, bounding_box, etc.)",
+        help_text="[ON HOLD] List of annotation types expert can review",
     )
 
     # Performance Metrics
@@ -1565,12 +1597,23 @@ class ExpertProfile(models.Model):
         default=0, help_text="Average review time in seconds"
     )
 
-    # Capacity
-    max_reviews_per_day = models.IntegerField(
-        default=50, help_text="Maximum reviews this expert can handle per day"
+    # Capacity - Based on number of concurrent tasks (not daily limit)
+    max_concurrent_reviews = models.IntegerField(
+        default=50, help_text="Maximum concurrent review tasks this expert can have"
     )
     current_workload = models.IntegerField(
         default=0, help_text="Current number of pending reviews"
+    )
+    
+    # Activity Tracking (for timeout and staleness handling)
+    is_active_for_assignments = models.BooleanField(
+        default=True,
+        help_text="Whether expert is currently active for receiving new reviews"
+    )
+    inactive_since = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When expert was marked inactive (for timeout handling)"
     )
 
     # Timestamps
@@ -1591,7 +1634,7 @@ class ExpertProfile(models.Model):
         ordering = ["-assigned_at"]
 
     def __str__(self):
-        return f"Expert: {self.user.email} ({self.expertise_level})"
+        return f"Expert: {self.user.email} ({self.status})"
 
     @property
     def approval_rate(self):
@@ -1605,8 +1648,43 @@ class ExpertProfile(models.Model):
     def is_available(self):
         """Check if expert can accept more reviews"""
         return (
-            self.status == "active" and self.current_workload < self.max_reviews_per_day
+            self.status == "active" 
+            and self.is_active_for_assignments
+            and self.current_workload < self.max_concurrent_reviews
         )
+    
+    @property
+    def available_capacity(self):
+        """Get remaining capacity for new reviews"""
+        return max(0, self.max_concurrent_reviews - self.current_workload)
+    
+    @property
+    def is_eligible_for_assignments(self):
+        """Check if expert is eligible to receive new review assignments"""
+        return (
+            self.status == "active"
+            and self.user.is_active
+            and self.is_active_for_assignments
+            and self.available_capacity > 0
+        )
+    
+    def mark_inactive(self):
+        """Mark expert as inactive - won't receive new reviews until login"""
+        self.is_active_for_assignments = False
+        self.inactive_since = timezone.now()
+        self.save(update_fields=["is_active_for_assignments", "inactive_since"])
+    
+    def reactivate_on_login(self):
+        """Reactivate expert when they log in"""
+        self.is_active_for_assignments = True
+        self.inactive_since = None
+        self.last_active = timezone.now()
+        self.save(update_fields=["is_active_for_assignments", "inactive_since", "last_active"])
+    
+    def update_last_active(self):
+        """Update last_active timestamp"""
+        self.last_active = timezone.now()
+        self.save(update_fields=["last_active"])
 
 
 class ExpertProjectAssignment(models.Model):

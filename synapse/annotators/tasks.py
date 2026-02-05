@@ -398,6 +398,164 @@ def process_task_completion_gamification(task_assignment_id):
         return {"success": False, "error": str(e)}
 
 
+# ============================================================================
+# EXPERT ASSIGNMENT TASKS
+# ============================================================================
+
+@job("default", timeout=600)
+def process_expert_review_timeouts(project_id=None):
+    """
+    Process timed out expert reviews.
+    
+    Checks for reviews that have exceeded the timeout threshold and:
+    - Extends timeout if expert was recently active
+    - Releases and reassigns if expert is inactive
+    - Marks expert as inactive if absence exceeds threshold
+    
+    Should be run hourly via scheduler.
+    
+    Args:
+        project_id: Optional project ID to limit processing
+    """
+    from annotators.expert_assignment_engine import ExpertAssignmentEngine
+    
+    try:
+        logger.info(f"🕐 Processing expert review timeouts (project: {project_id or 'all'})")
+        
+        if project_id:
+            from projects.models import Project
+            project = Project.objects.get(id=project_id)
+            result = ExpertAssignmentEngine.check_and_process_timeouts(project=project)
+        else:
+            result = ExpertAssignmentEngine.check_and_process_timeouts()
+        
+        logger.info(
+            f"✅ Expert timeout processing complete: "
+            f"{result['extended']} extended, "
+            f"{result['released']} released, "
+            f"{result['marked_inactive']} marked inactive"
+        )
+        
+        return {"success": True, **result}
+        
+    except Exception as e:
+        logger.exception(f"Error processing expert timeouts: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@job("default", timeout=600)
+def process_annotator_assignment_timeouts(project_id=None):
+    """
+    Process timed out annotator task assignments.
+    
+    Checks for assignments that have exceeded the timeout threshold and:
+    - Extends timeout if annotator was recently active
+    - Releases and reassigns if annotator is inactive
+    - Marks annotator as inactive if absence exceeds threshold
+    
+    Should be run hourly via scheduler.
+    
+    Args:
+        project_id: Optional project ID to limit processing
+    """
+    from annotators.assignment_engine import DynamicAssignmentEngine
+    
+    try:
+        logger.info(f"🕐 Processing annotator assignment timeouts (project: {project_id or 'all'})")
+        
+        if project_id:
+            from projects.models import Project
+            project = Project.objects.get(id=project_id)
+            DynamicAssignmentEngine.check_and_process_timeouts(project=project)
+        else:
+            DynamicAssignmentEngine.check_and_process_timeouts()
+        
+        logger.info("✅ Annotator timeout processing complete")
+        
+        return {"success": True}
+        
+    except Exception as e:
+        logger.exception(f"Error processing annotator timeouts: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@job("default", timeout=600)
+def batch_assign_pending_expert_reviews(project_id=None, max_assignments=50):
+    """
+    Batch assign pending tasks to available experts.
+    
+    Called to process tasks that are waiting for expert review.
+    Useful when new experts become available.
+    
+    Args:
+        project_id: Optional project ID to limit assignments
+        max_assignments: Maximum assignments to make
+    """
+    from annotators.expert_assignment_engine import ExpertAssignmentEngine
+    
+    try:
+        logger.info(
+            f"📋 Batch assigning expert reviews (project: {project_id or 'all'}, "
+            f"max: {max_assignments})"
+        )
+        
+        if project_id:
+            from projects.models import Project
+            project = Project.objects.get(id=project_id)
+            result = ExpertAssignmentEngine.batch_assign_pending_tasks(
+                project=project,
+                max_assignments=max_assignments
+            )
+        else:
+            result = ExpertAssignmentEngine.batch_assign_pending_tasks(
+                max_assignments=max_assignments
+            )
+        
+        logger.info(
+            f"✅ Expert batch assignment complete: "
+            f"{result['assignments_made']} assigned, "
+            f"{result.get('skipped', 0)} skipped"
+        )
+        
+        return {"success": True, **result}
+        
+    except Exception as e:
+        logger.exception(f"Error in batch expert assignment: {e}")
+        return {"success": False, "error": str(e)}
+
+
+def trigger_expert_timeout_processing(project_id=None, async_mode=True):
+    """
+    Trigger expert timeout processing.
+    
+    Args:
+        project_id: Optional project ID
+        async_mode: If True, run as background job
+    """
+    if async_mode:
+        job = process_expert_review_timeouts.delay(project_id)
+        logger.info(f"📋 Queued expert timeout job {job.id}")
+        return job
+    else:
+        return process_expert_review_timeouts(project_id)
+
+
+def trigger_annotator_timeout_processing(project_id=None, async_mode=True):
+    """
+    Trigger annotator timeout processing.
+    
+    Args:
+        project_id: Optional project ID
+        async_mode: If True, run as background job
+    """
+    if async_mode:
+        job = process_annotator_assignment_timeouts.delay(project_id)
+        logger.info(f"📋 Queued annotator timeout job {job.id}")
+        return job
+    else:
+        return process_annotator_assignment_timeouts(project_id)
+
+
 
 
 

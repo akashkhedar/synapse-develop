@@ -8,12 +8,12 @@ COST CALCULATION FORMULA:
 ========================
 
 1. PROJECT CREATION COST (Security Deposit)
-   Total Deposit = Base Fee + Storage Fee + Annotation Fee
+   Total Deposit = Security Fee + Storage Fee + Annotation Fee
 
    Where:
-   - Base Fee: Fixed ₹500 minimum deposit
+   - Security Fee: 10% of (Storage + Annotation Fee), minimum ₹500
    - Storage Fee: Estimated Storage (GB) × ₹10/GB
-   - Annotation Fee: (Task Count × Base Rate × Complexity Multiplier × Buffer Multiplier)
+   - Annotation Fee: Task Count × Base Rate × Complexity × Buffer × Overlap
 
 2. ANNOTATION WORK COST (Actual Cost)
    Total Cost = Sum of all annotation costs per task
@@ -23,6 +23,14 @@ COST CALCULATION FORMULA:
    - Base Rate depends on data type and annotation type
    - Complexity Multiplier based on label config (number of labels, types, etc.)
    - Buffer Multiplier: 1.5x (for estimation safety margin)
+   - Overlap Multiplier: Number of annotators per task (default: 3)
+
+OVERLAP (CONSENSUS):
+===================
+Each task requires multiple annotations for quality validation:
+- Default overlap: 3 annotators per task
+- Total annotations = Task Count × Overlap
+- Cost scales linearly with overlap
 
 ANNOTATION TYPE RATES:
 =====================
@@ -50,15 +58,17 @@ Project with:
 - Bounding box annotation
 - 10 labels
 - 1GB storage estimate
+- 3 annotators per task (default overlap)
 
-Step 1: Base Fee = ₹500
-Step 2: Storage Fee = 1 GB × ₹10/GB = ₹10
-Step 3: Annotation Rate = ₹5 (bounding box)
-Step 4: Complexity Multiplier = 1.5x (6-15 labels)
-Step 5: Buffer Multiplier = 1.5x
-Step 6: Annotation Fee = 100 × ₹5 × 1.5 × 1.5 = ₹1,125
+Step 1: Annotation Rate = ₹5 (bounding box)
+Step 2: Complexity Multiplier = 1.5x (6-15 labels)
+Step 3: Buffer Multiplier = 1.5x
+Step 4: Overlap = 3
+Step 5: Annotation Fee = 100 × ₹5 × 1.5 × 1.5 × 3 = ₹3,375
+Step 6: Storage Fee = 1 GB × ₹10/GB = ₹10
+Step 7: Security Fee = max(₹500, 10% × (₹10 + ₹3,375)) = ₹339 → ₹500 (min)
 
-Total Deposit = ₹500 + ₹10 + ₹1,125 = ₹1,635
+Total Deposit = ₹500 + ₹10 + ₹3,375 = ₹3,885
 
 After completion, actual cost may be less if fewer annotations were created,
 and unused deposit will be refunded.
@@ -142,6 +152,9 @@ class CostEstimationService:
         (float('inf'), Decimal("3.0"), "Very Complex"),
     ]
     
+    # Default overlap for cost estimation (matches project default)
+    DEFAULT_OVERLAP = 3
+    
     @classmethod
     def estimate_project_cost(
         cls,
@@ -151,6 +164,7 @@ class CostEstimationService:
         avg_duration_mins: Optional[float] = None,
         annotation_types: Optional[List[str]] = None,
         label_count: Optional[int] = None,
+        required_overlap: Optional[int] = None,
     ) -> Dict:
         """
         Estimate total project cost including deposit and annotation work
@@ -162,10 +176,14 @@ class CostEstimationService:
             avg_duration_mins: Average duration for audio/video (minutes)
             annotation_types: List of annotation types (if not auto-detecting)
             label_count: Number of labels (if not auto-detecting)
+            required_overlap: Number of annotators per task (default: 3)
             
         Returns:
             Dict with detailed cost breakdown
         """
+        
+        # Use default overlap if not specified
+        overlap = required_overlap if required_overlap is not None else cls.DEFAULT_OVERLAP
         
         # Analyze label config if provided
         if label_config:
@@ -202,12 +220,14 @@ class CostEstimationService:
             len(detected_annotation_types)
         )
         
-        # Calculate estimated annotation cost
+        # Calculate estimated annotation cost (multiplied by overlap)
+        # Each task needs annotations from `overlap` number of annotators
         estimated_annotation_cost = (
             Decimal(str(task_count))
             * annotation_rate
             * complexity_multiplier
             * cls.ANNOTATION_BUFFER_MULTIPLIER
+            * Decimal(str(overlap))
         )
         
         # Calculate security fee as 10% of project cost (storage + annotation)
@@ -222,6 +242,7 @@ class CostEstimationService:
             Decimal(str(task_count))
             * annotation_rate
             * complexity_multiplier
+            * Decimal(str(overlap))
         )
         
         # Expected refund (buffer amount)
@@ -236,6 +257,8 @@ class CostEstimationService:
             },
             "annotation_breakdown": {
                 "task_count": task_count,
+                "required_overlap": overlap,
+                "total_annotations": task_count * overlap,
                 "annotation_rate_per_task": float(annotation_rate),
                 "complexity_multiplier": float(complexity_multiplier),
                 "complexity_level": complexity_level,
@@ -255,12 +278,14 @@ class CostEstimationService:
                 "expected_actual_cost": float(base_fee + storage_fee + actual_annotation_cost),
                 "expected_refund": float(expected_refund),
                 "cost_per_task": float(annotation_rate * complexity_multiplier),
+                "cost_per_task_with_overlap": float(annotation_rate * complexity_multiplier * Decimal(str(overlap))),
             },
             "formula_explanation": {
-                "deposit_formula": "Security Fee (10% of project cost, min ₹500) + Storage Fee (GB × ₹10) + Annotation Fee (Tasks × Rate × Complexity × Buffer)",
+                "deposit_formula": "Security Fee + Storage Fee + Annotation Fee",
+                "annotation_fee_formula": f"Tasks ({task_count}) × Rate (₹{annotation_rate}) × Complexity ({complexity_multiplier}) × Buffer (1.5) × Overlap ({overlap})",
                 "security_fee_formula": "max(₹500, round(10% × (Storage Fee + Annotation Fee)))",
-                "annotation_formula": "Task Count × Base Rate × Complexity Multiplier",
                 "buffer_explanation": "1.5x buffer added to deposit for safety - unused amount refunded after completion",
+                "overlap_explanation": f"Each task requires {overlap} annotators for consensus validation",
             },
         }
     
@@ -370,3 +395,155 @@ class CostEstimationService:
     def get_formula_documentation(cls) -> str:
         """Return human-readable formula documentation"""
         return __doc__
+    
+    @classmethod
+    def get_task_annotation_slot_counts(cls, task_ids: List[int], overlap: int = None) -> Dict:
+        """
+        Get annotation count per task for refund calculations.
+        
+        Args:
+            task_ids: List of task IDs to check
+            overlap: Maximum overlap per task (default: DEFAULT_OVERLAP)
+            
+        Returns:
+            Dict with task_id -> annotation_count (capped at overlap)
+        """
+        from tasks.models import Annotation
+        from django.db.models import Count
+        
+        if overlap is None:
+            overlap = cls.DEFAULT_OVERLAP
+        
+        # Get raw counts
+        counts = dict(
+            Annotation.objects.filter(task_id__in=task_ids)
+            .values('task_id')
+            .annotate(count=Count('id'))
+            .values_list('task_id', 'count')
+        )
+        
+        # Cap at overlap limit and fill missing with 0
+        result = {}
+        for task_id in task_ids:
+            raw_count = counts.get(task_id, 0)
+            result[task_id] = min(raw_count, overlap)
+        
+        return result
+    
+    @classmethod
+    def calculate_slot_based_refund(
+        cls,
+        task_ids: List[int],
+        cost_per_slot: Decimal,
+        overlap: int = None,
+    ) -> Dict:
+        """
+        Calculate refund based on unfilled annotation slots.
+        
+        Each task has `overlap` slots. Client pays for all slots upfront.
+        Refund = unfilled_slots × cost_per_slot
+        
+        Args:
+            task_ids: List of task IDs being deleted
+            cost_per_slot: Cost per single annotation slot
+            overlap: Annotations per task (default: DEFAULT_OVERLAP)
+            
+        Returns:
+            Dict with slot breakdown and refund amount
+        """
+        if overlap is None:
+            overlap = cls.DEFAULT_OVERLAP
+        
+        if not task_ids:
+            return {
+                "tasks_total": 0,
+                "overlap_per_task": overlap,
+                "total_slots_charged": 0,
+                "slots_filled": 0,
+                "slots_unfilled": 0,
+                "cost_per_slot": float(cost_per_slot),
+                "refund_amount": 0,
+                "per_task_breakdown": [],
+            }
+        
+        # Get annotation counts per task
+        annotation_counts = cls.get_task_annotation_slot_counts(task_ids, overlap)
+        
+        total_slots_charged = len(task_ids) * overlap
+        slots_filled = sum(annotation_counts.values())
+        slots_unfilled = total_slots_charged - slots_filled
+        
+        refund_amount = Decimal(str(slots_unfilled)) * cost_per_slot
+        
+        # Per-task breakdown
+        per_task_breakdown = []
+        for task_id in task_ids:
+            annotations = annotation_counts.get(task_id, 0)
+            refundable_slots = overlap - annotations
+            per_task_breakdown.append({
+                "task_id": task_id,
+                "annotations": annotations,
+                "refundable_slots": refundable_slots,
+                "refund_amount": float(Decimal(str(refundable_slots)) * cost_per_slot),
+            })
+        
+        return {
+            "tasks_total": len(task_ids),
+            "overlap_per_task": overlap,
+            "total_slots_charged": total_slots_charged,
+            "slots_filled": slots_filled,
+            "slots_unfilled": slots_unfilled,
+            "cost_per_slot": float(cost_per_slot),
+            "refund_amount": float(refund_amount.quantize(Decimal('0.01'))),
+            "per_task_breakdown": per_task_breakdown,
+        }
+    
+    @classmethod
+    def calculate_project_slot_stats(cls, project, overlap: int = None) -> Dict:
+        """
+        Calculate slot-based statistics for a project.
+        
+        Args:
+            project: Project instance
+            overlap: Annotations per task (default: DEFAULT_OVERLAP)
+            
+        Returns:
+            Dict with slot statistics for work completion calculation
+        """
+        from tasks.models import Task, Annotation
+        from django.db.models import Count
+        
+        if overlap is None:
+            overlap = cls.DEFAULT_OVERLAP
+        
+        # Get all task IDs
+        task_ids = list(project.tasks.values_list('id', flat=True))
+        total_tasks = len(task_ids)
+        
+        if total_tasks == 0:
+            return {
+                "total_tasks": 0,
+                "overlap_per_task": overlap,
+                "total_slots": 0,
+                "filled_slots": 0,
+                "unfilled_slots": 0,
+                "work_completion_percentage": 0,
+            }
+        
+        # Get annotation counts per task, capped at overlap
+        annotation_counts = cls.get_task_annotation_slot_counts(task_ids, overlap)
+        
+        total_slots = total_tasks * overlap
+        filled_slots = sum(annotation_counts.values())
+        unfilled_slots = total_slots - filled_slots
+        work_completion = (filled_slots / total_slots) * 100 if total_slots > 0 else 0
+        
+        return {
+            "total_tasks": total_tasks,
+            "overlap_per_task": overlap,
+            "total_slots": total_slots,
+            "filled_slots": filled_slots,
+            "unfilled_slots": unfilled_slots,
+            "work_completion_percentage": round(work_completion, 2),
+        }
+

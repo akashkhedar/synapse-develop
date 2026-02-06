@@ -7,6 +7,7 @@ import {
   TestResult,
   EarningsDashboard,
   PayoutRequest,
+  ExpertiseTest,
 } from "./Annotators";
 import {
   ExpertEarnings,
@@ -46,6 +47,10 @@ PayoutRequest.title = "Request Payout";
 PayoutRequest.path = "/annotators/payouts";
 PayoutRequest.exact = true;
 
+ExpertiseTest.title = "Expertise Test";
+ExpertiseTest.path = "/annotators/expertise-test";
+ExpertiseTest.exact = true;
+
 // Expert Pages
 ExpertEarnings.title = "Expert Earnings";
 ExpertEarnings.path = "/expert/earnings";
@@ -68,6 +73,7 @@ export const Pages = [
   TestResult,
   EarningsDashboard,
   PayoutRequest,
+  ExpertiseTest,
   ExpertEarnings,
   ExpertPayoutPage,
   AcceptInvite,

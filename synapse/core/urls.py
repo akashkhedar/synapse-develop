@@ -67,6 +67,7 @@ urlpatterns = [
     ),  # Alternative route
     re_path(r"^annotators/test/$", views.main, name="annotator-test"),
     re_path(r"^annotators/skill-test/$", views.main, name="annotator-skill-test"),
+    re_path(r"^annotators/expertise-test/$", views.main, name="annotator-expertise-test"),
     re_path(r"^annotators/test-result/$", views.main, name="annotator-test-result"),
     re_path(r"^annotators/tasks/$", views.main, name="annotator-tasks"),
     re_path(r"^annotator/projects/$", views.main, name="annotator-projects"),

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expertise Qualification Test - Synapse</title>
+    <!--[if mso]>
+      <noscript>
+        <xml>
+          <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+          </o:OfficeDocumentSettings>
+        </xml>
+      </noscript>
+    <![endif]-->
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, sans-serif;
+      background-color: #000000;
+      color: #ffffff;
+    "
+  >
+    <!-- Wrapper table -->
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      border="0"
+      style="background-color: #000000"
+    >
+      <tr>
+        <td align="center" style="padding: 40px 20px">
+          <!-- Main container -->
+          <table
+            role="presentation"
+            width="600"
+            cellspacing="0"
+            cellpadding="0"
+            border="0"
+            style="max-width: 600px; width: 100%"
+          >
+            <!-- Header with logo -->
+            <tr>
+              <td style="padding: 32px 40px; border-bottom: 1px solid #1f2937">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                >
+                  <tr>
+                    <td>
+                      <span
+                        style="
+                          font-size: 24px;
+                          font-weight: 700;
+                          color: #ffffff;
+                          letter-spacing: 0.05em;
+                        "
+                        >SYNAPSE</span
+                      >
+                    </td>
+                    <td align="right">
+                      <span
+                        style="
+                          font-family: 'Courier New', monospace;
+                          font-size: 11px;
+                          color: #6b7280;
+                          letter-spacing: 0.1em;
+                        "
+                        >// EXPERTISE QUALIFICATION</span
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Main content -->
+            <tr>
+              <td
+                style="
+                  padding: 48px 40px;
+                  background-color: #0a0a0a;
+                  border-left: 1px solid #1f2937;
+                  border-right: 1px solid #1f2937;
+                "
+              >
+                <!-- Badge icon -->
+                <table
+                  role="presentation"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  style="margin-bottom: 24px"
+                >
+                  <tr>
+                    <td
+                      style="
+                        width: 64px;
+                        height: 64px;
+                        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                        border-radius: 12px;
+                        text-align: center;
+                        vertical-align: middle;
+                      "
+                    >
+                      <span style="font-size: 32px;">🎯</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Title -->
+                <p
+                  style="
+                    margin: 0 0 8px 0;
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    color: #f59e0b;
+                    letter-spacing: 0.15em;
+                    text-transform: uppercase;
+                  "
+                >
+                  Expertise Qualification
+                </p>
+
+                <h1
+                  style="
+                    margin: 0 0 24px 0;
+                    font-size: 28px;
+                    font-weight: 600;
+                    color: #ffffff;
+                    line-height: 1.2;
+                  "
+                >
+                  {{ expertise_name }} Test
+                </h1>
+
+                <p
+                  style="
+                    margin: 0 0 32px 0;
+                    font-size: 16px;
+                    color: #9ca3af;
+                    line-height: 1.6;
+                  "
+                >
+                  Hi
+                  <strong style="color: #ffffff">{{ user_name }}</strong>,<br /><br />
+                  You've applied to become a certified <strong style="color: #f59e0b">{{ expertise_name }}</strong> annotator. 
+                  Complete the qualification test to earn your expertise badge and unlock higher-paying tasks!
+                </p>
+
+                <!-- Test Details Card -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  style="
+                    background-color: rgba(245, 158, 11, 0.05);
+                    border: 1px solid rgba(245, 158, 11, 0.2);
+                    border-radius: 8px;
+                    margin-bottom: 32px;
+                  "
+                >
+                  <tr>
+                    <td style="padding: 24px">
+                      <table
+                        role="presentation"
+                        width="100%"
+                        cellspacing="0"
+                        cellpadding="0"
+                        border="0"
+                      >
+                        <tr>
+                          <td style="padding-bottom: 12px">
+                            <span
+                              style="
+                                font-family: 'Courier New', monospace;
+                                font-size: 10px;
+                                color: #f59e0b;
+                                letter-spacing: 0.1em;
+                              "
+                              >TEST DETAILS</span
+                            >
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 8px">
+                            <span style="color: #6b7280; font-size: 14px">Category:</span>
+                            <span style="color: #ffffff; font-size: 14px; margin-left: 8px">{{ category_name }}</span>
+                          </td>
+                        </tr>
+                        {% if specialization_name %}
+                        <tr>
+                          <td style="padding-bottom: 8px">
+                            <span style="color: #6b7280; font-size: 14px">Specialization:</span>
+                            <span style="color: #ffffff; font-size: 14px; margin-left: 8px">{{ specialization_name }}</span>
+                          </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                          <td style="padding-bottom: 8px">
+                            <span style="color: #6b7280; font-size: 14px">Passing Score:</span>
+                            <span style="color: #22c55e; font-size: 14px; margin-left: 8px">{{ passing_score }}%</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <span style="color: #6b7280; font-size: 14px">Time Limit:</span>
+                            <span style="color: #ffffff; font-size: 14px; margin-left: 8px">30 minutes</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- CTA Button -->
+                <table
+                  role="presentation"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  style="margin: 0 0 32px 0"
+                >
+                  <tr>
+                    <td style="border-radius: 0">
+                      <a
+                        href="{{ test_url }}"
+                        style="
+                          display: inline-block;
+                          padding: 16px 32px;
+                          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                          color: #000000;
+                          text-decoration: none;
+                          font-weight: 600;
+                          font-size: 14px;
+                          letter-spacing: 0.05em;
+                          border-radius: 0;
+                        "
+                        >START QUALIFICATION TEST →</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Badge Preview -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  style="
+                    background-color: rgba(34, 197, 94, 0.05);
+                    border: 1px solid rgba(34, 197, 94, 0.2);
+                    border-radius: 8px;
+                    margin-bottom: 24px;
+                  "
+                >
+                  <tr>
+                    <td style="padding: 20px">
+                      <table
+                        role="presentation"
+                        width="100%"
+                        cellspacing="0"
+                        cellpadding="0"
+                        border="0"
+                      >
+                        <tr>
+                          <td style="width: 50px; vertical-align: middle">
+                            <span style="font-size: 36px">🏆</span>
+                          </td>
+                          <td style="vertical-align: middle; padding-left: 16px">
+                            <p style="margin: 0; color: #22c55e; font-size: 12px; font-weight: 600; letter-spacing: 0.05em">
+                              PASS TO EARN
+                            </p>
+                            <p style="margin: 4px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 500">
+                              {{ expertise_name }} Badge
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Link expiry notice -->
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 13px;
+                    color: #6b7280;
+                    line-height: 1.5;
+                  "
+                >
+                  ⏰ This link expires in <strong style="color: #f59e0b">72 hours</strong>. 
+                  If you need a new link, you can request one from your dashboard.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td
+                style="
+                  padding: 32px 40px;
+                  background-color: #0a0a0a;
+                  border: 1px solid #1f2937;
+                  border-top: none;
+                "
+              >
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                >
+                  <tr>
+                    <td>
+                      <p
+                        style="
+                          margin: 0;
+                          font-size: 13px;
+                          color: #6b7280;
+                          line-height: 1.5;
+                        "
+                      >
+                        Need help? Reply to this email or visit our
+                        <a
+                          href="{{ site_url }}/contact"
+                          style="color: #f59e0b; text-decoration: none"
+                          >support page</a
+                        >.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-top: 16px">
+                      <p
+                        style="
+                          margin: 0;
+                          font-family: 'Courier New', monospace;
+                          font-size: 11px;
+                          color: #4b5563;
+                        "
+                      >
+                        © {{ year }} Synapse Data Labeling Platform
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

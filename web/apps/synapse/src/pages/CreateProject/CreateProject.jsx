@@ -17,6 +17,7 @@ import { Input, TextArea } from "../../components/Form";
 import { FF_LSDV_E_297, isFF } from "../../utils/feature-flags";
 
 import { SecurityDeposit } from "./SecurityDeposit/SecurityDeposit";
+import { ExpertiseSelector } from "../../components/ExpertiseSelector";
 
 const primaryButtonStyle = {
     display: "flex",
@@ -57,6 +58,10 @@ const ProjectName = ({
   error,
   description,
   setDescription,
+  selectedCategoryId,
+  setSelectedCategoryId,
+  selectedSpecializationId,
+  setSelectedSpecializationId,
   show = true,
 }) =>
   !show ? null : (
@@ -92,6 +97,12 @@ const ProjectName = ({
           className="project-description w-full"
         />
       </div>
+      <ExpertiseSelector
+        categoryId={selectedCategoryId}
+        specializationId={selectedSpecializationId}
+        onCategoryChange={setSelectedCategoryId}
+        onSpecializationChange={setSelectedSpecializationId}
+      />
     </form>
   );
 
@@ -109,6 +120,10 @@ export const CreateProject = ({ onClose }) => {
   const [description, setDescription] = React.useState("");
   const [sample, setSample] = React.useState(null);
   const [depositPaid, setDepositPaid] = React.useState(false);
+
+  // Expertise requirements state - expertise_required is derived from whether a category is selected
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState(null);
+  const [selectedSpecializationId, setSelectedSpecializationId] = React.useState(null);
 
   const setStep = React.useCallback((step) => {
     _setStep(step);
@@ -195,8 +210,11 @@ export const CreateProject = ({ onClose }) => {
       title: name,
       description,
       label_config: project?.label_config ?? "<View></View>",
+      expertise_required: selectedCategoryId !== null,
+      required_expertise_category: selectedCategoryId,
+      required_expertise_specialization: selectedSpecializationId,
     }),
-    [name, description, project?.label_config]
+    [name, description, project?.label_config, selectedCategoryId, selectedSpecializationId]
   );
 
   const onCreate = React.useCallback(async () => {
@@ -253,6 +271,9 @@ export const CreateProject = ({ onClose }) => {
         body: {
           title: name,
           description,
+          expertise_required: selectedCategoryId !== null,
+          required_expertise_category: selectedCategoryId,
+          required_expertise_specialization: selectedSpecializationId,
         },
       });
       setWaitingStatus(false);
@@ -281,6 +302,9 @@ export const CreateProject = ({ onClose }) => {
       body: {
         title: name,
         description,
+        expertise_required: selectedCategoryId !== null,
+        required_expertise_category: selectedCategoryId,
+        required_expertise_specialization: selectedSpecializationId,
       },
     });
 
@@ -396,6 +420,10 @@ export const CreateProject = ({ onClose }) => {
           onSaveName={onSaveName}
           description={description}
           setDescription={setDescription}
+          selectedCategoryId={selectedCategoryId}
+          setSelectedCategoryId={setSelectedCategoryId}
+          selectedSpecializationId={selectedSpecializationId}
+          setSelectedSpecializationId={setSelectedSpecializationId}
           show={step === "name"}
         />
         <ImportPage

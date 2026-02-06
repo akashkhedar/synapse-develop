@@ -484,6 +484,30 @@ class Project(ProjectMixin, FsmHistoryStateModel):
         help_text="Max consecutive honeypot failures before suspension",
     )
 
+    # Expertise Requirements for Assignment Filtering
+    # These fields filter annotators and experts by verified expertise
+    required_expertise_category = models.ForeignKey(
+        'annotators.ExpertiseCategory',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='projects',
+        help_text="Required expertise category for annotators/experts",
+    )
+    required_expertise_specialization = models.ForeignKey(
+        'annotators.ExpertiseSpecialization',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='projects',
+        help_text="Required expertise specialization (more specific than category)",
+    )
+    expertise_required = models.BooleanField(
+        _("expertise required"),
+        default=False,
+        help_text="If True, only annotators/experts with matching expertise can be assigned",
+    )
+
     def __init__(self, *args, **kwargs):
         super(Project, self).__init__(*args, **kwargs)
         # This check is required because deferred fields cause issues with evaluating lazy (deferred) fields if read directly, which means that any attempt to optimize a queryset involving projects

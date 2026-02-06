@@ -2658,6 +2658,37 @@ class AnnotatorExpertise(models.Model):
         help_text="Additional info from annotator"
     )
     
+    # Badge display (shown when verified)
+    badge_earned = models.BooleanField(
+        default=False,
+        help_text="Whether the badge has been earned for this expertise"
+    )
+    badge_earned_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the badge was earned"
+    )
+    
+    # Test invitation token (for email-based test links)
+    test_token = models.UUIDField(
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="Token for accessing the expertise test via email link"
+    )
+    test_token_created_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    test_email_sent = models.BooleanField(
+        default=False,
+        help_text="Whether test invitation email has been sent"
+    )
+    test_email_sent_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -2696,10 +2727,48 @@ class AnnotatorExpertise(models.Model):
         if passed:
             self.status = 'verified'
             self.verified_at = timezone.now()
+            # Award badge
+            self.badge_earned = True
+            self.badge_earned_at = timezone.now()
         else:
             self.status = 'failed'
         
         self.save()
+    
+    def generate_test_token(self):
+        """Generate a new test token for email-based access"""
+        import uuid
+        self.test_token = uuid.uuid4()
+        self.test_token_created_at = timezone.now()
+        self.save(update_fields=['test_token', 'test_token_created_at'])
+        return self.test_token
+    
+    def is_test_token_valid(self, hours=72):
+        """Check if test token is still valid (default 72 hours)"""
+        if not self.test_token or not self.test_token_created_at:
+            return False
+        expiry = self.test_token_created_at + timezone.timedelta(hours=hours)
+        return timezone.now() < expiry
+    
+    def mark_email_sent(self):
+        """Mark that test invitation email was sent"""
+        self.test_email_sent = True
+        self.test_email_sent_at = timezone.now()
+        self.save(update_fields=['test_email_sent', 'test_email_sent_at'])
+    
+    @property
+    def badge_info(self):
+        """Get badge display information"""
+        if not self.badge_earned:
+            return None
+        
+        return {
+            'name': self.specialization.name if self.specialization else self.category.name,
+            'category': self.category.name,
+            'icon': self.specialization.icon if self.specialization else self.category.icon,
+            'earned_at': self.badge_earned_at,
+            'score': float(self.last_test_score) if self.last_test_score else None,
+        }
     
     def can_retry_test(self, cooldown_days=7):
         """Check if annotator can retry the qualification test"""
@@ -2973,4 +3042,115 @@ class ExpertiseTest(models.Model):
         # Update the expertise record
         self.expertise.record_test_attempt(self.percentage, self.passed)
         
+        self.save()
+
+
+# ============================================================================
+# EXPERT EXPERTISE MODEL
+# ============================================================================
+
+
+class ExpertExpertise(models.Model):
+    """
+    Tracks which expertise/specializations an expert has been assigned.
+    Unlike AnnotatorExpertise, experts don't need to take tests - they are
+    directly assigned by admins.
+    """
+    
+    STATUS_CHOICES = [
+        ('assigned', 'Assigned'),         # Admin assigned this expertise
+        ('active', 'Active'),             # Currently active
+        ('revoked', 'Revoked'),           # Admin revoked
+    ]
+    
+    expert = models.ForeignKey(
+        ExpertProfile,
+        on_delete=models.CASCADE,
+        related_name='expertise_profiles'
+    )
+    category = models.ForeignKey(
+        ExpertiseCategory,
+        on_delete=models.CASCADE,
+        related_name='expert_expertise'
+    )
+    specialization = models.ForeignKey(
+        ExpertiseSpecialization,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='expert_expertise',
+        help_text="Optional: specific sub-expertise"
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='assigned'
+    )
+    
+    # When was this expertise assigned
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    assigned_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='assigned_expert_expertise'
+    )
+    
+    # Performance within this expertise
+    tasks_reviewed = models.IntegerField(default=0)
+    approvals_count = models.IntegerField(default=0)
+    rejections_count = models.IntegerField(default=0)
+    corrections_count = models.IntegerField(default=0)
+    
+    # Average review time in seconds
+    average_review_time = models.IntegerField(default=0)
+    
+    # Quality metrics
+    accuracy_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.0
+    )
+    
+    # Additional notes from admin
+    notes = models.TextField(
+        blank=True,
+        help_text="Notes from admin about this assignment"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Expert Expertise"
+        verbose_name_plural = "Expert Expertise"
+        unique_together = ['expert', 'category', 'specialization']
+        ordering = ['-assigned_at']
+    
+    def __str__(self):
+        spec = f" ({self.specialization.name})" if self.specialization else ""
+        return f"{self.expert.user.email} - {self.category.name}{spec}"
+    
+    @property
+    def badge_info(self):
+        """Get badge display info for this expertise."""
+        return {
+            'name': self.specialization.name if self.specialization else self.category.name,
+            'icon': self.specialization.icon if self.specialization else self.category.icon,
+            'category': self.category.name,
+            'status': self.status,
+            'assigned_at': self.assigned_at.isoformat() if self.assigned_at else None,
+            'tasks_reviewed': self.tasks_reviewed,
+        }
+    
+    def activate(self):
+        """Activate this expertise."""
+        self.status = 'active'
+        self.save()
+    
+    def revoke(self):
+        """Revoke this expertise."""
+        self.status = 'revoked'
         self.save()

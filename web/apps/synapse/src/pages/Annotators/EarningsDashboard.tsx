@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useHistory } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button, useToast, ToastType, Spinner } from "@synapse/ui";
+import { ExpertiseSection } from "./components";
 import "./EarningsDashboard.css";
 
 interface TrustLevel {
@@ -566,12 +567,6 @@ export const EarningsDashboard: React.FC = () => {
                   <span className="stat-lbl">Accuracy</span>
                 </div>
                 <div className="trust-stat">
-                  <span className="stat-num">
-                    {summary.trust_level.honeypot_pass_rate.toFixed(0)}%
-                  </span>
-                  <span className="stat-lbl">Quality Rate</span>
-                </div>
-                <div className="trust-stat">
                   <span
                     className={`stat-num ${
                       summary.trust_level.fraud_flags > 0 ? "warning" : ""
@@ -859,6 +854,9 @@ export const EarningsDashboard: React.FC = () => {
                 multiplier applies to all stages
               </div>
             </motion.section>
+
+            {/* Expertise & Badges */}
+            <ExpertiseSection />
           </div>
         </div>
       </div>

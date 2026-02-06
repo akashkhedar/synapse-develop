@@ -60,6 +60,7 @@ class ExpertAssignmentEngine:
         2. User is active
         3. is_active_for_assignments = True
         4. Has available capacity
+        5. Has verified expertise matching project requirements (if specified)
         
         Args:
             project: Optional - filter by project assignment
@@ -86,6 +87,45 @@ class ExpertAssignmentEngine:
                 models.Q(id__in=assigned_expert_ids) |
                 ~models.Q(project_assignments__is_active=True)
             ).distinct()
+            
+            # ================================================================
+            # EXPERTISE-BASED FILTERING FOR EXPERT REVIEW
+            # Filter experts by expertise if project requires it
+            # ================================================================
+            expertise_required = getattr(project, "expertise_required", False)
+            required_category = getattr(project, "required_expertise_category", None)
+            required_specialization = getattr(project, "required_expertise_specialization", None)
+            
+            if expertise_required and (required_category or required_specialization):
+                from .models import ExpertExpertise
+                
+                # Build expertise filter query for experts
+                expertise_query = ExpertExpertise.objects.filter(
+                    status='active'  # Only active expertise counts for experts
+                )
+                
+                if required_specialization:
+                    # If specialization is specified, filter by exact specialization
+                    expertise_query = expertise_query.filter(
+                        specialization=required_specialization
+                    )
+                elif required_category:
+                    # If only category is specified, any specialization in that category works
+                    expertise_query = expertise_query.filter(
+                        category=required_category
+                    )
+                
+                # Get expert IDs with matching active expertise
+                eligible_expert_ids = expertise_query.values_list('expert_id', flat=True)
+                
+                # Filter experts to only those with matching expertise
+                eligible = eligible.filter(id__in=eligible_expert_ids)
+                
+                logger.info(
+                    f"[ExpertExpertiseFilter] Project {project.id} requires expertise "
+                    f"(category={required_category}, specialization={required_specialization}). "
+                    f"Filtered to {eligible.count()} eligible experts."
+                )
         
         # Filter by capacity
         eligible_list = []

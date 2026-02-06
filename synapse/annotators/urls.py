@@ -486,4 +486,68 @@ urlpatterns = [
         api.ExpertiseTestDetailAPI.as_view(),
         name="expertise-test-detail",
     ),
+    # Apply for new expertise (sends email with test link)
+    path(
+        "expertise/apply",
+        api.ExpertiseApplyAPI.as_view(),
+        name="expertise-apply",
+    ),
+    # Access test via email token
+    path(
+        "expertise/test-by-token",
+        api.ExpertiseTestByTokenAPI.as_view(),
+        name="expertise-test-by-token",
+    ),
+    # Submit test via email token
+    path(
+        "expertise/test/submit-by-token",
+        api.ExpertiseTestSubmitByTokenAPI.as_view(),
+        name="expertise-test-submit-by-token",
+    ),
+    # Get all earned badges
+    path(
+        "expertise/badges",
+        api.AnnotatorBadgesAPI.as_view(),
+        name="expertise-badges",
+    ),
+    # Resend test email
+    path(
+        "expertise/resend-email/<int:expertise_id>",
+        api.ResendExpertiseTestEmailAPI.as_view(),
+        name="expertise-resend-email",
+    ),
+    
+    # ============================================================================
+    # EXPERT EXPERTISE ROUTES (Admin-assigned expertise for experts)
+    # ============================================================================
+    
+    # Expert expertise listing (for expert dashboard)
+    path(
+        "expert/expertise",
+        api.ExpertExpertiseListAPI.as_view(),
+        name="expert-expertise-list",
+    ),
+    # Expert expertise detail
+    path(
+        "expert/expertise/<int:pk>",
+        api.ExpertExpertiseDetailAPI.as_view(),
+        name="expert-expertise-detail",
+    ),
+    # Expert expertise summary for dashboard
+    path(
+        "expert/expertise/summary",
+        api.ExpertExpertiseSummaryAPI.as_view(),
+        name="expert-expertise-summary",
+    ),
+    # Admin API for assigning expertise to experts
+    path(
+        "admin/expert-expertise",
+        api.ExpertExpertiseAdminAPI.as_view(),
+        name="admin-expert-expertise-create",
+    ),
+    path(
+        "admin/expert-expertise/<int:pk>",
+        api.ExpertExpertiseAdminAPI.as_view(),
+        name="admin-expert-expertise-detail",
+    ),
 ]

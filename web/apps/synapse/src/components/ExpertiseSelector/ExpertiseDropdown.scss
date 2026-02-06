@@ -1,0 +1,105 @@
+/* =========================================
+   EXPERTISE DROPDOWN - Lambda Design System
+   ========================================= */
+
+.expertise-dropdown {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    margin-bottom: 8px;
+  }
+
+  &__wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: #0a0a0a;
+    border: 1px solid #374151;
+    transition: all 200ms ease;
+
+    &:hover {
+      border-color: #4b5563;
+    }
+
+    &:focus-within {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+  }
+
+  &__select {
+    width: 100%;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff;
+    border-radius: 0;
+    padding: 12px 48px 12px 14px;
+    font-size: 13px;
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+    cursor: pointer;
+    outline: none;
+
+    &::-ms-expand {
+      display: none;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      color: #6b7280;
+    }
+
+    option {
+      background: #111111;
+      color: #ffffff;
+      padding: 12px;
+    }
+  }
+
+  &__arrow {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 44px;
+    pointer-events: none;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid #374151;
+    background: rgba(55, 65, 81, 0.3);
+    transition: all 200ms ease;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &__wrapper:hover &__arrow {
+    color: #e5e7eb;
+    background: rgba(55, 65, 81, 0.5);
+  }
+
+  &__wrapper:focus-within &__arrow {
+    color: #8b5cf6;
+    border-left-color: #8b5cf6;
+  }
+}

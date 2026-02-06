@@ -176,6 +176,7 @@ from .models import (
     AnnotatorExpertise,
     ExpertiseTestQuestion,
     ExpertiseTest,
+    ExpertExpertise,
 )
 
 
@@ -327,6 +328,83 @@ class ExpertiseTestAdmin(admin.ModelAdmin):
         )
 
 
-
-
-
+@admin.register(ExpertExpertise)
+class ExpertExpertiseAdmin(admin.ModelAdmin):
+    """Admin interface for managing expert expertise assignments."""
+    
+    list_display = [
+        'expert_email',
+        'category',
+        'specialization',
+        'status',
+        'assigned_by_email',
+        'assigned_at',
+        'tasks_reviewed',
+    ]
+    list_filter = ['status', 'category', 'specialization', 'assigned_at']
+    search_fields = [
+        'expert__user__email',
+        'expert__user__first_name',
+        'category__name',
+        'specialization__name',
+        'assigned_by__email',
+    ]
+    raw_id_fields = ['expert', 'category', 'specialization', 'assigned_by']
+    readonly_fields = [
+        'assigned_at', 'tasks_reviewed', 'accuracy_score',
+        'created_at', 'updated_at'
+    ]
+    
+    fieldsets = (
+        ('Expert & Expertise', {
+            'fields': ('expert', 'category', 'specialization')
+        }),
+        ('Assignment', {
+            'fields': ('status', 'assigned_by', 'assigned_at', 'notes')
+        }),
+        ('Performance', {
+            'fields': ('tasks_reviewed', 'accuracy_score'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def expert_email(self, obj):
+        return obj.expert.user.email
+    expert_email.short_description = 'Expert'
+    
+    def assigned_by_email(self, obj):
+        if obj.assigned_by:
+            return obj.assigned_by.email
+        return '-'
+    assigned_by_email.short_description = 'Assigned By'
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            'expert__user',
+            'category',
+            'specialization',
+            'assigned_by'
+        )
+    
+    actions = ['activate_expertise', 'revoke_expertise']
+    
+    @admin.action(description='Activate selected expertise assignments')
+    def activate_expertise(self, request, queryset):
+        updated = 0
+        for expertise in queryset.filter(status='assigned'):
+            expertise.activate()
+            updated += 1
+        self.message_user(request, f'{updated} expertise assignment(s) activated.')
+    
+    @admin.action(description='Revoke selected expertise assignments')
+    def revoke_expertise(self, request, queryset):
+        updated = queryset.exclude(status='revoked').update(
+            status='revoked',
+            updated_at=timezone.now()
+        )
+        self.message_user(request, f'{updated} expertise assignment(s) revoked.')

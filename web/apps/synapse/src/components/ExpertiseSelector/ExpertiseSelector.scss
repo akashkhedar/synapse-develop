@@ -1,0 +1,13 @@
+/* =========================================
+   EXPERTISE SELECTOR - TWO COLUMN LAYOUT
+   ========================================= */
+
+.expertise-selector {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr; /* stack on mobile */
+  }
+}

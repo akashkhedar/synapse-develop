@@ -413,6 +413,45 @@ class AssignmentEngine:
                 accuracy_score__gte=95, trust_level__level__in=["senior", "expert"]
             )
 
+        # ================================================================
+        # EXPERTISE-BASED FILTERING
+        # Filter annotators by verified expertise if project requires it
+        # ================================================================
+        expertise_required = getattr(project, "expertise_required", False)
+        required_category = getattr(project, "required_expertise_category", None)
+        required_specialization = getattr(project, "required_expertise_specialization", None)
+        
+        if expertise_required and (required_category or required_specialization):
+            from .models import AnnotatorExpertise
+            
+            # Build expertise filter query
+            expertise_query = AnnotatorExpertise.objects.filter(
+                status='verified'  # Only verified expertise counts
+            )
+            
+            if required_specialization:
+                # If specialization is specified, filter by exact specialization
+                expertise_query = expertise_query.filter(
+                    specialization=required_specialization
+                )
+            elif required_category:
+                # If only category is specified, any specialization in that category works
+                expertise_query = expertise_query.filter(
+                    category=required_category
+                )
+            
+            # Get annotator IDs with matching verified expertise
+            eligible_annotator_ids = expertise_query.values_list('annotator_id', flat=True)
+            
+            # Filter annotators to only those with matching expertise
+            annotators = annotators.filter(id__in=eligible_annotator_ids)
+            
+            logger.info(
+                f"[ExpertiseFilter] Project {project.id} requires expertise "
+                f"(category={required_category}, specialization={required_specialization}). "
+                f"Filtered to {annotators.count()} eligible annotators."
+            )
+
         return annotators
 
     @staticmethod
@@ -495,11 +534,11 @@ class AssignmentEngine:
         ).values_list("task_id", flat=True)
 
         with transaction.atomic():
-            task = (
+            # First, find eligible task IDs (without FOR UPDATE due to GROUP BY limitation)
+            eligible_task_ids = list(
                 project.tasks.exclude(id__in=already_assigned)
                 .annotate(assignments_count=Count("annotator_assignments"))
                 .filter(assignments_count__lt=required_overlap)
-                .select_for_update(skip_locked=True)
                 .order_by(
                     Case(
                         When(priority="critical", then=Value(1)),
@@ -511,6 +550,16 @@ class AssignmentEngine:
                     ),
                     "id",
                 )
+                .values_list("id", flat=True)[:10]  # Get top 10 candidates
+            )
+
+            if not eligible_task_ids:
+                return None
+
+            # Now lock and fetch the first available task
+            task = (
+                project.tasks.filter(id__in=eligible_task_ids)
+                .select_for_update(skip_locked=True)
                 .first()
             )
 
@@ -534,34 +583,48 @@ class AssignmentEngine:
         ).values_list("task_id", flat=True)
 
         with transaction.atomic():
-            queryset = (
+            # First get eligible task IDs with annotate (no FOR UPDATE with GROUP BY)
+            eligible_base = (
                 project.tasks.exclude(id__in=already_assigned)
                 .annotate(assignments_count=Count("annotator_assignments"))
                 .filter(assignments_count__lt=required_overlap)
-                .select_for_update(skip_locked=True)
             )
 
             if is_high_performer:
                 # High performers get high-priority and complex tasks first
-                task = (
-                    queryset.filter(
+                eligible_ids = list(
+                    eligible_base.filter(
                         Q(priority__in=["critical", "high"])
                         | Q(complexity__in=["high", "very_high"])
                     )
                     .order_by("-priority", "id")
-                    .first()
+                    .values_list("id", flat=True)[:10]
                 )
 
-                if not task:
+                if not eligible_ids:
                     # Fall back to any task
-                    task = queryset.order_by("id").first()
+                    eligible_ids = list(
+                        eligible_base.order_by("id").values_list("id", flat=True)[:10]
+                    )
             else:
                 # Regular performers get standard tasks
-                task = (
-                    queryset.exclude(Q(priority="critical") | Q(complexity="very_high"))
+                eligible_ids = list(
+                    eligible_base.exclude(Q(priority="critical") | Q(complexity="very_high"))
                     .order_by("id")
-                    .first()
+                    .values_list("id", flat=True)[:10]
                 )
+
+            if not eligible_ids:
+                return None
+
+            # Now lock and get one task from the eligible set
+            from synapse.tasks.models import Task
+            task = (
+                Task.objects.filter(id__in=eligible_ids)
+                .select_for_update(skip_locked=True)
+                .order_by("id")
+                .first()
+            )
 
             if not task:
                 return None
@@ -590,7 +653,8 @@ class AssignmentEngine:
         ).values_list("task_id", flat=True)
 
         with transaction.atomic():
-            task = (
+            # First get eligible task IDs with annotate (no FOR UPDATE with GROUP BY)
+            eligible_ids = list(
                 project.tasks.exclude(id__in=already_assigned)
                 .annotate(assignments_count=Count("annotator_assignments"))
                 .filter(
@@ -600,6 +664,17 @@ class AssignmentEngine:
                     Q(complexity__in=allowed_complexities)
                     | Q(complexity__isnull=True)  # Allow unclassified tasks
                 )
+                .order_by("id")
+                .values_list("id", flat=True)[:10]
+            )
+
+            if not eligible_ids:
+                return None
+
+            # Now lock and get one task from the eligible set
+            from synapse.tasks.models import Task
+            task = (
+                Task.objects.filter(id__in=eligible_ids)
                 .select_for_update(skip_locked=True)
                 .order_by("id")
                 .first()
@@ -622,25 +697,42 @@ class AssignmentEngine:
         with transaction.atomic():
             # First, try to find tasks that already have partial assignments
             # (to complete consensus requirements)
-            task = (
+            # Get eligible IDs first (no FOR UPDATE with GROUP BY)
+            partial_task_ids = list(
                 project.tasks.exclude(id__in=already_assigned)
                 .annotate(assignments_count=Count("annotator_assignments"))
                 .filter(assignments_count__gt=0, assignments_count__lt=required_overlap)
-                .select_for_update(skip_locked=True)
                 .order_by("-assignments_count", "id")
-                .first()
+                .values_list("id", flat=True)[:10]
             )
 
-            if not task:
-                # Fall back to new tasks
+            from synapse.tasks.models import Task
+            task = None
+            if partial_task_ids:
                 task = (
-                    project.tasks.exclude(id__in=already_assigned)
-                    .annotate(assignments_count=Count("annotator_assignments"))
-                    .filter(assignments_count__lt=required_overlap)
+                    Task.objects.filter(id__in=partial_task_ids)
                     .select_for_update(skip_locked=True)
                     .order_by("id")
                     .first()
                 )
+
+            if not task:
+                # Fall back to new tasks - get eligible IDs first
+                new_task_ids = list(
+                    project.tasks.exclude(id__in=already_assigned)
+                    .annotate(assignments_count=Count("annotator_assignments"))
+                    .filter(assignments_count__lt=required_overlap)
+                    .order_by("id")
+                    .values_list("id", flat=True)[:10]
+                )
+
+                if new_task_ids:
+                    task = (
+                        Task.objects.filter(id__in=new_task_ids)
+                        .select_for_update(skip_locked=True)
+                        .order_by("id")
+                        .first()
+                    )
 
             if not task:
                 return None
@@ -789,6 +881,8 @@ class AssignmentEngine:
         total_assignments = 0
         annotators_used = set()
         tasks_fully_assigned = 0
+        tasks_partially_assigned = 0
+        tasks_waiting = 0
 
         # Determine strategy based on annotator count
         num_annotators = len(annotators)
@@ -924,8 +1018,8 @@ class AssignmentEngine:
 
                     if assigned_to_task >= task.target_assignment_count:
                         tasks_fully_assigned += 1
-                        # Trigger consolidation check
-                        AssignmentEngine._trigger_consolidation_if_ready(task)
+                        # TODO: Trigger consolidation check when ready
+                        # AssignmentEngine._trigger_consolidation_if_ready(task)
                         logger.debug(
                             f"✅ Task {task.id} FULLY assigned ({assigned_to_task}/{task.target_assignment_count})"
                         )
@@ -1959,9 +2053,10 @@ class DynamicAssignmentEngine:
             else:
                 # Get all projects annotator is assigned to
                 from projects.models import Project
+                # Use correct related_name: annotator_assignments (not project_assignments)
                 projects = Project.objects.filter(
-                    project_assignments__annotator=annotator,
-                    project_assignments__status='active'
+                    annotator_assignments__annotator=annotator,
+                    annotator_assignments__active=True
                 ).distinct()
                 
                 total_injected = 0

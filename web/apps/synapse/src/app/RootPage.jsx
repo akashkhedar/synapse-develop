@@ -22,6 +22,7 @@ export const RootPage = ({ content }) => {
     "/annotators/signup",
     "/annotators/test",
     "/annotators/skill-test",
+    "/annotators/expertise-test",
     "/annotators/verify",
     "/annotator",
     "/invite",

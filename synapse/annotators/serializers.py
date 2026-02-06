@@ -428,6 +428,7 @@ from .models import (
     AnnotatorExpertise,
     ExpertiseTestQuestion,
     ExpertiseTest,
+    ExpertExpertise,
 )
 
 
@@ -510,6 +511,7 @@ class AnnotatorExpertiseSerializer(serializers.ModelSerializer):
     
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_slug = serializers.CharField(source='category.slug', read_only=True)
+    category_icon = serializers.CharField(source='category.icon', read_only=True)
     specialization_name = serializers.CharField(
         source='specialization.name', 
         read_only=True, 
@@ -520,8 +522,14 @@ class AnnotatorExpertiseSerializer(serializers.ModelSerializer):
         read_only=True, 
         allow_null=True
     )
+    specialization_icon = serializers.CharField(
+        source='specialization.icon', 
+        read_only=True, 
+        allow_null=True
+    )
     is_verified = serializers.BooleanField(read_only=True)
     can_retry = serializers.SerializerMethodField()
+    badge_info = serializers.SerializerMethodField()
     
     class Meta:
         model = AnnotatorExpertise
@@ -530,9 +538,11 @@ class AnnotatorExpertiseSerializer(serializers.ModelSerializer):
             'category',
             'category_name',
             'category_slug',
+            'category_icon',
             'specialization',
             'specialization_name',
             'specialization_slug',
+            'specialization_icon',
             'status',
             'test_attempts',
             'last_test_score',
@@ -546,16 +556,24 @@ class AnnotatorExpertiseSerializer(serializers.ModelSerializer):
             'self_rating',
             'years_experience',
             'notes',
+            'badge_earned',
+            'badge_earned_at',
+            'badge_info',
+            'test_email_sent',
             'created_at',
         ]
         read_only_fields = [
             'id', 'status', 'test_attempts', 'last_test_score', 
             'last_test_at', 'verified_at', 'is_verified', 'can_retry',
             'tasks_completed', 'accuracy_score', 'created_at',
+            'badge_earned', 'badge_earned_at', 'badge_info', 'test_email_sent',
         ]
     
     def get_can_retry(self, obj):
         return obj.can_retry_test()
+    
+    def get_badge_info(self, obj):
+        return obj.badge_info
 
 
 class AnnotatorExpertiseCreateSerializer(serializers.Serializer):
@@ -734,7 +752,74 @@ class AnnotatorExpertiseSummarySerializer(serializers.Serializer):
     total_tasks_by_expertise = serializers.DictField()
 
 
+# ============================================================================
+# EXPERT EXPERTISE SERIALIZERS (Admin-assigned expertise for experts)
+# ============================================================================
+
+class ExpertExpertiseSerializer(serializers.ModelSerializer):
+    """Serializer for expert expertise assignments."""
+    
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
+    category_icon = serializers.CharField(source='category.icon', read_only=True)
+    specialization_name = serializers.CharField(
+        source='specialization.name', 
+        read_only=True, 
+        allow_null=True
+    )
+    specialization_slug = serializers.CharField(
+        source='specialization.slug', 
+        read_only=True, 
+        allow_null=True
+    )
+    specialization_icon = serializers.CharField(
+        source='specialization.icon', 
+        read_only=True, 
+        allow_null=True
+    )
+    assigned_by_email = serializers.EmailField(
+        source='assigned_by.email', 
+        read_only=True, 
+        allow_null=True
+    )
+    badge_info = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ExpertExpertise
+        fields = [
+            'id',
+            'category',
+            'category_name',
+            'category_slug',
+            'category_icon',
+            'specialization',
+            'specialization_name',
+            'specialization_slug',
+            'specialization_icon',
+            'status',
+            'assigned_at',
+            'assigned_by',
+            'assigned_by_email',
+            'tasks_reviewed',
+            'accuracy_score',
+            'notes',
+            'badge_info',
+            'created_at',
+        ]
+        read_only_fields = [
+            'id', 'status', 'assigned_at', 'assigned_by', 'assigned_by_email',
+            'tasks_reviewed', 'accuracy_score', 'created_at', 'badge_info',
+        ]
+    
+    def get_badge_info(self, obj):
+        return obj.badge_info
 
 
-
-
+class ExpertExpertiseSummarySerializer(serializers.Serializer):
+    """Summary serializer for expert dashboard display."""
+    
+    active_expertise = ExpertExpertiseSerializer(many=True)
+    assigned_expertise = ExpertExpertiseSerializer(many=True)
+    revoked_expertise = ExpertExpertiseSerializer(many=True)
+    total_active = serializers.IntegerField()
+    total_tasks_reviewed = serializers.IntegerField()

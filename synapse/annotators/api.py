@@ -5754,3 +5754,691 @@ class AnnotatorExpertiseSummaryAPI(APIView):
             }
         })
 
+
+class ExpertiseApplyAPI(APIView):
+    """
+    Apply for a new expertise - sends test link via email.
+    
+    POST: Apply for expertise and receive test link via email
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        from .models import ExpertiseCategory, ExpertiseSpecialization, AnnotatorExpertise
+        from .serializers import AnnotatorExpertiseSerializer
+        from django.core.mail import send_mail
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+        from datetime import datetime
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        category_id = request.data.get('category_id')
+        specialization_id = request.data.get('specialization_id')
+        
+        if not category_id:
+            return Response(
+                {'error': 'category_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            category = ExpertiseCategory.objects.get(id=category_id, is_active=True)
+        except ExpertiseCategory.DoesNotExist:
+            return Response(
+                {'error': 'Invalid category'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        specialization = None
+        if specialization_id:
+            try:
+                specialization = ExpertiseSpecialization.objects.get(
+                    id=specialization_id, 
+                    category=category,
+                    is_active=True
+                )
+            except ExpertiseSpecialization.DoesNotExist:
+                return Response(
+                    {'error': 'Invalid specialization'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Find or create expertise record
+        expertise, created = AnnotatorExpertise.objects.get_or_create(
+            annotator=profile,
+            category=category,
+            specialization=specialization,
+            defaults={
+                'status': 'claimed',
+                'self_rating': request.data.get('self_rating', 5),
+                'years_experience': request.data.get('years_experience', 0),
+            }
+        )
+        
+        # Check if already verified
+        if expertise.status == 'verified':
+            return Response(
+                {'error': 'You already have this expertise verified'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Reset status for retries
+        if expertise.status == 'failed':
+            if not expertise.can_retry_test():
+                return Response(
+                    {'error': 'You cannot retry yet. Please wait for the cooldown period.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            expertise.status = 'claimed'
+        
+        # Generate test token
+        token = expertise.generate_test_token()
+        
+        # Build test URL
+        expertise_name = specialization.name if specialization else category.name
+        test_url = f"{settings.HOSTNAME}/annotators/expertise-test?token={token}"
+        
+        # Prepare email context
+        email_context = {
+            'user_name': profile.user.get_full_name() or profile.user.email.split('@')[0],
+            'expertise_name': expertise_name,
+            'category_name': category.name,
+            'specialization_name': specialization.name if specialization else None,
+            'passing_score': specialization.passing_score if specialization else 70,
+            'test_url': test_url,
+            'site_url': settings.HOSTNAME,
+            'year': datetime.now().year,
+        }
+        
+        # Render HTML email
+        html_message = render_to_string('annotators/emails/expertise_test.html', email_context)
+        plain_message = strip_tags(html_message)
+        
+        subject = f"🎯 Synapse - {expertise_name} Qualification Test"
+        
+        try:
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [profile.user.email],
+                fail_silently=False,
+                html_message=html_message,
+            )
+            expertise.mark_email_sent()
+            email_sent = True
+        except Exception as e:
+            logger.error(f"Failed to send expertise test email: {e}")
+            email_sent = False
+        
+        expertise.save()
+        
+        return Response({
+            'message': f'Application submitted for {expertise_name}',
+            'expertise': AnnotatorExpertiseSerializer(expertise).data,
+            'email_sent': email_sent,
+            'test_url': test_url,  # Also return URL in case email fails
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class ExpertiseTestByTokenAPI(APIView):
+    """
+    Access expertise test via email token.
+    
+    GET: Validate token and get test info
+    POST: Start the test
+    """
+    
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        from .models import AnnotatorExpertise
+        
+        token = request.query_params.get('token')
+        if not token:
+            return Response(
+                {'error': 'Token is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            expertise = AnnotatorExpertise.objects.select_related(
+                'category', 'specialization', 'annotator__user'
+            ).get(test_token=token)
+        except AnnotatorExpertise.DoesNotExist:
+            return Response(
+                {'error': 'Invalid or expired token'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if not expertise.is_test_token_valid():
+            return Response(
+                {'error': 'Token has expired. Please apply again.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if expertise.status == 'verified':
+            return Response({
+                'status': 'already_verified',
+                'message': 'You already have this expertise verified.',
+                'badge_info': expertise.badge_info,
+            })
+        
+        return Response({
+            'valid': True,
+            'expertise': {
+                'id': expertise.id,
+                'category_name': expertise.category.name,
+                'category_slug': expertise.category.slug,
+                'specialization_name': expertise.specialization.name if expertise.specialization else None,
+                'specialization_slug': expertise.specialization.slug if expertise.specialization else None,
+                'annotator_name': expertise.annotator.user.get_full_name() or expertise.annotator.user.email.split('@')[0],
+                'test_attempts': expertise.test_attempts,
+            },
+            'passing_score': expertise.specialization.passing_score if expertise.specialization else 70,
+            'can_start': expertise.status in ['claimed', 'failed'],
+        })
+
+
+class ExpertiseTestSubmitByTokenAPI(APIView):
+    """
+    Submit expertise test results via token (no login required).
+    
+    POST: Submit test answers and score
+    """
+    
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        from .models import AnnotatorExpertise
+        from django.utils import timezone
+        
+        token = request.data.get('token')
+        if not token:
+            return Response(
+                {'error': 'Token is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            expertise = AnnotatorExpertise.objects.select_related(
+                'category', 'specialization', 'annotator'
+            ).get(test_token=token)
+        except AnnotatorExpertise.DoesNotExist:
+            return Response(
+                {'error': 'Invalid or expired token'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if not expertise.is_test_token_valid():
+            return Response(
+                {'error': 'Token has expired'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        score = request.data.get('score', 0)
+        passed = request.data.get('passed', False)
+        time_taken = request.data.get('time_taken', 0)
+        answers = request.data.get('answers', {})
+        
+        # Update expertise record
+        expertise.test_attempts += 1
+        expertise.last_test_score = score
+        expertise.last_test_at = timezone.now()
+        
+        passing_score = expertise.specialization.passing_score if expertise.specialization else 70
+        
+        badge_earned = False
+        if score >= passing_score:
+            expertise.status = 'verified'
+            expertise.verified_at = timezone.now()
+            expertise.badge_earned = True
+            expertise.badge_earned_at = timezone.now()
+            badge_earned = True
+        else:
+            expertise.status = 'failed'
+        
+        # Clear token after use
+        expertise.test_token = None
+        expertise.test_token_created_at = None
+        expertise.save()
+        
+        expertise_name = expertise.specialization.name if expertise.specialization else expertise.category.name
+        
+        return Response({
+            'success': True,
+            'score': score,
+            'passed': score >= passing_score,
+            'passing_score': passing_score,
+            'badge_earned': badge_earned,
+            'expertise_name': expertise_name,
+            'test_attempts': expertise.test_attempts,
+        })
+
+
+class AnnotatorBadgesAPI(APIView):
+    """
+    Get all badges earned by the annotator.
+    
+    GET: Returns all earned badges
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from .models import AnnotatorExpertise
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get all verified expertise with badges
+        badges = AnnotatorExpertise.objects.filter(
+            annotator=profile,
+            badge_earned=True
+        ).select_related('category', 'specialization').order_by('-badge_earned_at')
+        
+        badge_list = []
+        for exp in badges:
+            badge_list.append({
+                'id': exp.id,
+                'name': exp.specialization.name if exp.specialization else exp.category.name,
+                'category': exp.category.name,
+                'category_slug': exp.category.slug,
+                'icon': exp.specialization.icon if exp.specialization else exp.category.icon,
+                'specialization': exp.specialization.name if exp.specialization else None,
+                'earned_at': exp.badge_earned_at.isoformat() if exp.badge_earned_at else None,
+                'score': float(exp.last_test_score) if exp.last_test_score else None,
+                'tasks_completed': exp.tasks_completed,
+                'accuracy_score': float(exp.accuracy_score),
+            })
+        
+        return Response({
+            'badges': badge_list,
+            'total_badges': len(badge_list),
+        })
+
+
+class ResendExpertiseTestEmailAPI(APIView):
+    """
+    Resend test invitation email for a specific expertise.
+    
+    POST: Resend the test email
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, expertise_id):
+        from .models import AnnotatorExpertise
+        from django.core.mail import send_mail
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            expertise = AnnotatorExpertise.objects.select_related(
+                'category', 'specialization'
+            ).get(id=expertise_id, annotator=profile)
+        except AnnotatorExpertise.DoesNotExist:
+            return Response(
+                {'error': 'Expertise not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if expertise.status == 'verified':
+            return Response(
+                {'error': 'Expertise already verified'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Generate new token
+        token = expertise.generate_test_token()
+        
+        expertise_name = expertise.specialization.name if expertise.specialization else expertise.category.name
+        test_url = f"{settings.HOSTNAME}/annotators/expertise-test?token={token}"
+        
+        subject = f"Synapse - Expertise Test: {expertise_name}"
+        message = f"""
+Hello {profile.user.get_full_name() or profile.user.email},
+
+Here is your new test link for {expertise_name}:
+
+{test_url}
+
+This link is valid for 72 hours.
+
+Best regards,
+Synapse Team
+        """
+        
+        try:
+            send_mail(
+                subject,
+                message.strip(),
+                settings.DEFAULT_FROM_EMAIL,
+                [profile.user.email],
+                fail_silently=False,
+            )
+            expertise.mark_email_sent()
+            return Response({
+                'message': 'Test email sent successfully',
+                'test_url': test_url,
+            })
+        except Exception as e:
+            logger.error(f"Failed to send expertise test email: {e}")
+            return Response(
+                {'error': 'Failed to send email. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# ============================================================================
+# EXPERT EXPERTISE SYSTEM APIs (Admin-assigned expertise for experts)
+# ============================================================================
+
+class ExpertExpertiseListAPI(APIView):
+    """
+    List expert's expertise assignments.
+    
+    GET: List expert's assigned expertise
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from .models import ExpertExpertise, ExpertProfile
+        from .serializers import ExpertExpertiseSerializer
+        
+        try:
+            profile = ExpertProfile.objects.get(user=request.user)
+        except ExpertProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an expert account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get optional status filter
+        status_filter = request.query_params.get('status')
+        
+        expertise_query = ExpertExpertise.objects.filter(
+            expert=profile
+        ).select_related('category', 'specialization', 'assigned_by')
+        
+        if status_filter:
+            expertise_query = expertise_query.filter(status=status_filter)
+        
+        serializer = ExpertExpertiseSerializer(expertise_query, many=True)
+        
+        # Group by status for dashboard
+        active = [e for e in serializer.data if e['status'] == 'active']
+        assigned = [e for e in serializer.data if e['status'] == 'assigned']
+        revoked = [e for e in serializer.data if e['status'] == 'revoked']
+        
+        return Response({
+            'expertise': serializer.data,
+            'summary': {
+                'total': len(serializer.data),
+                'active': len(active),
+                'assigned': len(assigned),
+                'revoked': len(revoked),
+            },
+            'active_expertise': active,
+            'assigned_expertise': assigned,
+            'revoked_expertise': revoked,
+        })
+
+
+class ExpertExpertiseDetailAPI(APIView):
+    """
+    Get details of a specific expert expertise assignment.
+    
+    GET: Get expertise details
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        from .models import ExpertExpertise, ExpertProfile
+        from .serializers import ExpertExpertiseSerializer
+        
+        try:
+            profile = ExpertProfile.objects.get(user=request.user)
+        except ExpertProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an expert account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            expertise = ExpertExpertise.objects.select_related(
+                'category', 'specialization', 'assigned_by'
+            ).get(pk=pk, expert=profile)
+        except ExpertExpertise.DoesNotExist:
+            return Response(
+                {'error': 'Expertise not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = ExpertExpertiseSerializer(expertise)
+        return Response(serializer.data)
+
+
+class ExpertExpertiseAdminAPI(APIView):
+    """
+    Admin API for assigning expertise to experts.
+    
+    POST: Assign expertise to an expert
+    PUT: Update expertise assignment
+    DELETE: Revoke expertise assignment
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def check_admin_permission(self, request):
+        """Check if user has admin permissions."""
+        if not request.user.is_staff:
+            return False
+        return True
+    
+    def post(self, request):
+        from .models import ExpertExpertise, ExpertProfile, ExpertiseCategory, ExpertiseSpecialization
+        from .serializers import ExpertExpertiseSerializer
+        
+        if not self.check_admin_permission(request):
+            return Response(
+                {'error': 'Admin permissions required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        expert_id = request.data.get('expert_id')
+        category_id = request.data.get('category_id')
+        specialization_id = request.data.get('specialization_id')
+        notes = request.data.get('notes', '')
+        
+        if not expert_id or not category_id:
+            return Response(
+                {'error': 'expert_id and category_id are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            expert = ExpertProfile.objects.get(pk=expert_id)
+        except ExpertProfile.DoesNotExist:
+            return Response(
+                {'error': 'Expert not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            category = ExpertiseCategory.objects.get(pk=category_id)
+        except ExpertiseCategory.DoesNotExist:
+            return Response(
+                {'error': 'Category not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        specialization = None
+        if specialization_id:
+            try:
+                specialization = ExpertiseSpecialization.objects.get(
+                    pk=specialization_id,
+                    category=category
+                )
+            except ExpertiseSpecialization.DoesNotExist:
+                return Response(
+                    {'error': 'Specialization not found or does not belong to category'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Check for existing expertise
+        existing = ExpertExpertise.objects.filter(
+            expert=expert,
+            category=category,
+            specialization=specialization
+        ).first()
+        
+        if existing and existing.status != 'revoked':
+            return Response(
+                {'error': 'Expert already has this expertise'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if existing and existing.status == 'revoked':
+            # Reactivate revoked expertise
+            existing.status = 'active'
+            existing.assigned_by = request.user
+            existing.notes = notes
+            existing.save()
+            serializer = ExpertExpertiseSerializer(existing)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # Create new expertise assignment
+        expertise = ExpertExpertise.objects.create(
+            expert=expert,
+            category=category,
+            specialization=specialization,
+            status='active',
+            assigned_by=request.user,
+            notes=notes
+        )
+        
+        serializer = ExpertExpertiseSerializer(expertise)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def put(self, request, pk):
+        from .models import ExpertExpertise
+        from .serializers import ExpertExpertiseSerializer
+        
+        if not self.check_admin_permission(request):
+            return Response(
+                {'error': 'Admin permissions required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            expertise = ExpertExpertise.objects.get(pk=pk)
+        except ExpertExpertise.DoesNotExist:
+            return Response(
+                {'error': 'Expertise not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        new_status = request.data.get('status')
+        notes = request.data.get('notes')
+        
+        if new_status:
+            if new_status not in ['assigned', 'active', 'revoked']:
+                return Response(
+                    {'error': 'Invalid status'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            expertise.status = new_status
+            if new_status == 'active' and not expertise.assigned_at:
+                expertise.activate()
+        
+        if notes is not None:
+            expertise.notes = notes
+        
+        expertise.save()
+        
+        serializer = ExpertExpertiseSerializer(expertise)
+        return Response(serializer.data)
+    
+    def delete(self, request, pk):
+        from .models import ExpertExpertise
+        
+        if not self.check_admin_permission(request):
+            return Response(
+                {'error': 'Admin permissions required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            expertise = ExpertExpertise.objects.get(pk=pk)
+        except ExpertExpertise.DoesNotExist:
+            return Response(
+                {'error': 'Expertise not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        expertise.revoke()
+        return Response({'message': 'Expertise revoked successfully'})
+
+
+class ExpertExpertiseSummaryAPI(APIView):
+    """
+    Get summary of expert's expertise for dashboard.
+    
+    GET: Returns summary statistics
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from .models import ExpertExpertise, ExpertProfile
+        
+        try:
+            profile = ExpertProfile.objects.get(user=request.user)
+        except ExpertProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an expert account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        expertise_list = ExpertExpertise.objects.filter(
+            expert=profile
+        ).select_related('category', 'specialization')
+        
+        active_count = expertise_list.filter(status='active').count()
+        total_reviews = sum(e.tasks_reviewed for e in expertise_list)
+        
+        # Get categories with active expertise
+        active_categories = list(
+            expertise_list.filter(status='active')
+            .values_list('category__name', flat=True)
+            .distinct()
+        )
+        
+        return Response({
+            'active_expertise_count': active_count,
+            'total_expertise_count': expertise_list.count(),
+            'total_tasks_reviewed': total_reviews,
+            'active_categories': active_categories,
+        })

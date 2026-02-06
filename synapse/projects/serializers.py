@@ -245,6 +245,10 @@ class ProjectSerializer(FlexFieldsModelSerializer):
             'state',
             '_annotator_assigned_tasks',
             '_annotator_completed_tasks',
+            # Expertise requirements for assignment filtering
+            'required_expertise_category',
+            'required_expertise_specialization',
+            'expertise_required',
         ]
 
     def validate_label_config(self, value):

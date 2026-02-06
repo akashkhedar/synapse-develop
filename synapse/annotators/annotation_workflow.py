@@ -412,6 +412,13 @@ class AnnotationWorkflowService:
                         assignment.completed_at = timezone.now()
                         assignment.annotation_id = annotation.id
                         assignment.save(update_fields=["status", "completed_at", "annotation_id"])
+                    
+                    # Update streak for honeypot completion as well
+                    from .models import AnnotatorStreak
+                    streak, created = AnnotatorStreak.objects.get_or_create(
+                        annotator=profile
+                    )
+                    streak.record_activity()
                 except Exception as e:
                     logger.warning(f"Could not update honeypot task assignment: {e}")
                 return  # Skip consolidation for honeypots
@@ -421,7 +428,7 @@ class AnnotationWorkflowService:
             logger.warning(f"Error in honeypot handling: {e}")
             # Continue with normal workflow if honeypot handling fails
 
-        # Update task assignment
+        # Update task assignment and record streak activity
         try:
             profile = user.annotator_profile
             assignment = TaskAssignment.objects.filter(
@@ -436,6 +443,20 @@ class AnnotationWorkflowService:
                     update_fields=["status", "completed_at", "annotation_id"]
                 )
                 logger.info(f"Updated assignment {assignment.id} to completed")
+                
+                # =====================================================================
+                # UPDATE ANNOTATOR STREAK
+                # =====================================================================
+                # Record daily activity for streak tracking
+                try:
+                    from .models import AnnotatorStreak
+                    streak, created = AnnotatorStreak.objects.get_or_create(
+                        annotator=profile
+                    )
+                    new_streak = streak.record_activity()
+                    logger.info(f"Updated streak for {user.email}: {new_streak} days")
+                except Exception as streak_error:
+                    logger.warning(f"Could not update annotator streak: {streak_error}")
         except Exception as e:
             logger.warning(f"Could not update task assignment: {e}")
 

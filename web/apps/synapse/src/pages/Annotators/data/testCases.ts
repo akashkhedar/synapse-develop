@@ -311,6 +311,131 @@ export const nlpTests: TestCase[] = [
   },
 ];
 
+// ==================== MEDICAL IMAGING TEST CASES ====================
+
+export const medicalImagingTests: TestCase[] = [
+  {
+    id: "med-001",
+    specialty: "medical-imaging",
+    title: "Chest X-Ray Classification",
+    description: "Classify the chest X-ray finding",
+    difficulty: "medium",
+    points: 20,
+    config: `
+<View>
+  <Image name="image" value="$image" zoom="true"/>
+  <View style="padding: 20px; margin-top: 1em; background: rgba(255,255,255,0.02); border: 1px solid #1f1f1f;">
+    <Header value="What finding is visible in this chest X-ray?"/>
+    <Choices name="finding" toName="image" choice="single">
+      <Choice value="Normal"/>
+      <Choice value="Pneumonia"/>
+      <Choice value="Cardiomegaly"/>
+      <Choice value="Pleural Effusion"/>
+      <Choice value="Nodule/Mass"/>
+    </Choices>
+  </View>
+</View>
+    `.trim(),
+    task: {
+      data: {
+        image: "https://upload.wikimedia.org/wikipedia/commons/e/e0/X-ray_of_normal_chest_%28PA_view%2C_large%29.jpg",
+      },
+    },
+    groundTruth: [
+      {
+        type: "choices",
+        value: { choices: ["Normal"] },
+        from_name: "finding",
+        to_name: "image",
+      },
+    ],
+    scoringCriteria: {
+      type: "classification",
+      partialCredit: false,
+    },
+  },
+  {
+    id: "med-002",
+    specialty: "medical-imaging",
+    title: "Anatomical Region Identification",
+    description: "Identify the anatomical regions in the medical image",
+    difficulty: "medium",
+    points: 25,
+    config: `
+<View>
+  <Image name="image" value="$image" zoom="true"/>
+  <View style="padding: 20px; margin-top: 1em; background: rgba(255,255,255,0.02); border: 1px solid #1f1f1f;">
+    <Header value="Select all anatomical structures visible:"/>
+    <Choices name="regions" toName="image" choice="multiple">
+      <Choice value="Lungs"/>
+      <Choice value="Heart"/>
+      <Choice value="Ribs"/>
+      <Choice value="Spine"/>
+      <Choice value="Diaphragm"/>
+      <Choice value="Clavicles"/>
+    </Choices>
+  </View>
+</View>
+    `.trim(),
+    task: {
+      data: {
+        image: "https://upload.wikimedia.org/wikipedia/commons/e/e0/X-ray_of_normal_chest_%28PA_view%2C_large%29.jpg",
+      },
+    },
+    groundTruth: [
+      {
+        type: "choices",
+        value: { choices: ["Lungs", "Heart", "Ribs", "Spine", "Diaphragm", "Clavicles"] },
+        from_name: "regions",
+        to_name: "image",
+      },
+    ],
+    scoringCriteria: {
+      type: "classification",
+      partialCredit: true,
+    },
+  },
+  {
+    id: "med-003",
+    specialty: "medical-imaging",
+    title: "Image Quality Assessment",
+    description: "Assess the quality and positioning of the medical image",
+    difficulty: "easy",
+    points: 15,
+    config: `
+<View>
+  <Image name="image" value="$image" zoom="true"/>
+  <View style="padding: 20px; margin-top: 1em; background: rgba(255,255,255,0.02); border: 1px solid #1f1f1f;">
+    <Header value="Assess the image quality:"/>
+    <Choices name="quality" toName="image" choice="single">
+      <Choice value="Good - Diagnostic quality"/>
+      <Choice value="Acceptable - Minor issues"/>
+      <Choice value="Poor - Repeat recommended"/>
+      <Choice value="Unusable"/>
+    </Choices>
+  </View>
+</View>
+    `.trim(),
+    task: {
+      data: {
+        image: "https://upload.wikimedia.org/wikipedia/commons/e/e0/X-ray_of_normal_chest_%28PA_view%2C_large%29.jpg",
+      },
+    },
+    groundTruth: [
+      {
+        type: "choices",
+        value: { choices: ["Good - Diagnostic quality"] },
+        from_name: "quality",
+        to_name: "image",
+      },
+    ],
+    scoringCriteria: {
+      type: "classification",
+      partialCredit: false,
+    },
+  },
+];
+
 // ==================== AUDIO TEST CASES ====================
 
 export const audioTests: TestCase[] = [
@@ -749,12 +874,37 @@ export const rankingTests: TestCase[] = [
 // ==================== TEST CASES REGISTRY ====================
 
 export const ALL_TEST_CASES: Record<string, TestCase[]> = {
+  // Primary keys
   "computer-vision": computerVisionTests,
   "natural-language-processing": nlpTests,
   "audio-speech-processing": audioTests,
   "conversational-ai": conversationalAITests,
   "generative-ai": generativeAITests,
   "ranking-and-scoring": rankingTests,
+  "medical-imaging": medicalImagingTests,
+  
+  // Aliases for expertise system compatibility
+  "chest-x-ray": medicalImagingTests,
+  "chest-x-ray-analysis": medicalImagingTests,
+  "mri-analysis": medicalImagingTests,
+  "ct-scan-analysis": medicalImagingTests,
+  "object-detection": computerVisionTests,
+  "image-classification": computerVisionTests,
+  "image-segmentation": computerVisionTests,
+  "text-classification": nlpTests,
+  "named-entity-recognition": nlpTests,
+  "sentiment-analysis": nlpTests,
+  "speech-transcription": audioTests,
+  "speaker-diarization": audioTests,
+  "audio-classification": audioTests,
+  "intent-recognition": conversationalAITests,
+  "dialogue-evaluation": conversationalAITests,
+  "text-generation-evaluation": generativeAITests,
+  "image-generation-evaluation": generativeAITests,
+  "structured-data": rankingTests,
+  
+  // Fallback for general tests
+  "general": computerVisionTests,
 };
 
 export const getTestCasesForSpecialties = (specialtyIds: string[]): TestCase[] => {

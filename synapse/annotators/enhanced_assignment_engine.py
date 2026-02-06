@@ -30,7 +30,7 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 # CONSTANTS
-# REQUIRED_OVERLAP removed - use dynamic project settings
+REQUIRED_OVERLAP = 3  # Default overlap for backward compatibility
 MAX_ASSIGNMENT_ATTEMPTS = 100  # Prevent infinite loops
 MAX_TASKS_IN_PROGRESS = getattr(settings, "ANNOTATOR_MAX_ACTIVE_TASKS", 10)
 

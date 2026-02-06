@@ -372,15 +372,54 @@ class AnnotationWorkflowService:
         """
         Called after an annotation is created.
 
-        1. Update task assignment status
-        2. Check if all annotations are complete
-        3. Trigger consolidation if ready
+        1. Check if honeypot and evaluate (honeypots bypass consolidation)
+        2. Update task assignment status
+        3. Check if all annotations are complete
+        4. Trigger consolidation if ready
         """
         from .models import TaskAssignment, TaskConsensus
 
         task = annotation.task
         user = annotation.completed_by
         project = task.project
+
+        # =====================================================================
+        # HONEYPOT DETECTION AND EVALUATION
+        # =====================================================================
+        # Check if this is a honeypot submission - if so, evaluate and skip
+        # normal consolidation workflow. Honeypots are for quality monitoring.
+        try:
+            from .honeypot_handler import HoneypotHandler
+            
+            is_honeypot, honeypot_result = HoneypotHandler.handle_annotation_submission(
+                annotation=annotation,
+                user=user
+            )
+            
+            if is_honeypot:
+                logger.info(
+                    f"Honeypot task {task.id} evaluated for {user.email}: "
+                    f"passed={honeypot_result.get('evaluation', {}).get('passed', False)}"
+                )
+                # Honeypots skip consolidation - just update assignment and return
+                try:
+                    profile = user.annotator_profile
+                    assignment = TaskAssignment.objects.filter(
+                        annotator=profile, task=task
+                    ).first()
+                    if assignment:
+                        assignment.status = "completed"
+                        assignment.completed_at = timezone.now()
+                        assignment.annotation_id = annotation.id
+                        assignment.save(update_fields=["status", "completed_at", "annotation_id"])
+                except Exception as e:
+                    logger.warning(f"Could not update honeypot task assignment: {e}")
+                return  # Skip consolidation for honeypots
+        except ImportError:
+            pass  # Honeypot module not available
+        except Exception as e:
+            logger.warning(f"Error in honeypot handling: {e}")
+            # Continue with normal workflow if honeypot handling fails
 
         # Update task assignment
         try:

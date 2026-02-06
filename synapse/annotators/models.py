@@ -75,6 +75,12 @@ class AnnotatorProfile(models.Model):
     rejection_rate = models.DecimalField(
         max_digits=5, decimal_places=2, default=0.0, help_text="Percentage"
     )
+    
+    # Honeypot tracking (v2)
+    total_honeypots_evaluated = models.IntegerField(
+        default=0,
+        help_text="Total number of honeypot evaluations (lifetime)"
+    )
 
     # Earnings
     total_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
@@ -193,6 +199,23 @@ class AnnotationTest(models.Model):
     test_type = models.CharField(max_length=50, default="general")
     test_tasks = models.JSONField(
         default=list, help_text="List of task IDs or test data"
+    )
+    
+    # Expertise linking - which expertise this test is for
+    expertise_category = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Selected expertise category (e.g., 'computer-vision')"
+    )
+    expertise_specialization = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Selected specialization (e.g., 'chest-x-ray')"
+    )
+    selected_expertise = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Full expertise selection data from frontend"
     )
 
     # Test Execution
@@ -544,6 +567,14 @@ class TrustLevel(models.Model):
         null=True, blank=True, help_text="Recent accuracy scores"
     )
     last_accuracy_update = models.DateTimeField(null=True, blank=True)
+    
+    # Rolling accuracy (for warning system - based on last N honeypots)
+    rolling_accuracy = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Rolling window accuracy for warning decisions"
+    )
 
     # Fraud indicators
     fraud_flags = models.IntegerField(default=0)
@@ -2072,6 +2103,874 @@ class AnnotatorNotification(models.Model):
             self.save(update_fields=["is_read", "read_at"])
 
 
+# =============================================================================
+# HONEYPOT SYSTEM v2 MODELS
+# =============================================================================
 
 
+class GoldenStandardTask(models.Model):
+    """
+    Pre-annotated tasks with verified ground truth for quality control.
+    
+    These are tasks with known correct answers used to evaluate annotator accuracy.
+    Annotators don't know which tasks are golden standards.
+    """
+    
+    SOURCE_CHOICES = [
+        ('expert', 'Expert Annotated'),
+        ('client', 'Client Provided'),
+        ('admin', 'Admin Curated'),
+    ]
+    
+    # Link to original task
+    task = models.OneToOneField(
+        Task,
+        on_delete=models.CASCADE,
+        related_name='golden_standard'
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='golden_standards'
+    )
+    
+    # The verified correct annotation (what we compare against)
+    ground_truth = models.JSONField(
+        help_text="Verified correct annotation result"
+    )
+    
+    # Source tracking
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES)
+    source_annotation = models.ForeignKey(
+        Annotation,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Original annotation this was created from"
+    )
+    
+    # Tolerance for matching (0.0 = exact match, 1.0 = any answer passes)
+    # Default 0.85 = 85% match required to pass
+    tolerance = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.85
+    )
+    
+    # Usage statistics
+    times_shown = models.IntegerField(default=0)
+    times_passed = models.IntegerField(default=0)
+    times_failed = models.IntegerField(default=0)
+    average_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_golden_standards'
+    )
+    
+    # Retirement (stop showing after too many uses to prevent memorization)
+    max_uses = models.IntegerField(default=100)
+    is_retired = models.BooleanField(default=False)
+    retired_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'golden_standard_task'
+        verbose_name = 'Golden Standard Task'
+        verbose_name_plural = 'Golden Standard Tasks'
+        indexes = [
+            models.Index(fields=['project', 'is_active']),
+            models.Index(fields=['is_retired']),
+        ]
+    
+    def __str__(self):
+        return f"Golden Standard for Task {self.task.id} ({self.source})"
+    
+    def retire_if_needed(self):
+        """Retire golden standard if used too many times"""
+        if self.times_shown >= self.max_uses and not self.is_retired:
+            self.is_retired = True
+            self.retired_at = timezone.now()
+            self.is_active = False
+            self.save(update_fields=['is_retired', 'retired_at', 'is_active'])
+            return True
+        return False
+    
+    def update_statistics(self, passed, score):
+        """Update statistics after evaluation"""
+        self.times_shown += 1
+        if passed:
+            self.times_passed += 1
+        else:
+            self.times_failed += 1
+        
+        # Update running average
+        if self.times_shown == 1:
+            self.average_score = Decimal(str(score))
+        else:
+            # Incremental average calculation
+            old_avg = float(self.average_score)
+            new_avg = old_avg + (score - old_avg) / self.times_shown
+            self.average_score = Decimal(str(round(new_avg, 2)))
+        
+        self.save(update_fields=[
+            'times_shown', 'times_passed', 'times_failed', 'average_score'
+        ])
+        
+        # Check for retirement
+        self.retire_if_needed()
 
+
+class HoneypotAssignment(models.Model):
+    """
+    Tracks honeypot task assignments to annotators.
+    
+    THIS TABLE IS INTERNAL ONLY - Never exposed to annotator APIs.
+    Annotators cannot query this table or know which tasks are honeypots.
+    """
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),         # Assigned, not yet submitted
+        ('submitted', 'Submitted'),     # Submitted, awaiting evaluation
+        ('evaluated', 'Evaluated'),     # Evaluation complete
+        ('skipped', 'Skipped'),         # Annotator skipped or timed out
+    ]
+    
+    annotator = models.ForeignKey(
+        AnnotatorProfile,
+        on_delete=models.CASCADE,
+        related_name='honeypot_assignments'
+    )
+    golden_standard = models.ForeignKey(
+        GoldenStandardTask,
+        on_delete=models.CASCADE,
+        related_name='assignments'
+    )
+    task_assignment = models.OneToOneField(
+        'TaskAssignment',
+        on_delete=models.CASCADE,
+        related_name='honeypot_info'
+    )
+    
+    # Position in the assignment queue (for analysis)
+    position_in_queue = models.IntegerField(default=0)
+    
+    # Timing
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    
+    # Evaluation results (filled after submission)
+    annotator_result = models.JSONField(null=True, blank=True)
+    accuracy_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    passed = models.BooleanField(null=True)
+    evaluation_details = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Detailed comparison breakdown"
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+    
+    class Meta:
+        db_table = 'honeypot_assignment'
+        verbose_name = 'Honeypot Assignment'
+        verbose_name_plural = 'Honeypot Assignments'
+        indexes = [
+            models.Index(fields=['annotator', 'status']),
+            models.Index(fields=['golden_standard', 'status']),
+            models.Index(fields=['status', 'assigned_at']),
+        ]
+    
+    def __str__(self):
+        status = f"passed" if self.passed else ("failed" if self.passed is False else "pending")
+        return f"Honeypot for {self.annotator.user.email} - {status}"
+
+
+class AccuracyHistory(models.Model):
+    """
+    Daily accuracy snapshots for trend analysis.
+    
+    Stores both lifetime and rolling metrics for comparison.
+    """
+    
+    annotator = models.ForeignKey(
+        AnnotatorProfile,
+        on_delete=models.CASCADE,
+        related_name='honeypot_accuracy_history'
+    )
+    date = models.DateField()
+    
+    # Daily metrics
+    honeypots_evaluated = models.IntegerField(default=0)
+    honeypots_passed = models.IntegerField(default=0)
+    daily_average_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    
+    # Cumulative metrics (at end of day)
+    total_honeypots_lifetime = models.IntegerField(default=0)
+    lifetime_accuracy = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        help_text="All-time accuracy at end of this day"
+    )
+    rolling_accuracy = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        help_text="Rolling window accuracy at end of this day"
+    )
+    
+    class Meta:
+        db_table = 'accuracy_history'
+        verbose_name = 'Accuracy History'
+        verbose_name_plural = 'Accuracy Histories'
+        unique_together = ['annotator', 'date']
+        indexes = [
+            models.Index(fields=['annotator', 'date']),
+            models.Index(fields=['date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.annotator.user.email} - {self.date} - {self.lifetime_accuracy}%"
+    
+    @classmethod
+    def record_daily_snapshot(cls, annotator):
+        """Record end-of-day accuracy snapshot."""
+        today = timezone.now().date()
+        
+        # Get today's honeypots
+        todays_honeypots = HoneypotAssignment.objects.filter(
+            annotator=annotator,
+            status='evaluated',
+            submitted_at__date=today
+        )
+        
+        if not todays_honeypots.exists():
+            return None
+        
+        daily_scores = [
+            float(h.accuracy_score) 
+            for h in todays_honeypots 
+            if h.accuracy_score is not None
+        ]
+        
+        # Get rolling accuracy from TrustLevel
+        try:
+            rolling_acc = float(annotator.trust_level.rolling_accuracy)
+        except (TrustLevel.DoesNotExist, AttributeError):
+            rolling_acc = 0
+        
+        snapshot, created = cls.objects.update_or_create(
+            annotator=annotator,
+            date=today,
+            defaults={
+                'honeypots_evaluated': todays_honeypots.count(),
+                'honeypots_passed': todays_honeypots.filter(passed=True).count(),
+                'daily_average_score': Decimal(str(
+                    sum(daily_scores) / len(daily_scores)
+                )) if daily_scores else None,
+                'total_honeypots_lifetime': annotator.total_honeypots_evaluated or 0,
+                'lifetime_accuracy': annotator.accuracy_score or Decimal('0'),
+                'rolling_accuracy': Decimal(str(rolling_acc)),
+            }
+        )
+        return snapshot
+
+
+class AnnotatorWarning(models.Model):
+    """
+    Track warnings issued to annotators based on honeypot performance.
+    """
+    
+    WARNING_TYPES = [
+        ('soft_warning', 'Soft Warning'),
+        ('formal_warning', 'Formal Warning'),
+        ('final_warning', 'Final Warning'),
+        ('suspension', 'Suspension'),
+        ('recovery', 'Recovery'),
+    ]
+    
+    annotator = models.ForeignKey(
+        AnnotatorProfile,
+        on_delete=models.CASCADE,
+        related_name='honeypot_warnings'
+    )
+    warning_type = models.CharField(max_length=20, choices=WARNING_TYPES)
+    accuracy_at_warning = models.DecimalField(max_digits=5, decimal_places=2)
+    message = models.TextField()
+    
+    # Email tracking
+    email_sent = models.BooleanField(default=False)
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    
+    # Acknowledgment (optional - for compliance tracking)
+    acknowledged = models.BooleanField(default=False)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'annotator_warning'
+        verbose_name = 'Annotator Warning'
+        verbose_name_plural = 'Annotator Warnings'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['annotator', 'warning_type']),
+            models.Index(fields=['warning_type', 'created_at']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.warning_type} for {self.annotator.user.email} at {self.accuracy_at_warning}%"
+    
+    def mark_email_sent(self):
+        """Mark that warning email was sent"""
+        self.email_sent = True
+        self.email_sent_at = timezone.now()
+        self.save(update_fields=['email_sent', 'email_sent_at'])
+    
+    def acknowledge(self):
+        """Mark warning as acknowledged by annotator"""
+        self.acknowledged = True
+        self.acknowledged_at = timezone.now()
+        self.save(update_fields=['acknowledged', 'acknowledged_at'])
+
+
+# ============================================================================
+# EXPERTISE SYSTEM MODELS
+# ============================================================================
+
+
+class ExpertiseCategory(models.Model):
+    """
+    Main annotation categories (e.g., Computer Vision, NLP, Audio/Speech).
+    Maps to top-level annotation_templates folders.
+    """
+    
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    icon = models.CharField(
+        max_length=50, 
+        blank=True, 
+        help_text="Icon name or class (e.g., 'image', 'mic', 'text')"
+    )
+    
+    # Template folder mapping
+    template_folder = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Folder name in annotation_templates (e.g., 'computer-vision')"
+    )
+    
+    # Ordering
+    display_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'expertise_category'
+        verbose_name = 'Expertise Category'
+        verbose_name_plural = 'Expertise Categories'
+        ordering = ['display_order', 'name']
+    
+    def __str__(self):
+        return self.name
+
+
+class ExpertiseSpecialization(models.Model):
+    """
+    Sub-expertise within a category (e.g., X-Ray, MRI under Medical Imaging).
+    These are more specific skills an annotator can claim.
+    """
+    
+    category = models.ForeignKey(
+        ExpertiseCategory,
+        on_delete=models.CASCADE,
+        related_name='specializations'
+    )
+    
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
+    description = models.TextField(blank=True)
+    icon = models.CharField(max_length=50, blank=True)
+    
+    # Template mapping (subfolder within category)
+    template_folder = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Subfolder name (e.g., 'object-detection-with-bounding-boxes')"
+    )
+    
+    # Requirements
+    requires_certification = models.BooleanField(
+        default=False,
+        help_text="Whether this specialization requires external certification proof"
+    )
+    certification_instructions = models.TextField(
+        blank=True,
+        help_text="Instructions for certification upload/verification"
+    )
+    
+    # Test configuration
+    min_test_questions = models.IntegerField(
+        default=10,
+        help_text="Minimum questions for qualification test"
+    )
+    passing_score = models.IntegerField(
+        default=70,
+        help_text="Minimum score (%) to pass qualification"
+    )
+    
+    # Ordering and status
+    display_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'expertise_specialization'
+        verbose_name = 'Expertise Specialization'
+        verbose_name_plural = 'Expertise Specializations'
+        ordering = ['category', 'display_order', 'name']
+        unique_together = [('category', 'slug')]
+    
+    def __str__(self):
+        return f"{self.category.name} → {self.name}"
+
+
+class AnnotatorExpertise(models.Model):
+    """
+    Tracks which expertise/specializations an annotator has claimed and verified.
+    Many-to-many relationship with additional metadata.
+    """
+    
+    STATUS_CHOICES = [
+        ('claimed', 'Claimed'),           # Annotator said they have this skill
+        ('testing', 'Taking Test'),       # Currently taking qualification test
+        ('verified', 'Verified'),         # Passed test, can receive tasks
+        ('failed', 'Failed Test'),        # Failed qualification, can retry
+        ('expired', 'Expired'),           # Needs re-certification
+        ('revoked', 'Revoked'),           # Admin revoked (fraud/quality)
+    ]
+    
+    annotator = models.ForeignKey(
+        AnnotatorProfile,
+        on_delete=models.CASCADE,
+        related_name='expertise_profiles'
+    )
+    category = models.ForeignKey(
+        ExpertiseCategory,
+        on_delete=models.CASCADE,
+        related_name='annotator_expertise'
+    )
+    specialization = models.ForeignKey(
+        ExpertiseSpecialization,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='annotator_expertise',
+        help_text="Optional: specific sub-expertise"
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='claimed'
+    )
+    
+    # Qualification test tracking
+    test_attempts = models.IntegerField(default=0)
+    last_test_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    last_test_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When certification expires (if applicable)"
+    )
+    
+    # Certification documents (for specializations requiring proof)
+    certification_url = models.URLField(
+        blank=True,
+        help_text="Link to uploaded certification document"
+    )
+    certification_verified = models.BooleanField(default=False)
+    certification_verified_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='verified_certifications'
+    )
+    
+    # Performance within this expertise
+    tasks_completed = models.IntegerField(default=0)
+    accuracy_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.0
+    )
+    average_time_per_task = models.IntegerField(
+        default=0,
+        help_text="Seconds"
+    )
+    
+    # Additional metadata
+    self_rating = models.IntegerField(
+        default=5,
+        help_text="Self-rated expertise (1-10)"
+    )
+    years_experience = models.IntegerField(
+        default=0,
+        help_text="Years of experience in this area"
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Additional info from annotator"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'annotator_expertise'
+        verbose_name = 'Annotator Expertise'
+        verbose_name_plural = 'Annotator Expertise'
+        # Prevent duplicate entries
+        unique_together = [('annotator', 'category', 'specialization')]
+        indexes = [
+            models.Index(fields=['annotator', 'status']),
+            models.Index(fields=['category', 'status']),
+            models.Index(fields=['specialization', 'status']),
+            models.Index(fields=['status', 'verified_at']),
+        ]
+    
+    def __str__(self):
+        spec = f" ({self.specialization.name})" if self.specialization else ""
+        return f"{self.annotator.user.email}: {self.category.name}{spec} - {self.status}"
+    
+    @property
+    def is_verified(self):
+        """Check if expertise is currently valid"""
+        if self.status != 'verified':
+            return False
+        if self.expires_at and timezone.now() > self.expires_at:
+            return False
+        return True
+    
+    def record_test_attempt(self, score, passed):
+        """Record a test attempt for this expertise"""
+        self.test_attempts += 1
+        self.last_test_score = score
+        self.last_test_at = timezone.now()
+        
+        if passed:
+            self.status = 'verified'
+            self.verified_at = timezone.now()
+        else:
+            self.status = 'failed'
+        
+        self.save()
+    
+    def can_retry_test(self, cooldown_days=7):
+        """Check if annotator can retry the qualification test"""
+        if self.status == 'verified':
+            return False
+        if not self.last_test_at:
+            return True
+        # Check cooldown period
+        cooldown = timezone.timedelta(days=cooldown_days)
+        return timezone.now() > self.last_test_at + cooldown
+
+
+class ExpertiseTestQuestion(models.Model):
+    """
+    Test questions for expertise qualification.
+    Questions are linked to categories and/or specializations.
+    """
+    
+    QUESTION_TYPES = [
+        ('mcq', 'Multiple Choice'),
+        ('multi_select', 'Multiple Select'),
+        ('true_false', 'True/False'),
+        ('image_label', 'Image Labeling'),
+        ('text_annotation', 'Text Annotation'),
+    ]
+    
+    DIFFICULTY_LEVELS = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    ]
+    
+    category = models.ForeignKey(
+        ExpertiseCategory,
+        on_delete=models.CASCADE,
+        related_name='test_questions'
+    )
+    specialization = models.ForeignKey(
+        ExpertiseSpecialization,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='test_questions',
+        help_text="If set, question only applies to this specialization"
+    )
+    
+    question_type = models.CharField(
+        max_length=20,
+        choices=QUESTION_TYPES,
+        default='mcq'
+    )
+    difficulty = models.CharField(
+        max_length=10,
+        choices=DIFFICULTY_LEVELS,
+        default='medium'
+    )
+    
+    # Question content
+    question_text = models.TextField()
+    question_image_url = models.URLField(
+        blank=True,
+        help_text="URL to image for image-based questions"
+    )
+    question_data = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Additional question data (e.g., annotation config)"
+    )
+    
+    # Answer options (for MCQ/multi-select)
+    options = models.JSONField(
+        default=list,
+        help_text="List of answer options"
+    )
+    correct_answer = models.JSONField(
+        help_text="Correct answer(s) - index for MCQ, list for multi-select, ground truth for annotations"
+    )
+    
+    # Scoring
+    points = models.IntegerField(default=1)
+    partial_credit = models.BooleanField(
+        default=False,
+        help_text="Allow partial credit for partially correct answers"
+    )
+    
+    # Explanation shown after test
+    explanation = models.TextField(
+        blank=True,
+        help_text="Explanation shown after test submission"
+    )
+    
+    # Metadata
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='created_test_questions'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'expertise_test_question'
+        verbose_name = 'Expertise Test Question'
+        verbose_name_plural = 'Expertise Test Questions'
+        ordering = ['category', 'specialization', 'difficulty', 'id']
+        indexes = [
+            models.Index(fields=['category', 'is_active']),
+            models.Index(fields=['specialization', 'is_active']),
+            models.Index(fields=['question_type', 'difficulty']),
+        ]
+    
+    def __str__(self):
+        spec = f"/{self.specialization.name}" if self.specialization else ""
+        return f"[{self.category.name}{spec}] {self.question_text[:50]}..."
+
+
+class ExpertiseTest(models.Model):
+    """
+    Record of an expertise qualification test attempt.
+    Links to AnnotationTest for unified test tracking.
+    """
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('submitted', 'Submitted'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+    ]
+    
+    annotator = models.ForeignKey(
+        AnnotatorProfile,
+        on_delete=models.CASCADE,
+        related_name='expertise_tests'
+    )
+    expertise = models.ForeignKey(
+        AnnotatorExpertise,
+        on_delete=models.CASCADE,
+        related_name='tests'
+    )
+    
+    # Questions selected for this test
+    questions = models.ManyToManyField(
+        ExpertiseTestQuestion,
+        related_name='test_instances'
+    )
+    
+    # Answers submitted
+    answers = models.JSONField(
+        default=dict,
+        help_text="Map of question_id to answer"
+    )
+    
+    # Results
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+    score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    max_score = models.IntegerField(default=0)
+    percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    passed = models.BooleanField(default=False)
+    
+    # Detailed results
+    results_breakdown = models.JSONField(
+        default=dict,
+        help_text="Per-question results"
+    )
+    
+    # Timing
+    started_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    time_limit_minutes = models.IntegerField(
+        default=30,
+        help_text="Time limit for the test"
+    )
+    
+    # Feedback
+    feedback = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'expertise_test'
+        verbose_name = 'Expertise Test'
+        verbose_name_plural = 'Expertise Tests'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['annotator', 'status']),
+            models.Index(fields=['expertise', 'status']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Test for {self.annotator.user.email}: {self.expertise} - {self.status}"
+    
+    def start(self):
+        """Start the test"""
+        self.status = 'in_progress'
+        self.started_at = timezone.now()
+        self.save()
+    
+    def submit(self, answers):
+        """Submit and grade the test"""
+        self.answers = answers
+        self.submitted_at = timezone.now()
+        self.grade_test()
+    
+    def grade_test(self):
+        """Grade the test and update results"""
+        from decimal import Decimal
+        
+        total_points = 0
+        earned_points = 0
+        breakdown = {}
+        
+        for question in self.questions.all():
+            total_points += question.points
+            answer = self.answers.get(str(question.id))
+            
+            # Grade based on question type
+            is_correct = False
+            if question.question_type == 'mcq':
+                is_correct = answer == question.correct_answer
+            elif question.question_type == 'multi_select':
+                # For multi-select, check if all correct answers are selected
+                correct = set(question.correct_answer) if isinstance(question.correct_answer, list) else {question.correct_answer}
+                submitted = set(answer) if isinstance(answer, list) else {answer}
+                is_correct = correct == submitted
+            elif question.question_type == 'true_false':
+                is_correct = answer == question.correct_answer
+            # For annotation questions, we'd need more complex grading
+            
+            if is_correct:
+                earned_points += question.points
+            
+            breakdown[str(question.id)] = {
+                'points': question.points,
+                'earned': question.points if is_correct else 0,
+                'correct': is_correct,
+                'answer': answer,
+                'correct_answer': question.correct_answer,
+            }
+        
+        self.score = Decimal(str(earned_points))
+        self.max_score = total_points
+        self.percentage = Decimal(str((earned_points / total_points * 100) if total_points > 0 else 0))
+        self.results_breakdown = breakdown
+        
+        # Check if passed
+        passing_score = self.expertise.specialization.passing_score if self.expertise.specialization else 70
+        self.passed = float(self.percentage) >= passing_score
+        self.status = 'passed' if self.passed else 'failed'
+        
+        # Update the expertise record
+        self.expertise.record_test_attempt(self.percentage, self.passed)
+        
+        self.save()

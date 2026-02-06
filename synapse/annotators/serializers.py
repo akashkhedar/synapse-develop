@@ -418,6 +418,323 @@ class EarningsSummarySerializer(serializers.Serializer):
     this_month_earnings = serializers.DecimalField(max_digits=10, decimal_places=2)
 
 
+# ============================================================================
+# EXPERTISE SYSTEM SERIALIZERS
+# ============================================================================
+
+from .models import (
+    ExpertiseCategory,
+    ExpertiseSpecialization,
+    AnnotatorExpertise,
+    ExpertiseTestQuestion,
+    ExpertiseTest,
+)
+
+
+class ExpertiseSpecializationSerializer(serializers.ModelSerializer):
+    """Serializer for expertise specializations."""
+    
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    
+    class Meta:
+        model = ExpertiseSpecialization
+        fields = [
+            'id',
+            'name',
+            'slug',
+            'description',
+            'icon',
+            'template_folder',
+            'requires_certification',
+            'certification_instructions',
+            'min_test_questions',
+            'passing_score',
+            'display_order',
+            'is_active',
+            'category',
+            'category_name',
+        ]
+        read_only_fields = ['id', 'category_name']
+
+
+class ExpertiseCategorySerializer(serializers.ModelSerializer):
+    """Serializer for expertise categories."""
+    
+    specializations = ExpertiseSpecializationSerializer(many=True, read_only=True)
+    specialization_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ExpertiseCategory
+        fields = [
+            'id',
+            'name',
+            'slug',
+            'description',
+            'icon',
+            'template_folder',
+            'display_order',
+            'is_active',
+            'specializations',
+            'specialization_count',
+        ]
+        read_only_fields = ['id', 'specializations', 'specialization_count']
+    
+    def get_specialization_count(self, obj):
+        return obj.specializations.filter(is_active=True).count()
+
+
+class ExpertiseCategoryListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for category listing."""
+    
+    specialization_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ExpertiseCategory
+        fields = [
+            'id',
+            'name',
+            'slug',
+            'description',
+            'icon',
+            'template_folder',
+            'display_order',
+            'specialization_count',
+        ]
+    
+    def get_specialization_count(self, obj):
+        return obj.specializations.filter(is_active=True).count()
+
+
+class AnnotatorExpertiseSerializer(serializers.ModelSerializer):
+    """Serializer for annotator expertise records."""
+    
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
+    specialization_name = serializers.CharField(
+        source='specialization.name', 
+        read_only=True, 
+        allow_null=True
+    )
+    specialization_slug = serializers.CharField(
+        source='specialization.slug', 
+        read_only=True, 
+        allow_null=True
+    )
+    is_verified = serializers.BooleanField(read_only=True)
+    can_retry = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = AnnotatorExpertise
+        fields = [
+            'id',
+            'category',
+            'category_name',
+            'category_slug',
+            'specialization',
+            'specialization_name',
+            'specialization_slug',
+            'status',
+            'test_attempts',
+            'last_test_score',
+            'last_test_at',
+            'verified_at',
+            'expires_at',
+            'is_verified',
+            'can_retry',
+            'tasks_completed',
+            'accuracy_score',
+            'self_rating',
+            'years_experience',
+            'notes',
+            'created_at',
+        ]
+        read_only_fields = [
+            'id', 'status', 'test_attempts', 'last_test_score', 
+            'last_test_at', 'verified_at', 'is_verified', 'can_retry',
+            'tasks_completed', 'accuracy_score', 'created_at',
+        ]
+    
+    def get_can_retry(self, obj):
+        return obj.can_retry_test()
+
+
+class AnnotatorExpertiseCreateSerializer(serializers.Serializer):
+    """Serializer for claiming expertise."""
+    
+    category_id = serializers.IntegerField()
+    specialization_id = serializers.IntegerField(required=False, allow_null=True)
+    self_rating = serializers.IntegerField(min_value=1, max_value=10, default=5)
+    years_experience = serializers.IntegerField(min_value=0, default=0)
+    notes = serializers.CharField(required=False, allow_blank=True, default='')
+    
+    def validate_category_id(self, value):
+        try:
+            ExpertiseCategory.objects.get(id=value, is_active=True)
+        except ExpertiseCategory.DoesNotExist:
+            raise serializers.ValidationError("Invalid or inactive category.")
+        return value
+    
+    def validate_specialization_id(self, value):
+        if value is None:
+            return value
+        try:
+            ExpertiseSpecialization.objects.get(id=value, is_active=True)
+        except ExpertiseSpecialization.DoesNotExist:
+            raise serializers.ValidationError("Invalid or inactive specialization.")
+        return value
+    
+    def validate(self, data):
+        # Ensure specialization belongs to category if both provided
+        if data.get('specialization_id'):
+            spec = ExpertiseSpecialization.objects.get(id=data['specialization_id'])
+            if spec.category_id != data['category_id']:
+                raise serializers.ValidationError({
+                    'specialization_id': 'Specialization does not belong to selected category.'
+                })
+        return data
+
+
+class ExpertiseTestQuestionSerializer(serializers.ModelSerializer):
+    """Serializer for test questions (without answers for test-taking)."""
+    
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    specialization_name = serializers.CharField(
+        source='specialization.name', 
+        read_only=True, 
+        allow_null=True
+    )
+    
+    class Meta:
+        model = ExpertiseTestQuestion
+        fields = [
+            'id',
+            'question_type',
+            'difficulty',
+            'question_text',
+            'question_image_url',
+            'question_data',
+            'options',
+            'points',
+            'partial_credit',
+            'category_name',
+            'specialization_name',
+        ]
+        # Note: correct_answer and explanation excluded for test-taking
+
+
+class ExpertiseTestQuestionAdminSerializer(serializers.ModelSerializer):
+    """Full serializer for admins (includes answers)."""
+    
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    specialization_name = serializers.CharField(
+        source='specialization.name', 
+        read_only=True, 
+        allow_null=True
+    )
+    
+    class Meta:
+        model = ExpertiseTestQuestion
+        fields = [
+            'id',
+            'category',
+            'category_name',
+            'specialization',
+            'specialization_name',
+            'question_type',
+            'difficulty',
+            'question_text',
+            'question_image_url',
+            'question_data',
+            'options',
+            'correct_answer',
+            'points',
+            'partial_credit',
+            'explanation',
+            'is_active',
+            'created_at',
+            'updated_at',
+        ]
+
+
+class ExpertiseTestSerializer(serializers.ModelSerializer):
+    """Serializer for expertise test attempts."""
+    
+    expertise_category = serializers.CharField(
+        source='expertise.category.name', 
+        read_only=True
+    )
+    expertise_specialization = serializers.CharField(
+        source='expertise.specialization.name', 
+        read_only=True, 
+        allow_null=True
+    )
+    questions = ExpertiseTestQuestionSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = ExpertiseTest
+        fields = [
+            'id',
+            'expertise',
+            'expertise_category',
+            'expertise_specialization',
+            'status',
+            'score',
+            'max_score',
+            'percentage',
+            'passed',
+            'time_limit_minutes',
+            'started_at',
+            'submitted_at',
+            'feedback',
+            'questions',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+
+class ExpertiseTestResultSerializer(serializers.ModelSerializer):
+    """Serializer for test results (includes breakdown)."""
+    
+    expertise_category = serializers.CharField(
+        source='expertise.category.name', 
+        read_only=True
+    )
+    expertise_specialization = serializers.CharField(
+        source='expertise.specialization.name', 
+        read_only=True, 
+        allow_null=True
+    )
+    
+    class Meta:
+        model = ExpertiseTest
+        fields = [
+            'id',
+            'expertise',
+            'expertise_category',
+            'expertise_specialization',
+            'status',
+            'score',
+            'max_score',
+            'percentage',
+            'passed',
+            'results_breakdown',
+            'feedback',
+            'started_at',
+            'submitted_at',
+        ]
+
+
+class AnnotatorExpertiseSummarySerializer(serializers.Serializer):
+    """Summary serializer for dashboard display."""
+    
+    verified_expertise = AnnotatorExpertiseSerializer(many=True)
+    pending_expertise = AnnotatorExpertiseSerializer(many=True)
+    failed_expertise = AnnotatorExpertiseSerializer(many=True)
+    total_verified = serializers.IntegerField()
+    total_tasks_by_expertise = serializers.DictField()
+
+
+
 
 
 

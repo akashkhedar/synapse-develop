@@ -13,6 +13,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.utils import timezone
 from django.core.mail import send_mail
+from django.db import models
 
 from rest_framework import generics, status
 from rest_framework.views import APIView
@@ -5187,3 +5188,569 @@ class AnnotatorPerformanceHistoryAPI(APIView):
                 ],
             }
         )
+
+
+# ============================================================================
+# EXPERTISE SYSTEM APIs
+# ============================================================================
+
+
+class ExpertiseCategoryListAPI(APIView):
+    """
+    List all active expertise categories with their specializations.
+    
+    GET: Returns all categories (no auth required for browsing)
+    """
+    
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        from .models import ExpertiseCategory
+        from .serializers import ExpertiseCategorySerializer, ExpertiseCategoryListSerializer
+        
+        include_specializations = request.query_params.get('include_specializations', 'true').lower() == 'true'
+        
+        categories = ExpertiseCategory.objects.filter(is_active=True).prefetch_related(
+            'specializations'
+        ).order_by('display_order', 'name')
+        
+        if include_specializations:
+            serializer = ExpertiseCategorySerializer(categories, many=True)
+        else:
+            serializer = ExpertiseCategoryListSerializer(categories, many=True)
+        
+        return Response({
+            'categories': serializer.data,
+            'total': len(serializer.data)
+        })
+
+
+class ExpertiseCategoryDetailAPI(APIView):
+    """
+    Get details of a specific category with all specializations.
+    
+    GET: Returns category with specializations
+    """
+    
+    permission_classes = [AllowAny]
+    
+    def get(self, request, category_slug):
+        from .models import ExpertiseCategory
+        from .serializers import ExpertiseCategorySerializer
+        
+        try:
+            category = ExpertiseCategory.objects.prefetch_related(
+                'specializations'
+            ).get(slug=category_slug, is_active=True)
+        except ExpertiseCategory.DoesNotExist:
+            return Response(
+                {'error': 'Category not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = ExpertiseCategorySerializer(category)
+        return Response(serializer.data)
+
+
+class AnnotatorExpertiseListAPI(APIView):
+    """
+    List and manage annotator's expertise.
+    
+    GET: List annotator's claimed expertise
+    POST: Claim a new expertise
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from .models import AnnotatorExpertise
+        from .serializers import AnnotatorExpertiseSerializer
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get optional status filter
+        status_filter = request.query_params.get('status')
+        
+        expertise_query = AnnotatorExpertise.objects.filter(
+            annotator=profile
+        ).select_related('category', 'specialization')
+        
+        if status_filter:
+            expertise_query = expertise_query.filter(status=status_filter)
+        
+        serializer = AnnotatorExpertiseSerializer(expertise_query, many=True)
+        
+        # Group by status for dashboard
+        verified = [e for e in serializer.data if e['status'] == 'verified']
+        pending = [e for e in serializer.data if e['status'] in ['claimed', 'testing']]
+        failed = [e for e in serializer.data if e['status'] == 'failed']
+        
+        return Response({
+            'expertise': serializer.data,
+            'summary': {
+                'total': len(serializer.data),
+                'verified': len(verified),
+                'pending': len(pending),
+                'failed': len(failed),
+            },
+            'verified_expertise': verified,
+            'pending_expertise': pending,
+            'failed_expertise': failed,
+        })
+    
+    def post(self, request):
+        from .models import ExpertiseCategory, ExpertiseSpecialization, AnnotatorExpertise
+        from .serializers import AnnotatorExpertiseCreateSerializer, AnnotatorExpertiseSerializer
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = AnnotatorExpertiseCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        data = serializer.validated_data
+        category = ExpertiseCategory.objects.get(id=data['category_id'])
+        specialization = None
+        if data.get('specialization_id'):
+            specialization = ExpertiseSpecialization.objects.get(id=data['specialization_id'])
+        
+        # Check if already claimed
+        existing = AnnotatorExpertise.objects.filter(
+            annotator=profile,
+            category=category,
+            specialization=specialization
+        ).first()
+        
+        if existing:
+            # Allow retry if failed
+            if existing.status == 'failed' and existing.can_retry_test():
+                existing.status = 'claimed'
+                existing.save()
+                return Response(
+                    AnnotatorExpertiseSerializer(existing).data,
+                    status=status.HTTP_200_OK
+                )
+            elif existing.status == 'verified':
+                return Response(
+                    {'error': 'You already have this expertise verified'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                return Response(
+                    {'error': 'You already claimed this expertise'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Create new expertise claim
+        expertise = AnnotatorExpertise.objects.create(
+            annotator=profile,
+            category=category,
+            specialization=specialization,
+            self_rating=data.get('self_rating', 5),
+            years_experience=data.get('years_experience', 0),
+            notes=data.get('notes', ''),
+            status='claimed'
+        )
+        
+        return Response(
+            AnnotatorExpertiseSerializer(expertise).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+class AnnotatorExpertiseDetailAPI(APIView):
+    """
+    Get, update, or delete a specific expertise claim.
+    
+    GET: Get expertise details
+    PUT: Update expertise info (rating, notes, etc.)
+    DELETE: Remove expertise claim
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get_expertise(self, request, expertise_id):
+        from .models import AnnotatorExpertise
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return None, Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            expertise = AnnotatorExpertise.objects.select_related(
+                'category', 'specialization'
+            ).get(id=expertise_id, annotator=profile)
+        except AnnotatorExpertise.DoesNotExist:
+            return None, Response(
+                {'error': 'Expertise not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        return expertise, None
+    
+    def get(self, request, expertise_id):
+        from .serializers import AnnotatorExpertiseSerializer
+        
+        expertise, error = self.get_expertise(request, expertise_id)
+        if error:
+            return error
+        
+        return Response(AnnotatorExpertiseSerializer(expertise).data)
+    
+    def put(self, request, expertise_id):
+        from .serializers import AnnotatorExpertiseSerializer
+        
+        expertise, error = self.get_expertise(request, expertise_id)
+        if error:
+            return error
+        
+        # Only allow updating certain fields
+        if 'self_rating' in request.data:
+            expertise.self_rating = min(10, max(1, int(request.data['self_rating'])))
+        if 'years_experience' in request.data:
+            expertise.years_experience = max(0, int(request.data['years_experience']))
+        if 'notes' in request.data:
+            expertise.notes = request.data['notes']
+        
+        expertise.save()
+        
+        return Response(AnnotatorExpertiseSerializer(expertise).data)
+    
+    def delete(self, request, expertise_id):
+        expertise, error = self.get_expertise(request, expertise_id)
+        if error:
+            return error
+        
+        # Don't allow deleting verified expertise with completed tasks
+        if expertise.status == 'verified' and expertise.tasks_completed > 0:
+            return Response(
+                {'error': 'Cannot delete expertise with completed tasks'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        expertise.delete()
+        return Response({'message': 'Expertise removed'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class ExpertiseTestStartAPI(APIView):
+    """
+    Start an expertise qualification test.
+    
+    POST: Start a new test for a specific expertise
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, expertise_id):
+        from .models import (
+            AnnotatorExpertise, ExpertiseTestQuestion, ExpertiseTest
+        )
+        from .serializers import ExpertiseTestSerializer
+        import random
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            expertise = AnnotatorExpertise.objects.select_related(
+                'category', 'specialization'
+            ).get(id=expertise_id, annotator=profile)
+        except AnnotatorExpertise.DoesNotExist:
+            return Response(
+                {'error': 'Expertise not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if can take test
+        if expertise.status == 'verified':
+            return Response(
+                {'error': 'Expertise already verified'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if expertise.status == 'failed' and not expertise.can_retry_test():
+            return Response(
+                {'error': 'Cannot retry test yet. Please wait for cooldown period.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check for existing in-progress test
+        existing_test = ExpertiseTest.objects.filter(
+            expertise=expertise,
+            status='in_progress'
+        ).first()
+        
+        if existing_test:
+            # Check if test expired (time limit exceeded)
+            if existing_test.started_at:
+                elapsed = timezone.now() - existing_test.started_at
+                if elapsed.total_seconds() > existing_test.time_limit_minutes * 60:
+                    # Test expired - mark as failed
+                    existing_test.status = 'failed'
+                    existing_test.save()
+                    expertise.record_test_attempt(0, False)
+                else:
+                    # Return existing test
+                    serializer = ExpertiseTestSerializer(existing_test)
+                    return Response(serializer.data)
+        
+        # Get questions for this expertise
+        questions_query = ExpertiseTestQuestion.objects.filter(
+            category=expertise.category,
+            is_active=True
+        )
+        
+        # Filter by specialization if set
+        if expertise.specialization:
+            # Include both specialization-specific and general category questions
+            questions_query = questions_query.filter(
+                models.Q(specialization=expertise.specialization) |
+                models.Q(specialization__isnull=True)
+            )
+        else:
+            # Only general category questions (no specialization)
+            questions_query = questions_query.filter(specialization__isnull=True)
+        
+        questions = list(questions_query)
+        
+        if not questions:
+            return Response(
+                {'error': 'No test questions available for this expertise. Please try again later.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Determine number of questions
+        min_questions = expertise.specialization.min_test_questions if expertise.specialization else 10
+        num_questions = min(len(questions), max(min_questions, 10))
+        
+        # Select random questions (mix difficulties)
+        selected_questions = random.sample(questions, num_questions)
+        
+        # Create test
+        test = ExpertiseTest.objects.create(
+            annotator=profile,
+            expertise=expertise,
+            status='in_progress',
+            started_at=timezone.now(),
+            time_limit_minutes=30,
+            max_score=sum(q.points for q in selected_questions)
+        )
+        test.questions.set(selected_questions)
+        
+        # Update expertise status
+        expertise.status = 'testing'
+        expertise.save()
+        
+        serializer = ExpertiseTestSerializer(test)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ExpertiseTestSubmitAPI(APIView):
+    """
+    Submit answers for an expertise test.
+    
+    POST: Submit test answers and get results
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, test_id):
+        from .models import ExpertiseTest
+        from .serializers import ExpertiseTestResultSerializer
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            test = ExpertiseTest.objects.select_related(
+                'expertise__category', 'expertise__specialization'
+            ).prefetch_related('questions').get(
+                id=test_id,
+                annotator=profile
+            )
+        except ExpertiseTest.DoesNotExist:
+            return Response(
+                {'error': 'Test not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if test.status != 'in_progress':
+            return Response(
+                {'error': f'Test is not in progress (status: {test.status})'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check time limit
+        if test.started_at:
+            elapsed = timezone.now() - test.started_at
+            if elapsed.total_seconds() > test.time_limit_minutes * 60:
+                test.status = 'failed'
+                test.save()
+                test.expertise.record_test_attempt(0, False)
+                return Response(
+                    {'error': 'Test time expired'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Get answers from request
+        answers = request.data.get('answers', {})
+        
+        if not answers:
+            return Response(
+                {'error': 'No answers provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Grade the test
+        test.submit(answers)
+        
+        # Generate feedback
+        if test.passed:
+            test.feedback = (
+                f"Congratulations! You passed the {test.expertise.category.name} "
+                f"qualification test with a score of {test.percentage:.1f}%. "
+                "You can now receive tasks in this expertise area."
+            )
+        else:
+            passing_score = test.expertise.specialization.passing_score if test.expertise.specialization else 70
+            test.feedback = (
+                f"You scored {test.percentage:.1f}%, but {passing_score}% is required to pass. "
+                "You can retry the test after a 7-day cooldown period. "
+                "Review the study materials to improve your knowledge."
+            )
+        test.save()
+        
+        serializer = ExpertiseTestResultSerializer(test)
+        return Response(serializer.data)
+
+
+class ExpertiseTestDetailAPI(APIView):
+    """
+    Get details of a specific test (for viewing results).
+    
+    GET: Get test details and results
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, test_id):
+        from .models import ExpertiseTest
+        from .serializers import ExpertiseTestResultSerializer, ExpertiseTestSerializer
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            test = ExpertiseTest.objects.select_related(
+                'expertise__category', 'expertise__specialization'
+            ).prefetch_related('questions').get(
+                id=test_id,
+                annotator=profile
+            )
+        except ExpertiseTest.DoesNotExist:
+            return Response(
+                {'error': 'Test not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Return full results if submitted, otherwise just test info
+        if test.status in ['passed', 'failed', 'submitted']:
+            serializer = ExpertiseTestResultSerializer(test)
+        else:
+            serializer = ExpertiseTestSerializer(test)
+        
+        return Response(serializer.data)
+
+
+class AnnotatorExpertiseSummaryAPI(APIView):
+    """
+    Get a summary of annotator's expertise for the earnings dashboard.
+    
+    GET: Returns expertise summary with task counts
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from .models import AnnotatorExpertise, TaskAssignment
+        from django.db.models import Count, Sum
+        
+        try:
+            profile = request.user.annotator_profile
+        except AnnotatorProfile.DoesNotExist:
+            return Response(
+                {'error': 'Not an annotator account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get all expertise
+        expertise_list = AnnotatorExpertise.objects.filter(
+            annotator=profile
+        ).select_related('category', 'specialization')
+        
+        # Build summary
+        verified = []
+        pending = []
+        
+        for exp in expertise_list:
+            exp_data = {
+                'id': exp.id,
+                'category': exp.category.name,
+                'category_slug': exp.category.slug,
+                'specialization': exp.specialization.name if exp.specialization else None,
+                'specialization_slug': exp.specialization.slug if exp.specialization else None,
+                'status': exp.status,
+                'tasks_completed': exp.tasks_completed,
+                'accuracy_score': float(exp.accuracy_score),
+                'verified_at': exp.verified_at.isoformat() if exp.verified_at else None,
+            }
+            
+            if exp.status == 'verified':
+                verified.append(exp_data)
+            else:
+                pending.append(exp_data)
+        
+        # Calculate totals
+        total_tasks = sum(e['tasks_completed'] for e in verified)
+        
+        return Response({
+            'verified_expertise': verified,
+            'pending_expertise': pending,
+            'summary': {
+                'total_verified': len(verified),
+                'total_pending': len(pending),
+                'total_tasks_completed': total_tasks,
+            }
+        })
+

@@ -1894,6 +1894,10 @@ class DynamicAssignmentEngine:
         logger.info(
             f"[NewAnnotator] Annotator {annotator.id} assigned to {assignments_made} tasks"
         )
+        
+        # Inject honeypots for quality monitoring
+        cls._inject_honeypots_for_annotator(annotator)
+        
         return assignments_made
     
     @classmethod
@@ -1930,3 +1934,51 @@ class DynamicAssignmentEngine:
                 f"[TaskComplete] Post-completion assignment for annotator {annotator.id}: "
                 f"{result.get('assigned_count', 0)} new tasks"
             )
+    
+    @classmethod
+    def _inject_honeypots_for_annotator(cls, annotator, project=None):
+        """
+        Inject honeypots into an annotator's task queue.
+        
+        Called after task assignments to add quality monitoring tasks.
+        """
+        try:
+            from .honeypot_injector import HoneypotInjector
+            
+            if project:
+                # Inject for specific project
+                result = HoneypotInjector.inject_honeypots(
+                    annotator_profile=annotator,
+                    project=project
+                )
+                if result['honeypots_injected'] > 0:
+                    logger.info(
+                        f"Injected {result['honeypots_injected']} honeypots for "
+                        f"{annotator.user.email} in project {project.id}"
+                    )
+            else:
+                # Get all projects annotator is assigned to
+                from projects.models import Project
+                projects = Project.objects.filter(
+                    project_assignments__annotator=annotator,
+                    project_assignments__status='active'
+                ).distinct()
+                
+                total_injected = 0
+                for proj in projects:
+                    result = HoneypotInjector.inject_honeypots(
+                        annotator_profile=annotator,
+                        project=proj
+                    )
+                    total_injected += result['honeypots_injected']
+                
+                if total_injected > 0:
+                    logger.info(
+                        f"Injected {total_injected} total honeypots for "
+                        f"{annotator.user.email} across {projects.count()} projects"
+                    )
+        except ImportError:
+            logger.debug("Honeypot module not available")
+        except Exception as e:
+            logger.warning(f"Error injecting honeypots: {e}")
+

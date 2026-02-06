@@ -438,4 +438,52 @@ urlpatterns = [
         honeypot_api.ProjectHoneypotBulkCreateAPI.as_view(),
         name="project-honeypot-bulk",
     ),
+    # ============================================================================
+    # EXPERTISE SYSTEM URLS
+    # ============================================================================
+    # List all expertise categories (public)
+    path(
+        "expertise/categories",
+        api.ExpertiseCategoryListAPI.as_view(),
+        name="expertise-categories",
+    ),
+    # Get specific category details
+    path(
+        "expertise/categories/<slug:category_slug>",
+        api.ExpertiseCategoryDetailAPI.as_view(),
+        name="expertise-category-detail",
+    ),
+    # Annotator expertise management
+    path(
+        "expertise/my-expertise",
+        api.AnnotatorExpertiseListAPI.as_view(),
+        name="my-expertise",
+    ),
+    path(
+        "expertise/my-expertise/<int:expertise_id>",
+        api.AnnotatorExpertiseDetailAPI.as_view(),
+        name="my-expertise-detail",
+    ),
+    # Expertise summary for dashboard
+    path(
+        "expertise/summary",
+        api.AnnotatorExpertiseSummaryAPI.as_view(),
+        name="expertise-summary",
+    ),
+    # Expertise test management
+    path(
+        "expertise/test/start/<int:expertise_id>",
+        api.ExpertiseTestStartAPI.as_view(),
+        name="expertise-test-start",
+    ),
+    path(
+        "expertise/test/<int:test_id>/submit",
+        api.ExpertiseTestSubmitAPI.as_view(),
+        name="expertise-test-submit",
+    ),
+    path(
+        "expertise/test/<int:test_id>",
+        api.ExpertiseTestDetailAPI.as_view(),
+        name="expertise-test-detail",
+    ),
 ]

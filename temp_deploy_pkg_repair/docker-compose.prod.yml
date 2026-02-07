@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: synapse-platform
+    restart: always
+    expose:
+      - "8080"
+    env_file:
+      - production.env
+    depends_on:
+      - db
+      - redis
+    command: >
+      sh -c "python synapse/manage.py migrate &&
+             python synapse/manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8080 --workers 2 --timeout 120 synapse.core.wsgi:application"
+
+  db:
+    image: postgres:15-alpine
+    container_name: synapse-db
+    restart: always
+    volumes:
+      - synapse_db_data:/var/lib/postgresql/data
+    env_file:
+      - production.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: synapse-redis
+    restart: always
+    volumes:
+      - synapse_redis_data:/data
+
+  minio:
+    image: minio/minio
+    container_name: synapse-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - synapse_minio_data:/data
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: synapse-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  # RQ worker for background task processing
+  rq-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: synapse-rq-worker
+    restart: always
+    env_file:
+      - production.env
+    depends_on:
+      - db
+      - redis
+    command: python synapse/manage.py rqworker default high low
+
+  # Scheduler for periodic tasks (runs every hour)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: synapse-scheduler
+    restart: always
+    env_file:
+      - production.env
+    depends_on:
+      - db
+      - redis
+    command: >
+      sh -c "while true; do
+        echo '[Scheduler] Running timeout processing...' &&
+        python synapse/manage.py process_assignment_timeouts &&
+        echo '[Scheduler] Sleeping for 1 hour...' &&
+        sleep 3600;
+      done"
+
+volumes:
+  synapse_db_data:
+  synapse_redis_data:
+  synapse_minio_data:
+  caddy_data:
+  caddy_config:

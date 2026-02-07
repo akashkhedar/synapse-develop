@@ -682,6 +682,9 @@ export const EarningsDashboard: React.FC = () => {
                 </div>
               </div>
             </motion.section>
+
+            {/* Expertise & Badges - Full width below chart */}
+            <ExpertiseSection />
           </div>
 
           {/* Right Column */}
@@ -855,8 +858,6 @@ export const EarningsDashboard: React.FC = () => {
               </div>
             </motion.section>
 
-            {/* Expertise & Badges */}
-            <ExpertiseSection />
           </div>
         </div>
       </div>

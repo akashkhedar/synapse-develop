@@ -1,6 +1,6 @@
 # Annotator Workflow & Quality System
 
-> Last Updated: January 13, 2026
+> Last Updated: February 7, 2026
 
 ## Overview
 
@@ -12,13 +12,14 @@ This document details the complete annotator lifecycle on Synapse - from initial
 
 1. [Annotator Onboarding](#annotator-onboarding)
 2. [Skill Assessment System](#skill-assessment-system)
-3. [Task Assignment Engine](#task-assignment-engine)
-4. [Annotation Workflow](#annotation-workflow)
-5. [Quality Assurance](#quality-assurance)
-6. [Trust Level System](#trust-level-system)
-7. [Expert Review Process](#expert-review-process)
-8. [Gamification & Rewards](#gamification--rewards)
-9. [Payment & Payouts](#payment--payouts)
+3. [Expertise System](#expertise-system)
+4. [Task Assignment Engine](#task-assignment-engine)
+5. [Annotation Workflow](#annotation-workflow)
+6. [Quality Assurance](#quality-assurance)
+7. [Trust Level System](#trust-level-system)
+8. [Expert Review Process](#expert-review-process)
+9. [Gamification & Rewards](#gamification--rewards)
+10. [Payment & Payouts](#payment--payouts)
 
 ---
 
@@ -197,6 +198,113 @@ class TestAttempt(models.Model):
     completed_at = models.DateTimeField()
     time_taken = models.IntegerField()  # seconds
 ```
+
+---
+
+## Expertise System
+
+The platform features a comprehensive expertise and specialization system that allows annotators to demonstrate skills and qualify for specialized tasks.
+
+### Expertise Categories
+
+Top-level annotation domains that map to annotation template folders:
+
+```python
+class ExpertiseCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    icon = models.CharField(max_length=50, blank=True)
+    template_folder = models.CharField(max_length=100, blank=True)  # Maps to annotation_templates/
+    display_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+```
+
+**Available Categories:**
+- Computer Vision (object detection, segmentation)
+- NLP/Text (named entity recognition, classification)
+- Audio/Speech (transcription, speaker diarization)
+- Medical Imaging (X-ray, MRI, pathology)
+- Conversational AI (dialog quality, intent labeling)
+
+### Expertise Specializations
+
+Sub-expertise within categories representing specific skills:
+
+```python
+class ExpertiseSpecialization(models.Model):
+    category = models.ForeignKey(ExpertiseCategory, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
+    template_folder = models.CharField(max_length=100, blank=True)
+    
+    # Qualification requirements
+    requires_certification = models.BooleanField(default=False)
+    certification_instructions = models.TextField(blank=True)
+    min_test_questions = models.IntegerField(default=10)
+    passing_score = models.IntegerField(default=70)  # Percentage
+```
+
+### Annotator Expertise Tracking
+
+Tracks which expertise an annotator has claimed, tested, and verified:
+
+```python
+class AnnotatorExpertise(models.Model):
+    STATUS_CHOICES = [
+        ('claimed', 'Claimed'),       # Annotator said they have this skill
+        ('testing', 'Taking Test'),   # Currently taking qualification test
+        ('verified', 'Verified'),     # Passed test, can receive tasks
+        ('failed', 'Failed Test'),    # Failed qualification, can retry
+        ('expired', 'Expired'),       # Needs re-certification
+        ('revoked', 'Revoked'),       # Admin revoked (fraud/quality)
+    ]
+    
+    annotator = models.ForeignKey(AnnotatorProfile, on_delete=models.CASCADE)
+    category = models.ForeignKey(ExpertiseCategory, on_delete=models.CASCADE)
+    specialization = models.ForeignKey(ExpertiseSpecialization, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='claimed')
+    
+    # Qualification tracking
+    test_attempts = models.IntegerField(default=0)
+    last_test_score = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    verified_at = models.DateTimeField(null=True)
+    expires_at = models.DateTimeField(null=True)
+    
+    # Performance metrics
+    tasks_completed = models.IntegerField(default=0)
+    accuracy_score = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    average_time_per_task = models.IntegerField(default=0)  # Seconds
+    
+    # Email-based test access
+    test_token = models.UUIDField(null=True, unique=True)
+```
+
+### Expertise Qualification Flow
+
+```mermaid
+graph LR
+    A[Claim Expertise] --> B[Email Invitation]
+    B --> C[Take Test via Token]
+    C --> D{Score >= 70%?}
+    D -->|Yes| E[Verified ✓]
+    D -->|No| F[Failed - Retry Available]
+    E --> G[Receive Matching Tasks]
+    F --> C
+```
+
+1. **Claim**: Annotator selects expertise categories on their profile
+2. **Email Token**: System sends test invitation email with unique token link
+3. **Qualification Test**: Annotator completes timed test (10+ questions)
+4. **Verification**: Passing score (70%+) updates status to "verified"
+5. **Task Matching**: Verified expertise enables assignment of matching project tasks
+
+### Frontend Components
+
+- `ExpertiseSection.tsx` - Main expertise display/edit component
+- `ExpertiseIcons.tsx` - Category icon rendering
+- `SpecialtySelection.tsx` - Multi-select expertise picker
+- `TestResultsDisplay.tsx` - Show test scores and status
 
 ---
 
@@ -856,11 +964,11 @@ class EarningsCalculator:
 
 ### Escrow System
 
-Payment is released in stages:
+Payment is released in stages (40-40-20 split):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    ESCROW FLOW                               │
+│                    ESCROW FLOW (40-40-20 Split)              │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Task Submitted                                              │

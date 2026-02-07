@@ -1,6 +1,6 @@
 # Synapse Frontend Architecture
 
-> Last Updated: January 13, 2026
+> Last Updated: February 7, 2026
 
 ## Overview
 
@@ -407,12 +407,17 @@ pages/
 │   ├── VerificationSent.tsx     # Verification pending
 │   ├── AnnotatorTest.tsx        # Qualification test
 │   ├── AnnotatorSkillTest.tsx   # Skill assessment
+│   ├── ExpertiseTest.tsx        # Expertise qualification test
 │   ├── TestResult.tsx           # Test results
-│   ├── EarningsDashboard.tsx    # Earnings overview
+│   ├── EarningsDashboard.tsx    # Earnings overview with charts
 │   ├── PayoutRequest.tsx        # Payout requests
 │   └── components/
 │       ├── TaskCard.tsx
 │       ├── EarningsChart.tsx
+│       ├── ExpertiseSection.tsx     # Expertise badges display
+│       ├── ExpertiseIcons.tsx       # SVG icons for expertise
+│       ├── TestResultsDisplay.tsx   # Test result component
+│       ├── SpecialtySelection.tsx   # Specialty picker
 │       └── ...
 │
 ├── Expert/                      # Expert review portal

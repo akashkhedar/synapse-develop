@@ -1,0 +1,18 @@
+title = "LS"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allow list"
+stopwords = [
+    '''keyEntities''',
+    '''shiftKey''',
+    '''duplicated''',
+]
+paths = [
+    '''gitleaks\.toml''',
+    '''synapse\/feature_flags\.json''',
+    '''docs/.*'''
+]
+

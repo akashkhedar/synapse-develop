@@ -1,6 +1,6 @@
 # Synapse Backend Architecture
 
-> Last Updated: January 13, 2026
+> Last Updated: February 7, 2026
 
 ## Overview
 
@@ -122,8 +122,17 @@ synapse/
 ├── labels_manager/              # Label management
 │   └── models.py                # Label model
 │
-└── session_policy/              # Session management
-    └── ...
+├── session_policy/              # Session management
+│   └── ...                      # Session timeout policies
+│
+├── blogs/                       # Blog post management
+│   └── ...                      # Blog models and admin
+│
+├── telemetry/                   # Usage analytics
+│   └── ...                      # Analytics and monitoring
+│
+└── annotation_templates/        # Pre-built annotation templates
+    └── ...                      # Template folders by category
 ```
 
 ---
@@ -461,6 +470,60 @@ class TrustLevel(models.Model):
     
     fraud_flags = models.IntegerField(default=0)
     is_suspended = models.BooleanField(default=False)
+```
+
+**Expertise System:**
+
+```python
+class ExpertiseCategory(models.Model):
+    """Expertise domains (e.g., Computer Vision, NLP)"""
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True)
+    description = models.TextField()
+    template_folder = models.CharField()  # Template location
+    is_active = models.BooleanField(default=True)
+
+class ExpertiseSpecialization(models.Model):
+    """Sub-specializations within categories"""
+    category = models.ForeignKey(ExpertiseCategory)
+    name = models.CharField(max_length=100)
+    slug = models.SlugField()
+    description = models.TextField()
+    passing_score = models.IntegerField(default=70)
+    test_config = JSONField()  # Test configuration
+
+class AnnotatorExpertise(models.Model):
+    """Annotator's claimed/verified expertise"""
+    annotator = models.ForeignKey(AnnotatorProfile)
+    category = models.ForeignKey(ExpertiseCategory)
+    specialization = models.ForeignKey(ExpertiseSpecialization, null=True)
+    status = models.CharField()  # claimed, testing, verified, failed, expired
+    accuracy = models.DecimalField()
+    test_score = models.DecimalField(null=True)
+    verified_at = models.DateTimeField(null=True)
+```
+
+**Honeypot System (V2):**
+
+```python
+class GoldenStandardTask(models.Model):
+    """Ground truth tasks for quality control"""
+    project = models.ForeignKey(Project)
+    task = models.OneToOneField(Task)
+    ground_truth = JSONField()  # Expected annotation
+    tolerance = models.DecimalField()  # Acceptable deviation
+    times_shown = models.IntegerField(default=0)
+    times_passed = models.IntegerField(default=0)
+    times_failed = models.IntegerField(default=0)
+    is_retired = models.BooleanField(default=False)
+
+class HoneypotAssignment(models.Model):
+    """Hidden honeypot tracking"""
+    assignment = models.ForeignKey(TaskAssignment)
+    golden_task = models.ForeignKey(GoldenStandardTask)
+    accuracy_score = models.DecimalField()
+    passed = models.BooleanField()
+    evaluation_details = JSONField()
 ```
 
 **Gamification Models:**

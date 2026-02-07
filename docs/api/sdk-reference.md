@@ -2,6 +2,8 @@
 
 Complete reference documentation for the Synapse Python SDK.
 
+> Last Updated: February 7, 2026
+
 ## Table of Contents
 
 - [Client](#client)
@@ -10,6 +12,7 @@ Complete reference documentation for the Synapse Python SDK.
 - [Exports](#exports)
 - [Webhooks](#webhooks)
 - [Billing](#billing)
+- [Import Storage](#import-storage)
 - [Error Handling](#error-handling)
 - [Types & Models](#types--models)
 
@@ -17,16 +20,17 @@ Complete reference documentation for the Synapse Python SDK.
 
 ## Client
 
-The `Client` class is your entry point to the Synapse API.
+The `Synapse` class is your entry point to the Synapse API. An async version `AsyncSynapse` is also available.
 
 ### Constructor
 
 ```python
-synapse.Client(
+from synapse_sdk import Synapse
+
+client = Synapse(
     api_key: str = None,
     base_url: str = "https://api.synapse.io",
-    timeout: int = 30,
-    max_retries: int = 3
+    timeout: int = 30
 )
 ```
 
@@ -35,38 +39,34 @@ synapse.Client(
 | `api_key` | `str` | `None` | Your API key. If not provided, reads from `SYNAPSE_API_KEY` env var |
 | `base_url` | `str` | `https://api.synapse.io` | API base URL |
 | `timeout` | `int` | `30` | Request timeout in seconds |
-| `max_retries` | `int` | `3` | Max retries for failed requests |
 
 ### Example
 
 ```python
-import synapse
+from synapse_sdk import Synapse
 
 # Basic initialization
-client = synapse.Client(api_key="sk_live_xxxx")
+client = Synapse(api_key="sk_live_xxxx")
 
 # With custom settings
-client = synapse.Client(
+client = Synapse(
     api_key="sk_live_xxxx",
-    timeout=60,
-    max_retries=5
+    timeout=60
 )
 
-# Access your account info
-me = client.whoami()
-print(f"Logged in as: {me.email}")
-print(f"Organization: {me.organization.name}")
+# Async client
+from synapse_sdk import AsyncSynapse
+async_client = AsyncSynapse(api_key="sk_live_xxxx")
 ```
 
 ### Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `projects` | `ProjectsClient` | Project management |
-| `tasks` | `TasksClient` | Task management |
-| `exports` | `ExportsClient` | Export management |
-| `webhooks` | `WebhooksClient` | Webhook management |
-| `billing` | `BillingClient` | Billing & credits |
+| `projects` | `ProjectsClientExt` | Project management |
+| `tasks` | `TasksClientExt` | Task management |
+| `billing` | `BillingClientExt` | Billing & credits |
+| `import_storage` | `ImportStorageClientExt` | Data import/storage management |
 
 ### Methods
 
@@ -889,6 +889,65 @@ payment = client.billing.add_credits(
     amount: float,
     payment_method: str = "razorpay"
 )
+```
+
+---
+
+## Import Storage
+
+The `import_storage` client manages data imports from cloud storage providers.
+
+### import_storage.s3.import_from_bucket()
+
+Import data directly from an S3 bucket into a project.
+
+```python
+from synapse_sdk import Synapse
+
+client = Synapse(api_key="sk_live_xxxx")
+
+# Import images from S3
+result = client.import_storage.s3.import_from_bucket(
+    project_id=123,
+    bucket="my-data-bucket",
+    prefix="images/",
+    regex_filter=".*\\.jpg$"
+)
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | `int` | ✅ | Target project ID |
+| `bucket` | `str` | ✅ | S3 bucket name |
+| `prefix` | `str` | ❌ | Folder prefix to filter files |
+| `regex_filter` | `str` | ❌ | Regex pattern to match file names |
+| `use_blob_urls` | `bool` | ❌ | Use presigned URLs instead of copying |
+
+### import_storage.s3.create()
+
+Create an S3 storage configuration for a project.
+
+```python
+storage = client.import_storage.s3.create(
+    project=123,
+    bucket="my-bucket",
+    prefix="datasets/",
+    aws_access_key_id="AKIA...",
+    aws_secret_access_key="xxxx",
+    region_name="us-east-1"
+)
+```
+
+### import_storage.s3.sync()
+
+Sync files from configured S3 storage.
+
+```python
+# Sync new files from S3
+sync_result = client.import_storage.s3.sync(
+    storage_id=456
+)
+print(f"Synced {sync_result.tasks_created} new tasks")
 ```
 
 ---

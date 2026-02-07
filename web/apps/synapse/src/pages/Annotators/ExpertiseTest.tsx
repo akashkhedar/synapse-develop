@@ -234,21 +234,12 @@ export const ExpertiseTest: React.FC & { title?: string; path?: string; exact?: 
     setPhase("instructions");
   }, []);
 
-  // Handle continue (close window or show completion message)
+  // Handle continue - redirect to dashboard
   const handleContinue = useCallback(() => {
-    // Try to close the window (works if opened via link)
-    // Otherwise just show a completion message
-    try {
-      window.close();
-    } catch (e) {
-      // Window won't close if not opened via JavaScript
-      toast?.show({
-        message: "Test complete! You can close this window.",
-        type: ToastType.info,
-        duration: 5000,
-      });
-    }
-  }, [toast]);
+    // Redirect to login which will then redirect to earnings dashboard
+    // This ensures proper Django session authentication
+    window.location.href = "/login/?next=/annotator/earnings";
+  }, []);
 
   // Render based on phase
   if (phase === "loading") {

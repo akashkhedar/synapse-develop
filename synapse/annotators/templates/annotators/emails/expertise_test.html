@@ -20,7 +20,7 @@
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
         'Helvetica Neue', Arial, sans-serif;
-      background-color: #000000;
+      background-color: #050505;
       color: #ffffff;
     "
   >
@@ -31,10 +31,10 @@
       cellspacing="0"
       cellpadding="0"
       border="0"
-      style="background-color: #000000"
+      style="background-color: #050505"
     >
       <tr>
-        <td align="center" style="padding: 40px 20px">
+        <td align="center" style="padding: 48px 20px">
           <!-- Main container -->
           <table
             role="presentation"
@@ -46,7 +46,7 @@
           >
             <!-- Header with logo -->
             <tr>
-              <td style="padding: 32px 40px; border-bottom: 1px solid #1f2937">
+              <td style="padding: 28px 40px; background-color: #0a0a0a; border-bottom: 1px solid #1a1a1a;">
                 <table
                   role="presentation"
                   width="100%"
@@ -55,26 +55,34 @@
                   border="0"
                 >
                   <tr>
-                    <td>
-                      <span
-                        style="
-                          font-size: 24px;
-                          font-weight: 700;
-                          color: #ffffff;
-                          letter-spacing: 0.05em;
-                        "
-                        >SYNAPSE</span
-                      >
+                    <td style="vertical-align: middle;">
+                      <!-- Synapse Logo SVG -->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="vertical-align: middle; padding-right: 12px;">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' fill='none'%3E%3Ccircle cx='16' cy='16' r='14' stroke='%238b5cf6' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%238b5cf6'/%3E%3Cpath d='M16 2v6M16 24v6M2 16h6M24 16h6' stroke='%238b5cf6' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E" width="32" height="32" alt="Synapse" style="display: block;" />
+                          </td>
+                          <td style="vertical-align: middle;">
+                            <span style="font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: 0.02em;">Synapse</span>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
-                    <td align="right">
+                    <td align="right" style="vertical-align: middle;">
                       <span
                         style="
-                          font-family: 'Courier New', monospace;
-                          font-size: 11px;
-                          color: #6b7280;
-                          letter-spacing: 0.1em;
+                          display: inline-block;
+                          padding: 6px 12px;
+                          background-color: rgba(139, 92, 246, 0.1);
+                          border: 1px solid rgba(139, 92, 246, 0.2);
+                          border-radius: 4px;
+                          font-family: monospace;
+                          font-size: 10px;
+                          color: #8b5cf6;
+                          letter-spacing: 0.08em;
+                          text-transform: uppercase;
                         "
-                        >// EXPERTISE QUALIFICATION</span
+                        >Qualification Test</span
                       >
                     </td>
                   </tr>
@@ -88,30 +96,31 @@
                 style="
                   padding: 48px 40px;
                   background-color: #0a0a0a;
-                  border-left: 1px solid #1f2937;
-                  border-right: 1px solid #1f2937;
+                  border-left: 1px solid #1a1a1a;
+                  border-right: 1px solid #1a1a1a;
                 "
               >
-                <!-- Badge icon -->
+                <!-- Icon -->
                 <table
                   role="presentation"
                   cellspacing="0"
                   cellpadding="0"
                   border="0"
-                  style="margin-bottom: 24px"
+                  style="margin-bottom: 28px"
                 >
                   <tr>
                     <td
                       style="
-                        width: 64px;
-                        height: 64px;
-                        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                        width: 56px;
+                        height: 56px;
+                        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
                         border-radius: 12px;
                         text-align: center;
                         vertical-align: middle;
                       "
                     >
-                      <span style="font-size: 32px;">🎯</span>
+                      <!-- Target Icon SVG -->
+                      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3C/svg%3E" width="28" height="28" alt="" style="display: inline-block; vertical-align: middle;" />
                     </td>
                   </tr>
                 </table>
@@ -120,10 +129,10 @@
                 <p
                   style="
                     margin: 0 0 8px 0;
-                    font-family: 'Courier New', monospace;
-                    font-size: 12px;
-                    color: #f59e0b;
-                    letter-spacing: 0.15em;
+                    font-family: monospace;
+                    font-size: 11px;
+                    color: #8b5cf6;
+                    letter-spacing: 0.12em;
                     text-transform: uppercase;
                   "
                 >
@@ -133,27 +142,25 @@
                 <h1
                   style="
                     margin: 0 0 24px 0;
-                    font-size: 28px;
+                    font-size: 26px;
                     font-weight: 600;
                     color: #ffffff;
-                    line-height: 1.2;
+                    line-height: 1.3;
                   "
                 >
-                  {{ expertise_name }} Test
+                  {{ expertise_name }}
                 </h1>
 
                 <p
                   style="
-                    margin: 0 0 32px 0;
-                    font-size: 16px;
-                    color: #9ca3af;
-                    line-height: 1.6;
+                    margin: 0 0 36px 0;
+                    font-size: 15px;
+                    color: #888888;
+                    line-height: 1.7;
                   "
                 >
-                  Hi
-                  <strong style="color: #ffffff">{{ user_name }}</strong>,<br /><br />
-                  You've applied to become a certified <strong style="color: #f59e0b">{{ expertise_name }}</strong> annotator. 
-                  Complete the qualification test to earn your expertise badge and unlock higher-paying tasks!
+                  Hello <span style="color: #ffffff">{{ user_name }}</span>,<br /><br />
+                  You have applied to become a certified <span style="color: #8b5cf6; font-weight: 500;">{{ expertise_name }}</span> annotator. Complete this qualification test to verify your skills and unlock access to specialized, higher-paying annotation tasks.
                 </p>
 
                 <!-- Test Details Card -->
@@ -164,8 +171,8 @@
                   cellpadding="0"
                   border="0"
                   style="
-                    background-color: rgba(245, 158, 11, 0.05);
-                    border: 1px solid rgba(245, 158, 11, 0.2);
+                    background-color: #111111;
+                    border: 1px solid #1a1a1a;
                     border-radius: 8px;
                     margin-bottom: 32px;
                   "
@@ -180,42 +187,60 @@
                         border="0"
                       >
                         <tr>
-                          <td style="padding-bottom: 12px">
-                            <span
-                              style="
-                                font-family: 'Courier New', monospace;
-                                font-size: 10px;
-                                color: #f59e0b;
-                                letter-spacing: 0.1em;
-                              "
-                              >TEST DETAILS</span
-                            >
+                          <td style="padding-bottom: 16px; border-bottom: 1px solid #1a1a1a;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                              <tr>
+                                <td style="vertical-align: middle; padding-right: 10px;">
+                                  <!-- Document Icon -->
+                                  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3Cline x1='16' y1='13' x2='8' y2='13'/%3E%3Cline x1='16' y1='17' x2='8' y2='17'/%3E%3C/svg%3E" width="16" height="16" alt="" style="display: block;" />
+                                </td>
+                                <td style="vertical-align: middle;">
+                                  <span style="font-family: monospace; font-size: 10px; color: #666666; letter-spacing: 0.08em; text-transform: uppercase;">Test Details</span>
+                                </td>
+                              </tr>
+                            </table>
                           </td>
                         </tr>
                         <tr>
-                          <td style="padding-bottom: 8px">
-                            <span style="color: #6b7280; font-size: 14px">Category:</span>
-                            <span style="color: #ffffff; font-size: 14px; margin-left: 8px">{{ category_name }}</span>
+                          <td style="padding-top: 16px; padding-bottom: 10px">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                              <tr>
+                                <td style="width: 120px; color: #555555; font-size: 13px;">Category</td>
+                                <td style="color: #ffffff; font-size: 13px; font-weight: 500;">{{ category_name }}</td>
+                              </tr>
+                            </table>
                           </td>
                         </tr>
                         {% if specialization_name %}
                         <tr>
-                          <td style="padding-bottom: 8px">
-                            <span style="color: #6b7280; font-size: 14px">Specialization:</span>
-                            <span style="color: #ffffff; font-size: 14px; margin-left: 8px">{{ specialization_name }}</span>
+                          <td style="padding-bottom: 10px">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                              <tr>
+                                <td style="width: 120px; color: #555555; font-size: 13px;">Specialization</td>
+                                <td style="color: #ffffff; font-size: 13px; font-weight: 500;">{{ specialization_name }}</td>
+                              </tr>
+                            </table>
                           </td>
                         </tr>
                         {% endif %}
                         <tr>
-                          <td style="padding-bottom: 8px">
-                            <span style="color: #6b7280; font-size: 14px">Passing Score:</span>
-                            <span style="color: #22c55e; font-size: 14px; margin-left: 8px">{{ passing_score }}%</span>
+                          <td style="padding-bottom: 10px">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                              <tr>
+                                <td style="width: 120px; color: #555555; font-size: 13px;">Passing Score</td>
+                                <td style="color: #22c55e; font-size: 13px; font-weight: 600;">{{ passing_score }}%</td>
+                              </tr>
+                            </table>
                           </td>
                         </tr>
                         <tr>
                           <td>
-                            <span style="color: #6b7280; font-size: 14px">Time Limit:</span>
-                            <span style="color: #ffffff; font-size: 14px; margin-left: 8px">30 minutes</span>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                              <tr>
+                                <td style="width: 120px; color: #555555; font-size: 13px;">Time Limit</td>
+                                <td style="color: #ffffff; font-size: 13px; font-weight: 500;">30 minutes</td>
+                              </tr>
+                            </table>
                           </td>
                         </tr>
                       </table>
@@ -229,30 +254,32 @@
                   cellspacing="0"
                   cellpadding="0"
                   border="0"
-                  style="margin: 0 0 32px 0"
+                  width="100%"
+                  style="margin: 0 0 36px 0"
                 >
                   <tr>
-                    <td style="border-radius: 0">
+                    <td align="center">
                       <a
                         href="{{ test_url }}"
                         style="
                           display: inline-block;
-                          padding: 16px 32px;
-                          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                          color: #000000;
+                          padding: 16px 40px;
+                          background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+                          color: #ffffff;
                           text-decoration: none;
                           font-weight: 600;
                           font-size: 14px;
-                          letter-spacing: 0.05em;
-                          border-radius: 0;
+                          letter-spacing: 0.03em;
+                          border-radius: 6px;
+                          text-align: center;
                         "
-                        >START QUALIFICATION TEST →</a
+                        >Start Qualification Test</a
                       >
                     </td>
                   </tr>
                 </table>
 
-                <!-- Badge Preview -->
+                <!-- What You'll Earn -->
                 <table
                   role="presentation"
                   width="100%"
@@ -261,13 +288,13 @@
                   border="0"
                   style="
                     background-color: rgba(34, 197, 94, 0.05);
-                    border: 1px solid rgba(34, 197, 94, 0.2);
+                    border: 1px solid rgba(34, 197, 94, 0.15);
                     border-radius: 8px;
-                    margin-bottom: 24px;
+                    margin-bottom: 28px;
                   "
                 >
                   <tr>
-                    <td style="padding: 20px">
+                    <td style="padding: 20px 24px">
                       <table
                         role="presentation"
                         width="100%"
@@ -276,15 +303,22 @@
                         border="0"
                       >
                         <tr>
-                          <td style="width: 50px; vertical-align: middle">
-                            <span style="font-size: 36px">🏆</span>
+                          <td style="width: 44px; vertical-align: middle">
+                            <!-- Trophy Icon -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                              <tr>
+                                <td style="width: 44px; height: 44px; background-color: rgba(34, 197, 94, 0.1); border-radius: 8px; text-align: center; vertical-align: middle;">
+                                  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/%3E%3Cpath d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/%3E%3Cpath d='M4 22h16'/%3E%3Cpath d='M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22'/%3E%3Cpath d='M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22'/%3E%3Cpath d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/%3E%3C/svg%3E" width="22" height="22" alt="" style="display: inline-block; vertical-align: middle;" />
+                                </td>
+                              </tr>
+                            </table>
                           </td>
                           <td style="vertical-align: middle; padding-left: 16px">
-                            <p style="margin: 0; color: #22c55e; font-size: 12px; font-weight: 600; letter-spacing: 0.05em">
-                              PASS TO EARN
+                            <p style="margin: 0; color: #555555; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;">
+                              Upon Passing
                             </p>
-                            <p style="margin: 4px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 500">
-                              {{ expertise_name }} Badge
+                            <p style="margin: 4px 0 0 0; color: #ffffff; font-size: 15px; font-weight: 500;">
+                              {{ expertise_name }} Certification Badge
                             </p>
                           </td>
                         </tr>
@@ -294,17 +328,32 @@
                 </table>
 
                 <!-- Link expiry notice -->
-                <p
-                  style="
-                    margin: 0;
-                    font-size: 13px;
-                    color: #6b7280;
-                    line-height: 1.5;
-                  "
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  style="background-color: #111111; border: 1px solid #1a1a1a; border-radius: 6px;"
                 >
-                  ⏰ This link expires in <strong style="color: #f59e0b">72 hours</strong>. 
-                  If you need a new link, you can request one from your dashboard.
-                </p>
+                  <tr>
+                    <td style="padding: 14px 18px;">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="vertical-align: middle; padding-right: 12px;">
+                            <!-- Clock Icon -->
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E" width="16" height="16" alt="" style="display: block;" />
+                          </td>
+                          <td style="vertical-align: middle;">
+                            <span style="font-size: 13px; color: #888888;">
+                              This link expires in <span style="color: #f59e0b; font-weight: 600;">72 hours</span>
+                            </span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
 
@@ -312,9 +361,9 @@
             <tr>
               <td
                 style="
-                  padding: 32px 40px;
+                  padding: 28px 40px;
                   background-color: #0a0a0a;
-                  border: 1px solid #1f2937;
+                  border: 1px solid #1a1a1a;
                   border-top: none;
                 "
               >
@@ -331,31 +380,50 @@
                         style="
                           margin: 0;
                           font-size: 13px;
-                          color: #6b7280;
-                          line-height: 1.5;
+                          color: #555555;
+                          line-height: 1.6;
                         "
                       >
-                        Need help? Reply to this email or visit our
+                        Questions? Reply to this email or visit our
                         <a
                           href="{{ site_url }}/contact"
-                          style="color: #f59e0b; text-decoration: none"
+                          style="color: #8b5cf6; text-decoration: none; font-weight: 500;"
                           >support page</a
                         >.
                       </p>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding-top: 16px">
-                      <p
-                        style="
-                          margin: 0;
-                          font-family: 'Courier New', monospace;
-                          font-size: 11px;
-                          color: #4b5563;
-                        "
-                      >
-                        © {{ year }} Synapse Data Labeling Platform
-                      </p>
+                    <td style="padding-top: 20px; border-top: 1px solid #1a1a1a; margin-top: 20px;">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding-top: 16px;">
+                        <tr>
+                          <td>
+                            <p
+                              style="
+                                margin: 0;
+                                font-family: monospace;
+                                font-size: 11px;
+                                color: #444444;
+                                letter-spacing: 0.02em;
+                              "
+                            >
+                              Synapse Data Annotation Platform
+                            </p>
+                          </td>
+                          <td align="right">
+                            <p
+                              style="
+                                margin: 0;
+                                font-family: monospace;
+                                font-size: 11px;
+                                color: #333333;
+                              "
+                            >
+                              {{ year }}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
                 </table>

@@ -1,5 +1,7 @@
 # Synapse API Documentation
 
+> Last Updated: February 7, 2026
+
 Welcome to the Synapse API documentation. This guide is designed for **enterprise clients** who want to integrate Synapse's data annotation capabilities directly into their ML pipelines.
 
 ## Quick Links
@@ -26,10 +28,10 @@ Synapse is an enterprise-grade data annotation platform that provides:
 ## Integration Overview
 
 ```python
-import synapse
+from synapse_sdk import Synapse
 
 # Initialize client
-client = synapse.Client(api_key="sk_live_xxxx")
+client = Synapse(api_key="sk_live_xxxx")
 
 # Create project → Upload data → Wait for completion → Download results
 project = client.projects.create(name="My Project", annotation_type="classification")

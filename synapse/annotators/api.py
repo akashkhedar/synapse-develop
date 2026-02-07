@@ -5842,9 +5842,19 @@ class ExpertiseApplyAPI(APIView):
         # Generate test token
         token = expertise.generate_test_token()
         
-        # Build test URL
+        # Build test URL properly
         expertise_name = specialization.name if specialization else category.name
-        test_url = f"{settings.HOSTNAME}/annotators/expertise-test?token={token}"
+        test_path = f"/annotators/expertise-test?token={token}"
+        
+        # Use request.build_absolute_uri for proper domain handling
+        if request:
+            test_url = request.build_absolute_uri(test_path)
+            site_url = request.build_absolute_uri('/').rstrip('/')
+        else:
+            # Fallback to settings.HOSTNAME
+            hostname = settings.HOSTNAME.rstrip('/') if settings.HOSTNAME else 'http://localhost:8080'
+            test_url = f"{hostname}{test_path}"
+            site_url = hostname
         
         # Prepare email context
         email_context = {
@@ -5854,7 +5864,7 @@ class ExpertiseApplyAPI(APIView):
             'specialization_name': specialization.name if specialization else None,
             'passing_score': specialization.passing_score if specialization else 70,
             'test_url': test_url,
-            'site_url': settings.HOSTNAME,
+            'site_url': site_url,
             'year': datetime.now().year,
         }
         
@@ -5862,7 +5872,7 @@ class ExpertiseApplyAPI(APIView):
         html_message = render_to_string('annotators/emails/expertise_test.html', email_context)
         plain_message = strip_tags(html_message)
         
-        subject = f"🎯 Synapse - {expertise_name} Qualification Test"
+        subject = f"Synapse - {expertise_name} Qualification Test"
         
         try:
             send_mail(
@@ -6112,29 +6122,43 @@ class ResendExpertiseTestEmailAPI(APIView):
         token = expertise.generate_test_token()
         
         expertise_name = expertise.specialization.name if expertise.specialization else expertise.category.name
-        test_url = f"{settings.HOSTNAME}/annotators/expertise-test?token={token}"
+        test_path = f"/annotators/expertise-test?token={token}"
         
-        subject = f"Synapse - Expertise Test: {expertise_name}"
-        message = f"""
-Hello {profile.user.get_full_name() or profile.user.email},
-
-Here is your new test link for {expertise_name}:
-
-{test_url}
-
-This link is valid for 72 hours.
-
-Best regards,
-Synapse Team
-        """
+        # Use request.build_absolute_uri for proper domain handling
+        if request:
+            test_url = request.build_absolute_uri(test_path)
+            site_url = request.build_absolute_uri('/').rstrip('/')
+        else:
+            hostname = settings.HOSTNAME.rstrip('/') if settings.HOSTNAME else 'http://localhost:8080'
+            test_url = f"{hostname}{test_path}"
+            site_url = hostname
+        
+        # Prepare email context
+        email_context = {
+            'user_name': profile.user.get_full_name() or profile.user.email.split('@')[0],
+            'expertise_name': expertise_name,
+            'category_name': expertise.category.name,
+            'specialization_name': expertise.specialization.name if expertise.specialization else None,
+            'passing_score': expertise.specialization.passing_score if expertise.specialization else 70,
+            'test_url': test_url,
+            'site_url': site_url,
+            'year': datetime.now().year,
+        }
+        
+        # Render HTML email
+        html_message = render_to_string('annotators/emails/expertise_test.html', email_context)
+        plain_message = strip_tags(html_message)
+        
+        subject = f"Synapse - {expertise_name} Qualification Test"
         
         try:
             send_mail(
                 subject,
-                message.strip(),
+                plain_message,
                 settings.DEFAULT_FROM_EMAIL,
                 [profile.user.email],
                 fail_silently=False,
+                html_message=html_message,
             )
             expertise.mark_email_sent()
             return Response({

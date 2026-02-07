@@ -1,0 +1,7 @@
+synapse.work.gd {
+    reverse_proxy synapse-platform:8080
+}
+
+www.synapse.work.gd {
+    reverse_proxy synapse-platform:8080
+}

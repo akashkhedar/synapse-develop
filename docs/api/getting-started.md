@@ -2,6 +2,8 @@
 
 This guide walks you through setting up the Synapse Python SDK and creating your first annotation project.
 
+> Last Updated: February 7, 2026
+
 ## Table of Contents
 
 1. [Installation](#installation)

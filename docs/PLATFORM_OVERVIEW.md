@@ -1,6 +1,6 @@
 # Synapse Platform Overview
 
-> Last Updated: January 13, 2026
+> Last Updated: February 7, 2026
 
 ## Executive Summary
 
@@ -64,26 +64,36 @@
 ```
 synapse-develop/
 ├── synapse/              # Django Backend (Core Platform)
-│   ├── annotators/       # Annotator management & workforce
-│   ├── billing/          # Credits, subscriptions, payments
-│   ├── core/             # Core utilities, settings, middleware
-│   ├── data_export/      # Export functionality
-│   ├── data_import/      # Import functionality
-│   ├── fsm/              # Finite State Machine framework
-│   ├── ml/               # ML Backend integration
-│   ├── organizations/    # Multi-tenancy & org management
-│   ├── projects/         # Project management
-│   ├── tasks/            # Task & annotation management
-│   ├── users/            # User authentication & management
+│   ├── annotators/       # Workforce: profiles, assignments, payments, honeypots, gamification
+│   ├── billing/          # Credits, subscriptions, Razorpay integration, storage billing
+│   ├── core/             # Settings, middleware, permissions, RBAC, feature flags
+│   ├── data_export/      # Export annotations in multiple formats
+│   ├── data_import/      # File uploads (CSV, JSON, ZIP)
+│   ├── data_manager/     # Data filtering, sorting, prepared queries
+│   ├── fsm/              # Finite State Machine for project/task lifecycle
+│   ├── io_storages/      # Cloud storage (S3, GCS, Azure, Local)
+│   ├── jwt_auth/         # JWT-based authentication, API keys
+│   ├── labels_manager/   # Label taxonomy management
+│   ├── ml/               # ML Backend integration & predictions
+│   ├── organizations/    # Multi-tenancy, org members, API keys
+│   ├── projects/         # Project configuration & management
+│   ├── session_policy/   # Session timeout policies
+│   ├── tasks/            # Task, Annotation, Prediction models
+│   ├── telemetry/        # Usage analytics & monitoring
+│   ├── users/            # User authentication, profiles, verification
 │   └── webhooks/         # Event notifications
 │
 ├── web/                  # Frontend Monorepo (NX)
 │   ├── apps/
-│   │   └── synapse/      # Main React application
+│   │   ├── synapse/      # Main React application
+│   │   ├── playground/   # Component development playground
+│   │   └── synapse-e2e/  # End-to-end tests
 │   └── libs/
-│       ├── editor/       # Annotation interface (Synapse Frontend)
+│       ├── editor/       # Annotation interface (Label Studio based)
 │       ├── datamanager/  # Data exploration & management
-│       └── ui/           # Shared UI components
+│       ├── ui/           # Shadcn UI components, Tailwind, design tokens
+│       ├── core/         # Shared utilities, analytics
+│       └── app-common/   # Common application logic
 │
 ├── synapse-sdk/          # Python SDK for API integration
 │
@@ -236,31 +246,37 @@ synapse-develop/
 
 | Module | Description |
 |--------|-------------|
-| `annotators` | Workforce management, assignments, payments, gamification |
-| `billing` | Credits, subscriptions, pricing, payment processing |
-| `core` | Settings, utilities, middleware, feature flags |
-| `data_export` | Export annotations in various formats |
-| `data_import` | Import data from various sources |
-| `data_manager` | Data filtering, views, bulk operations |
-| `fsm` | Finite State Machine for entity state tracking |
-| `io_storages` | Cloud storage integrations |
-| `jwt_auth` | JWT-based API authentication |
-| `ml` | ML backend integration and predictions |
-| `organizations` | Multi-tenancy and organization management |
-| `projects` | Project configuration and management |
-| `tasks` | Task and annotation models |
-| `users` | User authentication and profiles |
+| `annotators` | Workforce management: profiles, assignments, payments, honeypots, trust levels, gamification, expertise system |
+| `billing` | Credits system, subscriptions, Razorpay integration, storage billing, API usage tracking |
+| `core` | Settings, middleware, permissions, RBAC, feature flags, utilities |
+| `data_export` | Export annotations in JSON, CSV, COCO, Pascal VOC, YOLO formats |
+| `data_import` | Import data from CSV, JSON, ZIP uploads |
+| `data_manager` | Data filtering, sorting, prepared queries for frontend |
+| `fsm` | Finite State Machine for project/task lifecycle (UUID7-based) |
+| `io_storages` | Cloud storage integrations (S3, GCS, Azure, Local) |
+| `jwt_auth` | JWT tokens, API key authentication (syn_xxxxx format) |
+| `labels_manager` | Label taxonomy and hierarchy management |
+| `ml` | ML backend connection, predictions, active learning |
+| `organizations` | Multi-tenancy, organization members (owner/admin/member) |
+| `projects` | Project configuration, label configs, FSM state management |
+| `session_policy` | Organization-specific session timeout policies |
+| `tasks` | Task, Annotation, Prediction, AnnotationDraft models |
+| `telemetry` | Usage analytics and monitoring |
+| `users` | User authentication, email verification, role management |
 | `webhooks` | Real-time event notifications |
 
 ### Frontend Libraries (`web/libs/`)
 
 | Library | Description |
 |---------|-------------|
-| `editor` | Main annotation interface (Synapse Frontend) |
-| `datamanager` | Data exploration and task management |
-| `ui` | Shared React components and design system |
-| `core` | Shared utilities and helpers |
+| `editor` | Main annotation interface (Label Studio-based editor) |
+| `datamanager` | Data exploration, filtering, and task management grid |
+| `ui` | Shadcn/UI components, Tailwind CSS, design tokens (5900+ tokens) |
+| `core` | Shared utilities, analytics helpers |
 | `app-common` | Common application logic and API clients |
+| `audio-file-decoder` | Audio processing utilities |
+| `frontend-test` | Testing utilities |
+| `storybook` | Component documentation |
 
 ---
 

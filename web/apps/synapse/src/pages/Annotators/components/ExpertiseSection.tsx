@@ -1,6 +1,19 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast, ToastType, Spinner } from "@synapse/ui";
+import {
+  Icon,
+  TrophyIcon,
+  PlusIcon,
+  CloseIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  ArrowRightIcon,
+  MailIcon,
+  CertificateIcon,
+  TargetIcon,
+  DocumentIcon,
+} from "./ExpertiseIcons";
 import "./ExpertiseSection.css";
 
 interface Badge {
@@ -53,45 +66,6 @@ interface MyExpertise {
   can_retry: boolean;
   test_email_sent: boolean;
 }
-
-// Icon mapping for badges
-const ICON_MAP: Record<string, string> = {
-  image: "🖼️",
-  activity: "🏥",
-  "file-text": "📝",
-  mic: "🎙️",
-  video: "🎬",
-  "message-circle": "💬",
-  zap: "⚡",
-  database: "📊",
-  target: "🎯",
-  tag: "🏷️",
-  layers: "📐",
-  type: "✍️",
-  crosshair: "⊕",
-  heart: "❤️",
-  circle: "🔘",
-  grid: "📏",
-  user: "👤",
-  smile: "😊",
-  link: "🔗",
-  globe: "🌍",
-  headphones: "🎧",
-  users: "👥",
-  music: "🎵",
-  clock: "⏰",
-  star: "⭐",
-  edit: "✏️",
-  code: "💻",
-  "thumbs-up": "👍",
-  table: "📋",
-  receipt: "🧾",
-};
-
-const getIcon = (iconName: string | null | undefined): string => {
-  if (!iconName) return "🏆";
-  return ICON_MAP[iconName] || "🏆";
-};
 
 export const ExpertiseSection: React.FC = () => {
   const toast = useToast();
@@ -220,66 +194,74 @@ export const ExpertiseSection: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { color: string; label: string }> = {
-      claimed: { color: "#f59e0b", label: "Pending" },
-      testing: { color: "#3b82f6", label: "Testing" },
-      verified: { color: "#22c55e", label: "Verified" },
-      failed: { color: "#ef4444", label: "Failed" },
-      expired: { color: "#6b7280", label: "Expired" },
+  const getStatusInfo = (status: string) => {
+    const statusConfig: Record<string, { className: string; label: string }> = {
+      claimed: { className: "status-pending", label: "Pending" },
+      testing: { className: "status-testing", label: "Testing" },
+      verified: { className: "status-verified", label: "Verified" },
+      failed: { className: "status-failed", label: "Failed" },
+      expired: { className: "status-expired", label: "Expired" },
     };
-    return statusConfig[status] || { color: "#6b7280", label: status };
+    return statusConfig[status] || { className: "status-default", label: status };
   };
 
   if (loading) {
     return (
-      <div className="expertise-section loading">
-        <Spinner size={32} />
-        <span>Loading expertise...</span>
+      <div className="expertise-section expertise-loading">
+        <Spinner size={24} />
+        <span className="loading-text">Loading expertise...</span>
       </div>
     );
   }
 
   return (
     <motion.section
-      className="section-card expertise-section"
-      initial={{ opacity: 0, y: 20 }}
+      className="expertise-section"
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.45 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <div className="section-header">
-        <span className="section-number">06/</span>
-        <h2 className="section-title">My Expertise & Badges</h2>
+      <header className="expertise-header">
+        <div className="header-title-group">
+          <TrophyIcon size={20} className="header-icon" />
+          <h2 className="expertise-title">Expertise & Badges</h2>
+        </div>
         <button
-          className="apply-btn"
+          className="add-skill-btn"
           onClick={() => setShowApplyModal(true)}
         >
-          + Apply for New Skill
+          <PlusIcon size={16} />
+          <span>Add Skill</span>
         </button>
-      </div>
+      </header>
 
       {/* Badges Display */}
       {badges.length > 0 && (
-        <div className="badges-container">
-          <h3 className="subsection-title">🏆 Earned Badges</h3>
+        <div className="badges-section">
+          <div className="section-label">
+            <span className="label-text">Earned Badges</span>
+            <span className="label-count">{badges.length}</span>
+          </div>
           <div className="badges-grid">
             {badges.map((badge) => (
               <motion.div
                 key={badge.id}
                 className="badge-card"
-                whileHover={{ scale: 1.05 }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ y: -2 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                <div className="badge-icon">{getIcon(badge.icon)}</div>
-                <div className="badge-info">
+                <div className="badge-icon-wrapper">
+                  <Icon name={badge.icon} size={20} className="badge-icon" />
+                </div>
+                <div className="badge-content">
                   <span className="badge-name">{badge.name}</span>
                   <span className="badge-category">{badge.category}</span>
-                  {badge.score && (
-                    <span className="badge-score">{badge.score.toFixed(0)}% score</span>
+                  {badge.score !== null && (
+                    <span className="badge-score">{badge.score.toFixed(0)}%</span>
                   )}
                 </div>
-                <div className="badge-glow" />
               </motion.div>
             ))}
           </div>
@@ -287,40 +269,46 @@ export const ExpertiseSection: React.FC = () => {
       )}
 
       {/* My Expertise List */}
-      <div className="expertise-list">
-        <h3 className="subsection-title">📋 My Applications</h3>
+      <div className="applications-section">
+        <div className="section-label">
+          <span className="label-text">My Applications</span>
+          {myExpertise.length > 0 && (
+            <span className="label-count">{myExpertise.length}</span>
+          )}
+        </div>
         {myExpertise.length === 0 ? (
           <div className="empty-state">
-            <span className="empty-icon">🎯</span>
-            <span className="empty-text">No expertise applications yet</span>
-            <span className="empty-hint">Apply for a skill to start earning in that area</span>
+            <div className="empty-icon-wrapper">
+              <TargetIcon size={32} className="empty-icon" />
+            </div>
+            <div className="empty-content">
+              <span className="empty-title">No expertise applications yet</span>
+              <span className="empty-description">Apply for a skill to start earning in that area</span>
+            </div>
           </div>
         ) : (
-          <div className="expertise-items">
+          <div className="expertise-list">
             {myExpertise.map((exp) => {
-              const statusInfo = getStatusBadge(exp.status);
+              const statusInfo = getStatusInfo(exp.status);
               return (
-                <div key={exp.id} className={`expertise-item status-${exp.status}`}>
-                  <div className="expertise-icon">
-                    {getIcon(exp.specialization_icon || exp.category_icon)}
+                <div key={exp.id} className={`expertise-item ${statusInfo.className}`}>
+                  <div className="item-icon-wrapper">
+                    <Icon name={exp.specialization_icon || exp.category_icon} size={18} className="item-icon" />
                   </div>
-                  <div className="expertise-details">
-                    <span className="expertise-name">
+                  <div className="item-details">
+                    <span className="item-name">
                       {exp.specialization_name || exp.category_name}
                     </span>
                     {exp.specialization_name && (
-                      <span className="expertise-category">{exp.category_name}</span>
+                      <span className="item-category">{exp.category_name}</span>
                     )}
                   </div>
-                  <div 
-                    className="expertise-status"
-                    style={{ backgroundColor: statusInfo.color }}
-                  >
+                  <span className={`item-status ${statusInfo.className}`}>
                     {statusInfo.label}
-                  </div>
+                  </span>
                   {exp.badge_earned && (
-                    <div className="badge-earned-indicator" title="Badge Earned!">
-                      🏆
+                    <div className="badge-indicator" title="Badge Earned">
+                      <TrophyIcon size={16} />
                     </div>
                   )}
                   {(exp.status === 'claimed' || exp.status === 'failed') && exp.can_retry && (
@@ -329,16 +317,16 @@ export const ExpertiseSection: React.FC = () => {
                       onClick={() => handleResendEmail(exp.id)}
                       title="Resend test email"
                     >
-                      📧 Resend
+                      <MailIcon size={14} />
+                      <span>Resend</span>
                     </button>
                   )}
-                  {exp.last_test_score !== null && !isNaN(Number(exp.last_test_score)) ? (
-                    <span className="last-score">
-                      Last: {Number(exp.last_test_score).toFixed(0)}%
-                    </span>
-                  ) : (
-                    <span className="last-score">Last: -</span>
-                  )}
+                  <span className="item-score">
+                    {exp.last_test_score !== null && !isNaN(Number(exp.last_test_score)) 
+                      ? `${Number(exp.last_test_score).toFixed(0)}%`
+                      : "-"
+                    }
+                  </span>
                 </div>
               );
             })}
@@ -350,48 +338,52 @@ export const ExpertiseSection: React.FC = () => {
       <AnimatePresence>
         {showApplyModal && (
           <motion.div
-            className="expertise-modal-overlay"
+            className="modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowApplyModal(false)}
           >
             <motion.div
-              className="expertise-modal"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              className="modal-container"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
-                <h2>Apply for New Expertise</h2>
+              <header className="modal-header">
+                <h2 className="modal-title">Apply for Expertise</h2>
                 <button 
-                  className="close-btn"
+                  className="modal-close-btn"
                   onClick={() => setShowApplyModal(false)}
+                  aria-label="Close modal"
                 >
-                  ✕
+                  <CloseIcon size={18} />
                 </button>
-              </div>
+              </header>
 
-              <div className="modal-body">
+              <div className="modal-content">
                 {!selectedCategory ? (
                   <>
                     <p className="modal-instruction">
                       Select a category to apply for:
                     </p>
-                    <div className="categories-grid">
+                    <div className="category-grid">
                       {categories.map((cat) => (
                         <motion.button
                           key={cat.id}
                           className="category-card"
-                          whileHover={{ scale: 1.02 }}
+                          whileHover={{ y: -2 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => setSelectedCategory(cat)}
                         >
-                          <span className="cat-icon">{getIcon(cat.icon)}</span>
-                          <span className="cat-name">{cat.name}</span>
-                          <span className="cat-count">
-                            {cat.specializations.length} specializations
+                          <div className="category-icon-wrapper">
+                            <Icon name={cat.icon} size={22} className="category-icon" />
+                          </div>
+                          <span className="category-name">{cat.name}</span>
+                          <span className="category-count">
+                            {cat.specializations.length} {cat.specializations.length === 1 ? 'specialization' : 'specializations'}
                           </span>
                         </motion.button>
                       ))}
@@ -406,48 +398,65 @@ export const ExpertiseSection: React.FC = () => {
                         setSelectedSpecialization(null);
                       }}
                     >
-                      ← Back to categories
+                      <ChevronLeftIcon size={16} />
+                      <span>Back to categories</span>
                     </button>
                     
-                    <div className="selected-category">
-                      <span className="cat-icon">{getIcon(selectedCategory.icon)}</span>
-                      <span className="cat-name">{selectedCategory.name}</span>
+                    <div className="selected-category-card">
+                      <div className="selected-category-icon">
+                        <Icon name={selectedCategory.icon} size={20} />
+                      </div>
+                      <span className="selected-category-name">{selectedCategory.name}</span>
                     </div>
 
                     <p className="modal-instruction">
                       Select a specialization (optional):
                     </p>
 
-                    <div className="specializations-list">
+                    <div className="specialization-list">
                       <motion.button
-                        className={`spec-card ${!selectedSpecialization ? 'selected' : ''}`}
-                        whileHover={{ scale: 1.01 }}
+                        className={`specialization-card ${!selectedSpecialization ? 'is-selected' : ''}`}
+                        whileHover={{ backgroundColor: 'var(--color-neutral-surface-hover)' }}
                         onClick={() => setSelectedSpecialization(null)}
                       >
-                        <span className="spec-icon">📋</span>
-                        <div className="spec-info">
+                        <div className="spec-icon-wrapper">
+                          <DocumentIcon size={18} className="spec-icon" />
+                        </div>
+                        <div className="spec-content">
                           <span className="spec-name">General {selectedCategory.name}</span>
                           <span className="spec-desc">Take the general category test</span>
                         </div>
-                        {!selectedSpecialization && <span className="check">✓</span>}
+                        {!selectedSpecialization && (
+                          <div className="spec-check">
+                            <CheckIcon size={16} />
+                          </div>
+                        )}
                       </motion.button>
 
                       {selectedCategory.specializations.map((spec) => (
                         <motion.button
                           key={spec.id}
-                          className={`spec-card ${selectedSpecialization?.id === spec.id ? 'selected' : ''}`}
-                          whileHover={{ scale: 1.01 }}
+                          className={`specialization-card ${selectedSpecialization?.id === spec.id ? 'is-selected' : ''}`}
+                          whileHover={{ backgroundColor: 'var(--color-neutral-surface-hover)' }}
                           onClick={() => setSelectedSpecialization(spec)}
                         >
-                          <span className="spec-icon">{getIcon(spec.icon)}</span>
-                          <div className="spec-info">
+                          <div className="spec-icon-wrapper">
+                            <Icon name={spec.icon} size={18} className="spec-icon" />
+                          </div>
+                          <div className="spec-content">
                             <span className="spec-name">{spec.name}</span>
                             <span className="spec-desc">{spec.description}</span>
-                            <span className="spec-score">Passing: {spec.passing_score}%</span>
+                            <span className="spec-passing">Passing score: {spec.passing_score}%</span>
                           </div>
-                          {selectedSpecialization?.id === spec.id && <span className="check">✓</span>}
+                          {selectedSpecialization?.id === spec.id && (
+                            <div className="spec-check">
+                              <CheckIcon size={16} />
+                            </div>
+                          )}
                           {spec.requires_certification && (
-                            <span className="cert-badge" title="Requires certification">📜</span>
+                            <div className="spec-cert" title="Requires certification">
+                              <CertificateIcon size={16} />
+                            </div>
                           )}
                         </motion.button>
                       ))}
@@ -457,29 +466,33 @@ export const ExpertiseSection: React.FC = () => {
               </div>
 
               {selectedCategory && (
-                <div className="modal-footer">
+                <footer className="modal-footer">
                   <button
-                    className="cancel-btn"
+                    className="btn-secondary"
                     onClick={() => setShowApplyModal(false)}
                   >
                     Cancel
                   </button>
                   <motion.button
-                    className="submit-btn"
-                    whileHover={{ scale: 1.02 }}
+                    className="btn-primary"
+                    whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleApply}
                     disabled={applying}
                   >
                     {applying ? (
                       <>
-                        <Spinner size={16} /> Applying...
+                        <Spinner size={14} />
+                        <span>Applying...</span>
                       </>
                     ) : (
-                      <>Apply & Get Test Link →</>
+                      <>
+                        <span>Apply & Get Test Link</span>
+                        <ArrowRightIcon size={16} />
+                      </>
                     )}
                   </motion.button>
-                </div>
+                </footer>
               )}
             </motion.div>
           </motion.div>

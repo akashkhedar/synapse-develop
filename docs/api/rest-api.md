@@ -2,6 +2,8 @@
 
 Direct REST API endpoints for clients who prefer HTTP calls over the SDK.
 
+> Last Updated: February 7, 2026
+
 > **Tip:** We recommend using the [Python SDK](sdk-reference.md) for easier integration. This reference is for clients who need direct HTTP access.
 
 ## Base URL

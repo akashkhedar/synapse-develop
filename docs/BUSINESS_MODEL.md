@@ -1,6 +1,6 @@
 # Synapse Business Model
 
-> Last Updated: January 13, 2026
+> Last Updated: February 7, 2026
 
 ## Executive Summary
 
